@@ -1,0 +1,165 @@
+import Foundation
+
+/// A markdown note: optional YAML frontmatter followed by a body.
+public struct Note: Equatable, Identifiable, Sendable {
+    /// Path relative to the vault root, e.g. `Projects/Website relaunch.md`.
+    public var relativePath: String
+    public var kind: ParaKind
+    public var frontmatter: Frontmatter
+    public var body: String
+    public var modifiedAt: Date?
+
+    public var id: String { relativePath }
+
+    public init(relativePath: String, kind: ParaKind, frontmatter: Frontmatter = Frontmatter(), body: String = "", modifiedAt: Date? = nil) {
+        self.relativePath = relativePath
+        self.kind = kind
+        self.frontmatter = frontmatter
+        self.body = body
+        self.modifiedAt = modifiedAt
+    }
+
+    public init(relativePath: String, kind: ParaKind, text: String, modifiedAt: Date? = nil) {
+        let parsed = Frontmatter.parse(text)
+        self.init(relativePath: relativePath, kind: kind, frontmatter: parsed.frontmatter, body: parsed.body, modifiedAt: modifiedAt)
+    }
+
+    /// Full file contents.
+    public var text: String {
+        get { frontmatter.serialized() + body }
+        set {
+            let parsed = Frontmatter.parse(newValue)
+            frontmatter = parsed.frontmatter
+            body = parsed.body
+        }
+    }
+
+    public var fileName: String {
+        let last = relativePath.split(separator: "/").last.map(String.init) ?? relativePath
+        return last.hasSuffix(".md") ? String(last.dropLast(3)) : last
+    }
+
+    public var title: String { frontmatter.string("title") ?? fileName }
+    public var status: String? { frontmatter.string("status")?.lowercased() }
+    public var tags: [String] { frontmatter.list("tags") }
+    public var related: [String] { frontmatter.list("related") }
+    public var area: String? { frontmatter.string("area") }
+    public var dueDate: DateOnly? { frontmatter.string("due").flatMap(DateOnly.init) }
+
+    /// `sync: false` in the frontmatter keeps a note out of Reminders.
+    public var isSyncEnabled: Bool { frontmatter.bool("sync") ?? true }
+
+    /// The Reminders list that mirrors this note (frontmatter `reminders-list`, else the title).
+    public var remindersListName: String { frontmatter.string("reminders-list") ?? title }
+
+    public var isArchived: Bool { kind == .archive || status == "archived" }
+
+    // MARK: Tasks
+
+    public var tasks: [TaskItem] { TaskParser.parse(text: body) }
+
+    public var openTasks: [TaskItem] { tasks.filter { !$0.isDone } }
+
+    public var lines: [String] {
+        get { body.split(separator: "\n", omittingEmptySubsequences: false).map(String.init) }
+        set { body = newValue.joined(separator: "\n") }
+    }
+
+    /// Rewrites the line the task came from. Returns false if the line no longer holds a task.
+    @discardableResult
+    public mutating func replace(task: TaskItem) -> Bool {
+        var current = lines
+        guard task.lineIndex >= 0, task.lineIndex < current.count,
+              TaskParser.parse(line: current[task.lineIndex]) != nil else { return false }
+        let newLine = task.serialized
+        guard current[task.lineIndex] != newLine else { return true }
+        current[task.lineIndex] = newLine
+        lines = current
+        return true
+    }
+
+    /// Appends a task at the end of the `## Tasks` section (created if missing).
+    /// Returns the task with its final `lineIndex`.
+    @discardableResult
+    public mutating func append(task: TaskItem, sectionHeading: String = "Tasks") -> TaskItem {
+        var current = lines
+        var inserted = task
+        if let heading = current.firstIndex(where: { Self.isHeading($0, titled: sectionHeading) }) {
+            let level = Self.headingLevel(current[heading])
+            var end = heading + 1
+            while end < current.count {
+                let l = Self.headingLevel(current[end])
+                if l > 0 && l <= level { break }
+                end += 1
+            }
+            var insertAt = end
+            while insertAt > heading + 1, current[insertAt - 1].trimmingCharacters(in: .whitespaces).isEmpty {
+                insertAt -= 1
+            }
+            inserted.lineIndex = insertAt
+            current.insert(task.serialized, at: insertAt)
+        } else {
+            while let last = current.last, last.trimmingCharacters(in: .whitespaces).isEmpty {
+                current.removeLast()
+            }
+            if !current.isEmpty { current.append("") }
+            current.append("## \(sectionHeading)")
+            inserted.lineIndex = current.count
+            current.append(task.serialized)
+            current.append("")
+        }
+        lines = current
+        return inserted
+    }
+
+    public mutating func removeTask(at lineIndex: Int) {
+        var current = lines
+        guard lineIndex >= 0, lineIndex < current.count else { return }
+        current.remove(at: lineIndex)
+        lines = current
+    }
+
+    // MARK: Links
+
+    static let wikilinkRegex = try! NSRegularExpression(pattern: #"\[\[([^\]\|#]+)(?:#[^\]\|]*)?(?:\|[^\]]*)?\]\]"#)
+
+    /// Targets of `[[Title]]`, `[[Title|alias]]` and `[[Title#heading]]` links in the body.
+    public var wikilinks: [String] {
+        let ns = body as NSString
+        let matches = Self.wikilinkRegex.matches(in: body, range: NSRange(location: 0, length: ns.length))
+        var seen = Set<String>()
+        var out: [String] = []
+        for m in matches {
+            let target = ns.substring(with: m.range(at: 1)).trimmingCharacters(in: .whitespaces)
+            if seen.insert(target.lowercased()).inserted { out.append(target) }
+        }
+        return out
+    }
+
+    /// Everything this note points at: frontmatter `related`, `area`, and wikilinks.
+    public var outgoingReferences: [String] {
+        var refs = related
+        if let area { refs.append(area) }
+        refs.append(contentsOf: wikilinks)
+        return refs
+    }
+
+    // MARK: Helpers
+
+    static func headingLevel(_ line: String) -> Int {
+        var count = 0
+        for ch in line {
+            if ch == "#" { count += 1 } else { break }
+        }
+        guard count > 0, count <= 6 else { return 0 }
+        let after = line.dropFirst(count)
+        return after.first == " " || after.isEmpty ? count : 0
+    }
+
+    static func isHeading(_ line: String, titled title: String) -> Bool {
+        let level = headingLevel(line)
+        guard level > 0 else { return false }
+        let text = line.dropFirst(level).trimmingCharacters(in: .whitespaces)
+        return text.caseInsensitiveCompare(title) == .orderedSame
+    }
+}

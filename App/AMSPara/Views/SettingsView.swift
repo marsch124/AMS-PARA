@@ -1,0 +1,89 @@
+import SwiftUI
+import AMSParaCore
+
+struct SettingsView: View {
+    @EnvironmentObject private var model: AppModel
+    @State private var showingImporter = false
+
+    var body: some View {
+        Form {
+            Section("Vault") {
+                LabeledContent("Folder") {
+                    Text(model.vaultPath ?? "No vault selected")
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                        .truncationMode(.middle)
+                }
+                HStack {
+                    Button("Choose folder…") { showingImporter = true }
+                    if model.vault != nil {
+                        Button("Close vault", role: .destructive) { model.closeVault() }
+                    }
+                }
+            }
+
+            Section("Reminders sync") {
+                Picker("Sync automatically", selection: Binding(
+                    get: { model.autoSyncMinutes },
+                    set: { model.autoSyncMinutes = $0 }
+                )) {
+                    Text("Off").tag(0)
+                    Text("Every 5 minutes").tag(5)
+                    Text("Every 15 minutes").tag(15)
+                    Text("Every 30 minutes").tag(30)
+                    Text("Every hour").tag(60)
+                }
+                Picker("When both sides changed", selection: Binding(
+                    get: { model.config.conflictPolicy },
+                    set: { var c = model.config; c.conflictPolicy = $0; model.config = c }
+                )) {
+                    Text("The note wins").tag(ConflictPolicy.noteWins)
+                    Text("The reminder wins").tag(ConflictPolicy.reminderWins)
+                }
+                Toggle("Sync tasks in Area notes", isOn: Binding(
+                    get: { model.config.syncAreas },
+                    set: { var c = model.config; c.syncAreas = $0; model.config = c }
+                ))
+                Toggle("Create missing Reminders lists", isOn: Binding(
+                    get: { model.config.createMissingLists },
+                    set: { var c = model.config; c.createMissingLists = $0; model.config = c }
+                ))
+                Toggle("Import reminders that are already completed", isOn: Binding(
+                    get: { model.config.importCompletedReminders },
+                    set: { var c = model.config; c.importCompletedReminders = $0; model.config = c }
+                ))
+                LabeledContent("Inbox list") {
+                    Text(model.config.inboxListName).foregroundStyle(.secondary)
+                }
+            }
+            .disabled(model.vault == nil)
+
+            Section("Last sync") {
+                if let report = model.lastReport {
+                    Text(report.summary)
+                    ForEach(report.conflicts, id: \.self) { Text($0).font(.caption).foregroundStyle(.orange) }
+                    ForEach(report.warnings, id: \.self) { Text($0).font(.caption).foregroundStyle(.secondary) }
+                } else {
+                    Text("Not synced yet in this session.").foregroundStyle(.secondary)
+                }
+            }
+
+            Section("About") {
+                LabeledContent("Device id", value: model.deviceID)
+                Text("Sync state is stored per device in the vault's .ams-para folder. Task ids (^t…) in your notes and the ams-para marker in reminder notes are what keep both sides linked.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .formStyle(.grouped)
+        .navigationTitle("Settings")
+        #if os(macOS)
+        .frame(width: 520, height: 560)
+        #endif
+        .fileImporter(isPresented: $showingImporter, allowedContentTypes: [.folder]) { result in
+            if case .success(let url) = result {
+                model.openVault(at: url)
+            }
+        }
+    }
+}

@@ -1,0 +1,13 @@
+# Xcode / SwiftPM
+.build/
+*.xcodeproj/
+*.xcworkspace/
+!*.xcodeproj/project.pbxproj
+xcuserdata/
+DerivedData/
+*.swp
+.DS_Store
+Package.resolved
+
+# AMS PARA per-vault state lives inside the vault, not the repo
+.ams-para/
