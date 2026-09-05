@@ -8,6 +8,7 @@ enum SidebarSection: Hashable, Identifiable {
     case today
     case calendar
     case review
+    case search
     case kind(ParaKind)
 
     var id: String { title }
@@ -18,6 +19,7 @@ enum SidebarSection: Hashable, Identifiable {
         case .today: return "Today"
         case .calendar: return "Calendar"
         case .review: return "Weekly review"
+        case .search: return "Search"
         case .kind(let kind): return kind.displayName
         }
     }
@@ -28,6 +30,7 @@ enum SidebarSection: Hashable, Identifiable {
         case .today: return "sun.max"
         case .calendar: return "calendar"
         case .review: return "checklist.checked"
+        case .search: return "magnifyingglass"
         case .kind(.daily): return "calendar"
         case .kind(.project): return "flag"
         case .kind(.area): return "circle.grid.2x2"
@@ -37,7 +40,7 @@ enum SidebarSection: Hashable, Identifiable {
         }
     }
 
-    static let all: [SidebarSection] = [.inbox, .today, .calendar, .review, .kind(.project), .kind(.area), .kind(.resource), .kind(.archive)]
+    static let all: [SidebarSection] = [.inbox, .today, .calendar, .review, .search, .kind(.project), .kind(.area), .kind(.resource), .kind(.archive)]
 }
 
 @MainActor
@@ -47,6 +50,8 @@ final class AppModel: ObservableObject {
     @Published var section: SidebarSection? = .inbox
     @Published var selectedNotePath: String?
     @Published var searchText = ""
+    /// The full-text search query (Search section), separate from the list filter.
+    @Published var queryText = ""
     @Published private(set) var isSyncing = false
     @Published private(set) var lastReport: SyncReport?
     @Published var errorMessage: String?
@@ -120,7 +125,7 @@ final class AppModel: ObservableObject {
         case .inbox?: base = notes.filter { $0.kind == .inbox }
         case .kind(let kind)?: base = notes.filter { $0.kind == kind }
         case .calendar?: base = index.dailyNotes
-        case .today?, .review?, nil: base = notes
+        case .today?, .review?, .search?, nil: base = notes
         }
         let query = searchText.trimmingCharacters(in: .whitespaces)
         guard !query.isEmpty else { return base }
@@ -131,7 +136,7 @@ final class AppModel: ObservableObject {
         switch section {
         case .inbox: return note(at: vault?.config.inboxFile)?.openTasks.count ?? 0
         case .today: return index.openTasks(dueOnOrBefore: .today()).count + (todayNote?.openTasks.count ?? 0)
-        case .calendar: return 0
+        case .calendar, .search: return 0
         case .review: return index.review(config: config).projectsNeedingAttention.count
         case .kind(let kind): return notes.filter { $0.kind == kind }.count
         }
@@ -409,6 +414,19 @@ final class AppModel: ObservableObject {
 
     func clearCaptureMessage() {
         lastCaptureMessage = nil
+    }
+
+    // MARK: Search
+
+    var searchQuery: SearchQuery { SearchQuery.parse(queryText) }
+
+    var searchHits: [SearchHit] { index.search(searchQuery) }
+
+    /// Jumps to the Search section with a query, e.g. from a tag or a saved search.
+    func search(_ text: String) {
+        queryText = text
+        section = .search
+        selectedNotePath = nil
     }
 
     // MARK: Review

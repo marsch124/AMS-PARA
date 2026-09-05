@@ -135,6 +135,7 @@ struct SidebarView: View {
                 row(.today)
                 row(.calendar)
                 row(.review)
+                row(.search)
             }
             Section("PARA") {
                 row(.kind(.project))
@@ -167,6 +168,8 @@ struct NoteListView: View {
                 CalendarView()
             } else if model.section == .review {
                 ReviewView()
+            } else if model.section == .search {
+                SearchView()
             } else {
                 List(model.notes(in: model.section), selection: $model.selectedNotePath) { note in
                     NoteRow(note: note)

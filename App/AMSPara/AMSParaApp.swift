@@ -18,6 +18,9 @@ struct AMSParaApp: App {
                     .disabled(model.vault == nil)
                 Button("Quick Capture…") { model.showingQuickCapture = true }
                     .keyboardShortcut("n", modifiers: [.command, .shift])
+                Button("Search Everywhere…") { model.section = .search }
+                    .keyboardShortcut("f", modifiers: [.command, .shift])
+                    .disabled(model.vault == nil)
                 Button("Sync with Reminders") { Task { await model.syncNow() } }
                     .keyboardShortcut("r", modifiers: [.command, .shift])
                     .disabled(model.vault == nil || model.isSyncing)

@@ -99,6 +99,24 @@ Three ways to get a thought into the system without opening the right note first
 
 Captured text uses the task syntax: `>2026-09-10T14:30`, `!!` and `#tags` are picked up as usual.
 
+### Search
+
+The Search section (⇧⌘F) searches every note and task. Type words, quoted phrases, and filters in one
+line; the chips above the results add the common filters for you:
+
+| Filter | Values |
+| --- | --- |
+| `type:` | project, area, resource, archive, daily, inbox |
+| `status:` | active, on-hold, done, archived |
+| `tag:web` or `#web` | any tag from frontmatter or task lines |
+| `area:` | the area of a project |
+| `in:` | a path prefix such as `Resources/Books` |
+| `due:` | overdue, today, week, month, none, any |
+| `is:` | open, done |
+
+`due:` and `is:` turn the results into a task list; everything else lists notes with the matching lines.
+Examples: `due:overdue is:open`, `type:project status:active`, `"contact form" #web`.
+
 ### Editor and preview
 
 The editor toolbar switches between Edit, Split and Preview. The preview renders headings, lists, quotes,
@@ -176,4 +194,4 @@ note, so a project sees its resources and a resource sees where it is used. Sub-
 
 ## Roadmap
 
-- Full-text search with tag and status filters
+- Saved searches in the sidebar

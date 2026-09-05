@@ -149,7 +149,11 @@ public extension Vault {
         case .today:
             note = try dailyNote(for: today)
         case .note(let path):
-            note = (try? loadNote(relativePath: path)) ?? (try inboxNote())
+            if let existing = try? loadNote(relativePath: path) {
+                note = existing
+            } else {
+                note = try inboxNote()
+            }
         }
         if item.asTask {
             note.append(task: TaskParser.normalized(TaskItem(title: item.lineText)))
