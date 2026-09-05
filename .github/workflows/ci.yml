@@ -51,16 +51,32 @@ jobs:
     name: Commit generated Xcode project
     runs-on: macos-15
     needs: [core-tests, app-build]
+    # Only when the project definition itself changed, so a developer's local
+    # signing settings in AMSPara.xcodeproj are never overwritten by a pull.
     if: github.event_name == 'push'
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Skip unless project.yml changed
+        id: check
+        run: |
+          if git diff --name-only HEAD^ HEAD | grep -qx "project.yml"; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "project.yml unchanged; leaving the committed Xcode project alone."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          fi
       - name: Install XcodeGen
+        if: steps.check.outputs.run == 'true'
         run: brew install xcodegen
       - name: Generate project
+        if: steps.check.outputs.run == 'true'
         run: xcodegen generate
       - name: Commit and push when it changed
+        if: steps.check.outputs.run == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
