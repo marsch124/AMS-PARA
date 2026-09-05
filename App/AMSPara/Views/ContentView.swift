@@ -72,9 +72,9 @@ struct ContentView: View {
             model.handle(url: url)
         }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active { model.drainOutbox() }
+            if phase == .active { model.afterUpdate { model.drainOutbox() } }
         }
-        .onAppear { model.drainOutbox() }
+        .onAppear { model.afterUpdate { model.drainOutbox() } }
         .overlay(alignment: .bottom) {
             if let message = model.lastCaptureMessage {
                 Text(message)

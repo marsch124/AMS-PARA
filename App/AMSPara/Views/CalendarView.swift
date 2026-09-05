@@ -37,7 +37,8 @@ struct DayCalendarView: View {
                 .padding(.horizontal, 8)
                 .onChange(of: pickerDate) { _, newValue in
                     let day = DateOnly(newValue)
-                    if day != model.selectedDate { model.openDailyNote(for: day) }
+                    guard day != model.selectedDate else { return }
+                    model.afterUpdate { model.openDailyNote(for: day) }
                 }
             HStack {
                 Button("Today") {

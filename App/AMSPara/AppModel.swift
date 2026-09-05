@@ -55,7 +55,11 @@ enum AppSheet: String, Identifiable {
 @MainActor
 final class AppModel: ObservableObject {
     @Published private(set) var vault: Vault?
-    @Published private(set) var notes: [Note] = []
+    @Published private(set) var notes: [Note] = [] {
+        didSet { index = NoteIndex(notes: notes) }
+    }
+    /// Rebuilt whenever `notes` changes, so views never build it during a redraw.
+    @Published private(set) var index = NoteIndex(notes: [])
     @Published var section: SidebarSection? = .inbox
     @Published var selectedNotePath: String?
     @Published var searchText = ""
@@ -92,8 +96,6 @@ final class AppModel: ObservableObject {
     }
 
     // MARK: Derived state
-
-    var index: NoteIndex { NoteIndex(notes: notes) }
 
     var vaultPath: String? { vault?.rootURL.path }
 
@@ -374,6 +376,12 @@ final class AppModel: ObservableObject {
     }
 
     /// Writes a capture straight into the vault, or parks it in the outbox when no vault is open.
+    /// Runs a state change after the current SwiftUI update, so a view lifecycle
+    /// callback never publishes while the view tree is being evaluated.
+    func afterUpdate(_ work: @escaping () -> Void) {
+        Task { @MainActor in work() }
+    }
+
     func capture(_ item: CaptureItem) {
         guard let vault else {
             try? CaptureOutbox(fileURL: Self.outboxURL).append(item)
