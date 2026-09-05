@@ -89,3 +89,19 @@ targets:
         GENERATE_INFOPLIST_FILE: false
         PRODUCT_BUNDLE_IDENTIFIER: com.schabbauer.AMSPara.Share
         SKIP_INSTALL: true
+
+schemes:
+  AMSPara:
+    build:
+      targets:
+        AMSPara: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
