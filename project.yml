@@ -10,7 +10,9 @@ options:
 
 packages:
   AMSParaCore:
-    path: .
+    # The package lives in its own folder: Xcode cannot reference a local
+    # package that sits in the same directory as the .xcodeproj.
+    path: Core
 
 targets:
   AMSPara:

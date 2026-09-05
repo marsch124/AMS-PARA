@@ -15,9 +15,9 @@ jobs:
           xcodebuild -version
           swift --version
       - name: Build
-        run: swift build
+        run: swift build --package-path Core
       - name: Test
-        run: swift test
+        run: swift test --package-path Core
 
   app-build:
     name: App build (macOS + iOS Simulator)

@@ -11,8 +11,8 @@ You can keep editing the same files in NotePlan, Obsidian or any text editor.
 
 | Part | Where | What it does |
 | --- | --- | --- |
-| `AMSParaCore` | `Sources/AMSParaCore` | Swift package, no UI. Markdown notes with frontmatter, NotePlan style task lines, the PARA vault on disk, a note index (backlinks, tags, open tasks) and the two-way Reminders sync engine. |
-| Unit tests | `Tests/AMSParaCoreTests` | Cover parsing, note editing, the vault and every sync scenario (create, edit, complete, delete, conflicts, second device). |
+| `AMSParaCore` | `Core/Sources/AMSParaCore` | Swift package, no UI. Markdown notes with frontmatter, NotePlan style task lines, the PARA vault on disk, a note index (backlinks, tags, open tasks) and the two-way Reminders sync engine. |
+| Unit tests | `Core/Tests/AMSParaCoreTests` | Cover parsing, note editing, the vault and every sync scenario (create, edit, complete, delete, conflicts, second device). |
 | `AMSPara` app | `App/AMSPara` | SwiftUI app for macOS 14 and iOS 17. Sidebar (Inbox, Today, Calendar, Weekly review, Projects, Areas, Resources, Archive), note list, markdown editor with rendered preview and clickable wikilinks, task checklist, Reminders sync via EventKit, settings. |
 | `project.yml` | repository root | XcodeGen spec that produces the Xcode project for the app. |
 | `Example Vault` | `Example Vault/` | A small sample vault to try the app with. |
@@ -24,7 +24,7 @@ Requirements: Xcode 15.4 or newer (Xcode 16 recommended), and [XcodeGen](https:/
 ```bash
 brew install xcodegen
 cd AMS-PARA
-swift test                  # runs the core tests (no Xcode project needed)
+swift test --package-path Core   # runs the core tests (no Xcode project needed)
 xcodegen generate           # creates AMSPara.xcodeproj from project.yml
 open AMSPara.xcodeproj      # select the AMSPara scheme, set your Team under Signing, run
 ```
