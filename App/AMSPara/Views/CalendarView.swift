@@ -182,7 +182,9 @@ struct MonthOverviewView: View {
 
     var body: some View {
         let overview = model.index.monthOverview(for: model.selectedMonth)
-        let leading = (model.selectedMonth.firstDay.date(calendar: WeekRef.calendar).map { WeekRef.calendar.component(.weekday, from: $0) } ?? 2 + 5) % 7
+        // Weekday of the 1st (1 = Sunday … 7 = Saturday) turned into blank cells before it in a Monday-first grid.
+        let firstWeekday = model.selectedMonth.firstDay.date(calendar: WeekRef.calendar).map { WeekRef.calendar.component(.weekday, from: $0) } ?? 2
+        let leading = (firstWeekday + 5) % 7
         VStack(spacing: 0) {
             HStack {
                 Button { model.selectedMonth = model.selectedMonth.adding(months: -1) } label: { Image(systemName: "chevron.left") }
