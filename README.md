@@ -51,21 +51,25 @@ behaviour problems should show up there first.
 ```
 My PARA/
 ├── Inbox.md                 quick capture, mirrored to the "Inbox" list
-├── Calendar/                daily notes, YYYYMMDD.md like NotePlan, mirrored to the "Daily Notes" list
+├── Calendar/                daily notes YYYYMMDD.md and weekly notes YYYY-Www.md, like NotePlan
 ├── Projects/                one note per project, mirrored to a list with the project's name
 ├── Areas/                   one note per area, mirrored too (can be switched off)
 ├── Resources/               reference material, any depth of sub-folders
 ├── Archive/                 inactive notes, never synced
-├── Templates/               Project.md, Area.md, Resource.md, Daily.md (edit them as you like)
+├── Templates/               Project, Area, Resource, Daily and Weekly templates (edit as you like)
 └── .ams-para/               config.json and per-device sync state
 ```
 
-### Daily notes and the calendar
+### Daily notes, weekly notes and the calendar
 
-The Calendar section shows a date picker. Picking a day opens `Calendar/YYYYMMDD.md`, creating it from
-`Templates/Daily.md` when needed. The top of a daily note lists every task in the vault that is due that day,
-with arrows to move to the previous or next day. Tasks written in daily notes sync to one shared
-"Daily Notes" list in Reminders; a reminder added to that list lands in today's note.
+The Calendar section has three views. **Day** shows a date picker; picking a day opens
+`Calendar/YYYYMMDD.md`, created from `Templates/Daily.md` when needed. **Week** lists the seven days of an
+ISO week with everything due and done on each day and a button for the weekly note
+(`Calendar/2026-W36.md`, from `Templates/Weekly.md`, the NotePlan naming). **Month** is a grid with the
+number of tasks due and completed per day. The top of a daily note lists every task due that day, the top of
+a weekly note lists what is due that week, both with arrows to move back and forth. Tasks written in daily
+or weekly notes sync to one shared "Daily Notes" list in Reminders; a reminder added to that list lands in
+today's daily note.
 
 ### Weekly review
 
@@ -152,6 +156,5 @@ note, so a project sees its resources and a resource sees where it is used. Sub-
 
 ## Roadmap
 
-- Week and month overview in the calendar, weekly notes
 - Quick capture from the share sheet on iOS and a menu bar item on macOS
 - Full-text search with tag and status filters

@@ -52,6 +52,15 @@ final class AppModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var showingNewNote = false
     @Published var selectedDate = DateOnly.today()
+    @Published var selectedWeek = WeekRef.current()
+    @Published var selectedMonth = MonthRef.current()
+    @Published var calendarMode: CalendarMode = .day
+
+    enum CalendarMode: String, CaseIterable, Identifiable {
+        case day, week, month
+        var id: String { rawValue }
+        var label: String { rawValue.capitalized }
+    }
 
     let remindersStore = EventKitRemindersStore()
 
@@ -277,10 +286,27 @@ final class AppModel: ObservableObject {
         return note(at: vault.dailyNotePath(for: .today()))
     }
 
+    /// Shows the weekly note for a week, creating the file when it does not exist yet.
+    func openWeeklyNote(for week: WeekRef) {
+        guard let vault else { return }
+        selectedWeek = week
+        selectedDate = week.contains(selectedDate) ? selectedDate : week.monday
+        do {
+            let existed = vault.weeklyNoteExists(for: week)
+            let note = try vault.weeklyNote(for: week)
+            if !existed { reload() }
+            selectedNotePath = note.relativePath
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
     /// Shows the daily note for a date, creating the file when it does not exist yet.
     func openDailyNote(for date: DateOnly) {
         guard let vault else { return }
         selectedDate = date
+        selectedWeek = WeekRef(containing: date)
+        selectedMonth = MonthRef(containing: date)
         do {
             let existed = vault.dailyNoteExists(for: date)
             let note = try vault.dailyNote(for: date)

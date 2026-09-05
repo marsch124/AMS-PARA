@@ -52,9 +52,14 @@ public struct NoteIndex: Sendable {
         notes.first { $0.kind == .daily && $0.dailyDate == date }
     }
 
-    /// Daily notes, newest first.
+    /// Daily and weekly notes, newest first (a weekly note sorts before the daily note of its Monday).
     public var dailyNotes: [Note] {
-        notes(kind: .daily).sorted { ($0.dailyDate ?? DateOnly(year: 0, month: 1, day: 1)) > ($1.dailyDate ?? DateOnly(year: 0, month: 1, day: 1)) }
+        notes(kind: .daily).sorted { a, b in
+            let da = a.dailyDate ?? a.weekRef?.monday ?? DateOnly(year: 0, month: 1, day: 1)
+            let db = b.dailyDate ?? b.weekRef?.monday ?? DateOnly(year: 0, month: 1, day: 1)
+            if da != db { return da > db }
+            return a.isWeeklyNote && !b.isWeeklyNote
+        }
     }
 
     /// Open tasks due on exactly this date, across the vault.

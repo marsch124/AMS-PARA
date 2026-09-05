@@ -92,11 +92,28 @@ public enum Templates {
 
     """
 
+    public static let weekly = """
+    # {{title}}
+
+    ## Focus
+
+    What matters most this week?
+
+    ## Tasks
+
+    ## Review
+
+    - What went well?
+    - What to change next week?
+
+    """
+
     public static let defaults: [(String, String)] = [
         ("Project", project),
         ("Area", area),
         ("Resource", resource),
         ("Daily", daily),
+        ("Weekly", weekly),
     ]
 
     public static func minimal(kind: ParaKind) -> String {

@@ -65,9 +65,18 @@ public struct Note: Equatable, Identifiable, Sendable {
         return Self.dailyDate(fromFileName: fileName)
     }
 
-    /// Title for lists: daily notes show their date, everything else its title.
+    /// The week of a weekly note, parsed from its `YYYY-Www` file name.
+    public var weekRef: WeekRef? {
+        guard kind == .daily else { return nil }
+        return WeekRef(fileName)
+    }
+
+    public var isWeeklyNote: Bool { weekRef != nil }
+
+    /// Title for lists: calendar notes show their date or week, everything else its title.
     public var displayTitle: String {
         if let dailyDate { return Self.dailyTitle(for: dailyDate) }
+        if let weekRef { return weekRef.title }
         return title
     }
 

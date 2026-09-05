@@ -145,9 +145,38 @@ public final class Vault {
             result.append(try loadNote(relativePath: rel))
         }
         if kind == .daily {
-            return result.sorted { $0.fileName > $1.fileName }
+            // Newest first; weekly notes sort by their Monday among the daily notes.
+            return result.sorted { a, b in
+                let da = a.dailyDate ?? a.weekRef?.monday ?? DateOnly(year: 0, month: 1, day: 1)
+                let db = b.dailyDate ?? b.weekRef?.monday ?? DateOnly(year: 0, month: 1, day: 1)
+                if da != db { return da > db }
+                return a.isWeeklyNote && !b.isWeeklyNote
+            }
         }
         return result.sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
+    }
+
+    // MARK: Weekly notes
+
+    public func weeklyNotePath(for week: WeekRef) -> String {
+        "\(config.calendarFolder)/\(week).md"
+    }
+
+    public func weeklyNoteExists(for week: WeekRef) -> Bool {
+        fm.fileExists(atPath: url(for: weeklyNotePath(for: week)).path)
+    }
+
+    /// Loads the weekly note for a week, creating it from the `Weekly` template when missing.
+    public func weeklyNote(for week: WeekRef) throws -> Note {
+        let path = weeklyNotePath(for: week)
+        if fm.fileExists(atPath: url(for: path).path) {
+            return try loadNote(relativePath: path)
+        }
+        let template = (try? String(contentsOf: templatesURL.appendingPathComponent("Weekly.md"), encoding: .utf8)) ?? Templates.weekly
+        let text = Templates.fill(template, title: week.title, date: week.monday)
+        let note = Note(relativePath: path, kind: .daily, text: text, modifiedAt: Date())
+        try save(note)
+        return note
     }
 
     // MARK: Daily notes

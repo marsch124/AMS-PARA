@@ -31,6 +31,10 @@ struct NoteEditorView: View {
                     DayAgendaView(date: date)
                     Divider()
                 }
+                if let week = note.weekRef {
+                    WeekAgendaView(week: week)
+                    Divider()
+                }
                 if !note.tasks.isEmpty {
                     DisclosureGroup(isExpanded: $showTasks) {
                         TaskChecklist(note: note, beforeToggle: flushSave)
@@ -325,6 +329,50 @@ struct DayAgendaView: View {
                 ForEach(refs) { ref in
                     TaskRow(ref: ref, showNote: true) { model.toggle(ref) }
                 }
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+    }
+}
+
+/// Tasks due during the week of a weekly note, grouped by day.
+struct WeekAgendaView: View {
+    @EnvironmentObject private var model: AppModel
+    let week: WeekRef
+    @State private var expanded = true
+
+    private static let dayFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.setLocalizedDateFormatFromTemplate("EEE d")
+        return f
+    }()
+
+    var body: some View {
+        let overview = model.index.weekOverview(for: week)
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text("Due this week (\(overview.dueCount))")
+                    .font(.subheadline.weight(.medium))
+                Spacer()
+                Button { model.openWeeklyNote(for: week.adding(weeks: -1)) } label: { Image(systemName: "chevron.left") }
+                Button("This week") { model.openWeeklyNote(for: .current()) }
+                Button { model.openWeeklyNote(for: week.adding(weeks: 1)) } label: { Image(systemName: "chevron.right") }
+            }
+            .buttonStyle(.borderless)
+            ForEach(overview.days.filter { !$0.due.isEmpty }) { day in
+                Text(day.date.date().map(Self.dayFormatter.string(from:)) ?? day.date.description)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .padding(.top, 2)
+                ForEach(day.due) { ref in
+                    TaskRow(ref: ref, showNote: true) { model.toggle(ref) }
+                }
+            }
+            if overview.dueCount == 0 {
+                Text("Nothing is due this week yet.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
         .padding(.horizontal, 12)
