@@ -13,10 +13,10 @@ struct AMSParaApp: App {
         }
         .commands {
             CommandGroup(after: .newItem) {
-                Button("New Note…") { model.showingNewNote = true }
+                Button("New Note…") { model.activeSheet = .newNote }
                     .keyboardShortcut("n", modifiers: [.command])
                     .disabled(model.vault == nil)
-                Button("Quick Capture…") { model.showingQuickCapture = true }
+                Button("Quick Capture…") { model.activeSheet = .quickCapture }
                     .keyboardShortcut("n", modifiers: [.command, .shift])
                 Button("Search Everywhere…") { model.section = .search }
                     .keyboardShortcut("f", modifiers: [.command, .shift])

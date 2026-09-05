@@ -43,6 +43,15 @@ enum SidebarSection: Hashable, Identifiable {
     static let all: [SidebarSection] = [.inbox, .today, .calendar, .review, .search, .kind(.project), .kind(.area), .kind(.resource), .kind(.archive)]
 }
 
+/// The sheets the main window can present.
+enum AppSheet: String, Identifiable {
+    case newNote
+    case quickCapture
+    case settings
+
+    var id: String { rawValue }
+}
+
 @MainActor
 final class AppModel: ObservableObject {
     @Published private(set) var vault: Vault?
@@ -55,8 +64,8 @@ final class AppModel: ObservableObject {
     @Published private(set) var isSyncing = false
     @Published private(set) var lastReport: SyncReport?
     @Published var errorMessage: String?
-    @Published var showingNewNote = false
-    @Published var showingQuickCapture = false
+    /// SwiftUI only presents one sheet reliably per view, so all sheets go through this.
+    @Published var activeSheet: AppSheet?
     @Published private(set) var lastCaptureMessage: String?
     @Published var selectedDate = DateOnly.today()
     @Published var selectedWeek = WeekRef.current()

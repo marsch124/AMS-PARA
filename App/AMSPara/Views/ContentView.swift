@@ -6,12 +6,18 @@ struct ContentView: View {
     @EnvironmentObject private var model: AppModel
     @Environment(\.scenePhase) private var scenePhase
     @State private var showingImporter = false
-    @State private var showingSettings = false
 
     var body: some View {
         Group {
             if model.vault == nil {
                 WelcomeView(showingImporter: $showingImporter)
+                    // The folder picker lives on the welcome screen only, so it never
+                    // competes with the sheet below for the same presentation slot.
+                    .fileImporter(isPresented: $showingImporter, allowedContentTypes: [.folder]) { result in
+                        if case .success(let url) = result {
+                            model.openVault(at: url)
+                        }
+                    }
             } else {
                 NavigationSplitView {
                     SidebarView()
@@ -23,7 +29,7 @@ struct ContentView: View {
                 .toolbar {
                     ToolbarItemGroup {
                         Button {
-                            model.showingQuickCapture = true
+                            model.activeSheet = .quickCapture
                         } label: {
                             Label("Quick capture", systemImage: "tray.and.arrow.down")
                         }
@@ -31,7 +37,7 @@ struct ContentView: View {
                         SyncButton()
                         #if !os(macOS)
                         Button {
-                            showingSettings = true
+                            model.activeSheet = .settings
                         } label: {
                             Label("Settings", systemImage: "gear")
                         }
@@ -40,18 +46,27 @@ struct ContentView: View {
                 }
             }
         }
-        .fileImporter(isPresented: $showingImporter, allowedContentTypes: [.folder]) { result in
-            if case .success(let url) = result {
-                model.openVault(at: url)
+        // One sheet modifier for the whole window: stacking several of them makes
+        // SwiftUI present an empty sheet and leave the window modal.
+        .sheet(item: $model.activeSheet) { sheet in
+            switch sheet {
+            case .newNote:
+                NewNoteSheet()
+                    .environmentObject(model)
+            case .quickCapture:
+                QuickCaptureView()
+                    .environmentObject(model)
+            case .settings:
+                NavigationStack {
+                    SettingsView()
+                        .environmentObject(model)
+                        .toolbar {
+                            ToolbarItem(placement: .confirmationAction) {
+                                Button("Done") { model.activeSheet = nil }
+                            }
+                        }
+                }
             }
-        }
-        .sheet(isPresented: $model.showingNewNote) {
-            NewNoteSheet()
-                .environmentObject(model)
-        }
-        .sheet(isPresented: $model.showingQuickCapture) {
-            QuickCaptureView()
-                .environmentObject(model)
         }
         .onOpenURL { url in
             model.handle(url: url)
@@ -76,17 +91,6 @@ struct ContentView: View {
             }
         }
         .animation(.easeInOut(duration: 0.2), value: model.lastCaptureMessage)
-        .sheet(isPresented: $showingSettings) {
-            NavigationStack {
-                SettingsView()
-                    .environmentObject(model)
-                    .toolbar {
-                        ToolbarItem(placement: .confirmationAction) {
-                            Button("Done") { showingSettings = false }
-                        }
-                    }
-            }
-        }
         .alert("Something went wrong", isPresented: Binding(
             get: { model.errorMessage != nil },
             set: { if !$0 { model.errorMessage = nil } }
@@ -182,7 +186,7 @@ struct NoteListView: View {
         .toolbar {
             ToolbarItem {
                 Button {
-                    model.showingNewNote = true
+                    model.activeSheet = .newNote
                 } label: {
                     Label("New note", systemImage: "square.and.pencil")
                 }
