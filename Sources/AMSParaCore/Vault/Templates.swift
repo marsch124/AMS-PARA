@@ -41,6 +41,7 @@ public enum Templates {
     ## Log
 
     - {{date}}: Project created
+
     """
 
     public static let area = """

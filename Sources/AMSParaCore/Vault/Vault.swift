@@ -200,6 +200,7 @@ public final class Vault {
 
         var text = templateText(for: kind) ?? Templates.minimal(kind: kind)
         text = Templates.fill(text, title: cleanTitle, date: DateOnly.today())
+        if !text.hasSuffix("\n") { text += "\n" }
         var note = Note(relativePath: relativePath, kind: kind, text: text, modifiedAt: Date())
         note.frontmatter.set("title", cleanTitle)
         if note.frontmatter.string("type") == nil { note.frontmatter.set("type", kind.frontmatterType) }

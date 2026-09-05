@@ -105,13 +105,17 @@ public final class SyncEngine {
             }
         }
 
-        // Index tasks by id.
+        // Index tasks by id (rebuilt after reconciliation so later steps see the current lines).
         var taskLocations: [String: (path: String, task: TaskItem)] = [:]
-        for (path, note) in notesByPath {
-            for task in note.tasks {
-                if let id = task.id { taskLocations[id] = (path, task) }
+        func indexTasks() {
+            taskLocations = [:]
+            for (path, note) in notesByPath {
+                for task in note.tasks {
+                    if let id = task.id { taskLocations[id] = (path, task) }
+                }
             }
         }
+        indexTasks()
 
         func updateNote(_ path: String, _ mutate: (inout Note) -> Void) {
             guard var note = notesByPath[path] else { return }
@@ -159,6 +163,8 @@ public final class SyncEngine {
                 state.links[taskID] = nil
             }
         }
+
+        indexTasks()
 
         // 4. Tasks without a link: match by marker, else create a reminder for open tasks.
         for (taskID, location) in taskLocations.sorted(by: { $0.key < $1.key }) where state.links[taskID] == nil {
