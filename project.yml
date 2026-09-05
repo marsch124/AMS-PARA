@@ -30,6 +30,8 @@ targets:
       properties:
         CFBundleDisplayName: AMS PARA
         CFBundleName: AMS PARA
+        # Without this key macOS and iOS ignore the AppIcon set in the asset catalog.
+        CFBundleIconName: AppIcon
         LSApplicationCategoryType: public.app-category.productivity
         CFBundleURLTypes:
           - CFBundleURLName: com.schabbauer.amspara
