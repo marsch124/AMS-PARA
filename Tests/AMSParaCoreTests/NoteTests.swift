@@ -77,3 +77,40 @@ final class NoteTests: XCTestCase {
         XCTAssertTrue(archived.isArchived)
     }
 }
+
+final class SubtaskNoteTests: XCTestCase {
+    let text = """
+    ## Tasks
+
+    - [ ] Parent
+        - [ ] Child A
+        - [ ] Child B
+    - [ ] Sibling
+    """
+
+    func testParentChainAndSyncTitle() {
+        let note = Note(relativePath: "Inbox.md", kind: .inbox, text: text)
+        let tasks = note.tasks
+        XCTAssertEqual(note.parentChain(of: tasks[1]).map(\.title), ["Parent"])
+        XCTAssertEqual(note.parentPrefix(for: tasks[1]), "Parent")
+        XCTAssertEqual(note.syncTitle(for: tasks[1]), "Parent › Child A")
+        XCTAssertNil(note.parentPrefix(for: tasks[0]))
+        XCTAssertEqual(note.syncTitle(for: tasks[0]), "Parent")
+        XCTAssertEqual(note.subtasks(of: tasks[0]).map(\.title), ["Child A", "Child B"])
+    }
+
+    func testAppendSubtaskGoesAfterLastDescendant() {
+        var note = Note(relativePath: "Inbox.md", kind: .inbox, text: text)
+        let parent = note.tasks[0]
+        let child = note.appendSubtask(TaskItem(title: "Child C"), to: parent)
+        XCTAssertEqual(child.lineIndex, 5)
+        XCTAssertEqual(child.indent, "    ")
+        XCTAssertEqual(note.lines[5], "    - [ ] Child C")
+        XCTAssertEqual(note.tasks.map(\.title), ["Parent", "Child A", "Child B", "Child C", "Sibling"])
+        XCTAssertEqual(note.tasks[3].parentLineIndex, 2)
+
+        let sibling = note.tasks[4]
+        note.appendSubtask(TaskItem(title: "Sibling's child"), to: sibling)
+        XCTAssertEqual(note.lines.last, "    - [ ] Sibling's child")
+    }
+}

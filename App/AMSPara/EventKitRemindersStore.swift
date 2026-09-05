@@ -87,11 +87,23 @@ final class EventKitRemindersStore: RemindersStore {
         reminder.notes = record.notes
         reminder.priority = Self.ekPriority(from: record.priority)
         if let due = record.dueDate {
-            var components = due.dateComponents
+            var components = due.dateComponents(at: record.dueTime)
             components.calendar = Calendar.current
             reminder.dueDateComponents = components
+            // A timed due date only notifies when the reminder carries an alarm at that moment.
+            let alarms = reminder.alarms ?? []
+            if record.dueTime != nil, let moment = components.date {
+                if let alarm = alarms.first {
+                    if alarm.absoluteDate != moment { alarm.absoluteDate = moment }
+                } else {
+                    reminder.addAlarm(EKAlarm(absoluteDate: moment))
+                }
+            } else {
+                for alarm in alarms where alarm.absoluteDate != nil { reminder.removeAlarm(alarm) }
+            }
         } else {
             reminder.dueDateComponents = nil
+            for alarm in reminder.alarms ?? [] { reminder.removeAlarm(alarm) }
         }
         if record.isCompleted {
             reminder.completionDate = record.completedAt ?? reminder.completionDate ?? Date()
@@ -107,6 +119,7 @@ final class EventKitRemindersStore: RemindersStore {
                        isCompleted: reminder.isCompleted,
                        completedAt: reminder.completionDate,
                        dueDate: reminder.dueDateComponents.flatMap { DateOnly(components: $0) },
+                       dueTime: reminder.dueDateComponents.flatMap { TimeOfDay(components: $0) },
                        priority: Self.priority(fromEK: reminder.priority),
                        notes: reminder.notes,
                        lastModified: reminder.lastModifiedDate)

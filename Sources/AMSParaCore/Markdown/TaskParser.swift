@@ -1,7 +1,8 @@
 import Foundation
 
 /// One task line in a markdown note, NotePlan style:
-/// `- [ ] Call the bank #finance !! >2026-09-10 @done(2026-09-05 10:00) ^t3fa2c1`
+/// `- [ ] Call the bank #finance !! >2026-09-10T14:30 @done(2026-09-05 10:00) ^t3fa2c1`
+/// Indented task lines below another task are its subtasks.
 public struct TaskItem: Equatable, Sendable {
     public enum Status: String, CaseIterable, Sendable {
         case open = " "
@@ -14,6 +15,8 @@ public struct TaskItem: Equatable, Sendable {
     /// Task text with markers removed. `#tags` stay in the title on purpose so they round-trip.
     public var title: String
     public var dueDate: DateOnly?
+    /// Optional time on the due date (`>2026-09-10T14:30`).
+    public var dueTime: TimeOfDay?
     /// 0 = none, 1 = `!`, 2 = `!!`, 3 = `!!!`.
     public var priority: Int
     /// The raw content of `@done(...)`, e.g. `2026-09-05 10:00`.
@@ -26,20 +29,25 @@ public struct TaskItem: Equatable, Sendable {
     public var bullet: String
     /// Index of the line inside the note body (0-based).
     public var lineIndex: Int
+    /// Line index of the parent task when this line is indented below another task.
+    public var parentLineIndex: Int?
 
     public init(status: Status = .open,
                 title: String,
                 dueDate: DateOnly? = nil,
+                dueTime: TimeOfDay? = nil,
                 priority: Int = 0,
                 doneStamp: String? = nil,
                 tags: [String] = [],
                 id: String? = nil,
                 indent: String = "",
                 bullet: String = "-",
-                lineIndex: Int = -1) {
+                lineIndex: Int = -1,
+                parentLineIndex: Int? = nil) {
         self.status = status
         self.title = title
         self.dueDate = dueDate
+        self.dueTime = dueTime
         self.priority = min(max(priority, 0), 3)
         self.doneStamp = doneStamp
         self.tags = tags
@@ -47,9 +55,24 @@ public struct TaskItem: Equatable, Sendable {
         self.indent = indent
         self.bullet = bullet
         self.lineIndex = lineIndex
+        self.parentLineIndex = parentLineIndex
     }
 
     public var isDone: Bool { status == .done || status == .cancelled }
+
+    public var isSubtask: Bool { parentLineIndex != nil }
+
+    /// Nesting depth from the indentation: two spaces (or a tab, counted as four) per level.
+    public var indentLevel: Int {
+        var width = 0
+        for ch in indent { width += ch == "\t" ? 4 : 1 }
+        return width / 2
+    }
+
+    /// The due moment as a Date, when a date is set.
+    public func dueMoment(calendar: Calendar = .current) -> Date? {
+        dueDate?.date(at: dueTime, calendar: calendar)
+    }
 
     public var doneDate: Date? {
         guard let doneStamp else { return nil }
@@ -75,7 +98,7 @@ public struct TaskItem: Equatable, Sendable {
     public var serialized: String {
         var parts: [String] = [title.trimmingCharacters(in: .whitespaces)]
         if priority > 0 { parts.append(String(repeating: "!", count: priority)) }
-        if let dueDate { parts.append(">\(dueDate)") }
+        if let dueDate { parts.append(">\(dueDate)" + (dueTime.map { "T\($0)" } ?? "")) }
         if status == .done, let doneStamp { parts.append("@done(\(doneStamp))") }
         if let id { parts.append("^\(id)") }
         return "\(indent)\(bullet) [\(status.rawValue)] \(parts.joined(separator: " "))"
@@ -93,7 +116,7 @@ public enum TaskParser {
     static let lineRegex = try! NSRegularExpression(pattern: #"^(\s*)([-*+])\s+\[([ xX>\-])\](?:\s+(.*))?$"#)
     static let idRegex = try! NSRegularExpression(pattern: #"(?<!\S)\^(t[0-9a-f]{4,12})(?!\S)"#)
     static let doneRegex = try! NSRegularExpression(pattern: #"(?<!\S)@done\(([^)]*)\)"#)
-    static let dueRegex = try! NSRegularExpression(pattern: #"(?<!\S)>(\d{4}-\d{2}-\d{2})(?!\S)"#)
+    static let dueRegex = try! NSRegularExpression(pattern: #"(?<!\S)>(\d{4}-\d{2}-\d{2})(?:T(\d{1,2}:\d{2}))?(?!\S)"#)
     static let priorityRegex = try! NSRegularExpression(pattern: #"(?<!\S)(!{1,3})(?!\S)"#)
     static let tagRegex = try! NSRegularExpression(pattern: #"(?<!\S)#([\p{L}\p{N}_/\-]+)"#)
 
@@ -110,23 +133,33 @@ public enum TaskParser {
         var id: String?
         var doneStamp: String?
         var dueDate: DateOnly?
+        var dueTime: TimeOfDay?
         var priority = 0
 
         rest = extract(idRegex, from: rest) { id = $0 }
         rest = extract(doneRegex, from: rest) { doneStamp = $0.trimmingCharacters(in: .whitespaces) }
-        rest = extract(dueRegex, from: rest) { dueDate = DateOnly($0) }
+        let restNS = rest as NSString
+        if let due = dueRegex.firstMatch(in: rest, range: NSRange(location: 0, length: restNS.length)) {
+            dueDate = DateOnly(restNS.substring(with: due.range(at: 1)))
+            if due.range(at: 2).location != NSNotFound {
+                dueTime = TimeOfDay(restNS.substring(with: due.range(at: 2)))
+            }
+            rest = restNS.replacingCharacters(in: due.range, with: " ")
+        }
         rest = extract(priorityRegex, from: rest) { priority = max(priority, $0.count) }
 
         let title = collapseWhitespace(rest)
         let tags = allCaptures(tagRegex, in: title)
-        return TaskItem(status: status, title: title, dueDate: dueDate, priority: priority,
+        return TaskItem(status: status, title: title, dueDate: dueDate, dueTime: dueTime, priority: priority,
                         doneStamp: doneStamp, tags: tags, id: id, indent: indent, bullet: bullet, lineIndex: lineIndex)
     }
 
-    /// Parses every task line in a body, ignoring fenced code blocks.
+    /// Parses every task line in a body, ignoring fenced code blocks. Indented tasks below another
+    /// task get that task as `parentLineIndex`; a heading ends the nesting.
     public static func parse(text: String) -> [TaskItem] {
         var result: [TaskItem] = []
         var inFence = false
+        var stack: [(level: Int, lineIndex: Int)] = []
         for (i, line) in text.split(separator: "\n", omittingEmptySubsequences: false).enumerated() {
             let trimmed = line.trimmingCharacters(in: .whitespaces)
             if trimmed.hasPrefix("```") || trimmed.hasPrefix("~~~") {
@@ -134,9 +167,16 @@ public enum TaskParser {
                 continue
             }
             if inFence { continue }
-            if let task = parse(line: String(line), lineIndex: i) {
-                result.append(task)
+            if trimmed.hasPrefix("#") {
+                stack.removeAll()
+                continue
             }
+            guard var task = parse(line: String(line), lineIndex: i) else { continue }
+            let level = task.indentLevel
+            while let top = stack.last, top.level >= level { stack.removeLast() }
+            task.parentLineIndex = stack.last?.lineIndex
+            stack.append((level, i))
+            result.append(task)
         }
         return result
     }

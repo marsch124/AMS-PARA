@@ -376,3 +376,106 @@ final class DailyNoteSyncTests: XCTestCase {
         XCTAssertFalse(lists.contains("Daily Notes"))
     }
 }
+
+final class TimeAndSubtaskSyncTests: XCTestCase {
+    var vault: Vault!
+    var store: InMemoryRemindersStore!
+    var engine: SyncEngine!
+    let fixedNow = DoneStamp.date(from: "2026-09-05 12:00")!
+
+    override func setUpWithError() throws {
+        vault = try makeTemporaryVault()
+        store = InMemoryRemindersStore(lists: ["Reminders"])
+        store.now = { self.fixedNow }
+        engine = SyncEngine(vault: vault, store: store, deviceID: "test-device")
+        engine.now = { self.fixedNow }
+    }
+
+    override func tearDown() {
+        removeVault(vault)
+    }
+
+    private func writeInbox(_ body: String) throws {
+        var inbox = try vault.loadNote(relativePath: "Inbox.md")
+        inbox.body = body
+        try vault.save(inbox)
+    }
+
+    private func inbox() throws -> Note { try vault.loadNote(relativePath: "Inbox.md") }
+
+    func testDueTimeSyncsBothWays() async throws {
+        try writeInbox("- [ ] Dentist >2026-09-15T14:30\n")
+        try await engine.run()
+        var r = try await store.reminders(inList: "Inbox")[0]
+        XCTAssertEqual(r.dueDate, DateOnly(year: 2026, month: 9, day: 15))
+        XCTAssertEqual(r.dueTime, TimeOfDay(hour: 14, minute: 30))
+
+        store.simulateUserEdit(identifier: r.identifier) { $0.dueTime = TimeOfDay(hour: 9, minute: 0) }
+        try await engine.run()
+        XCTAssertEqual(try inbox().lines[0], "- [ ] Dentist >2026-09-15T09:00 ^\(try inbox().tasks[0].id!)")
+
+        store.simulateUserEdit(identifier: r.identifier) { $0.dueTime = nil }
+        try await engine.run()
+        XCTAssertNil(try inbox().tasks[0].dueTime)
+        XCTAssertEqual(try inbox().tasks[0].dueDate, DateOnly(year: 2026, month: 9, day: 15))
+
+        var note = try inbox()
+        var task = note.tasks[0]
+        task.dueTime = TimeOfDay(hour: 16, minute: 15)
+        note.replace(task: task)
+        try vault.save(note)
+        try await engine.run()
+        r = try await store.reminders(inList: "Inbox")[0]
+        XCTAssertEqual(r.dueTime, TimeOfDay(hour: 16, minute: 15))
+        let idle = try await engine.run()
+        XCTAssertEqual(idle.changeCount, 0)
+    }
+
+    func testSubtasksMirrorAsPrefixedReminders() async throws {
+        try writeInbox("- [ ] Plan party\n    - [ ] Book room\n    - [ ] Send invites >2026-09-20\n")
+        let report = try await engine.run()
+        XCTAssertEqual(report.remindersCreated, 3)
+        let titles = try await store.reminders(inList: "Inbox").map(\.title)
+        XCTAssertEqual(Set(titles), ["Plan party", "Plan party › Book room", "Plan party › Send invites"])
+        XCTAssertEqual(try inbox().tasks.map(\.title), ["Plan party", "Book room", "Send invites"])
+        let idle = try await engine.run()
+        XCTAssertEqual(idle.changeCount, 0)
+    }
+
+    func testRenamingSubtaskInRemindersStripsPrefix() async throws {
+        try writeInbox("- [ ] Plan party\n    - [ ] Book room\n")
+        try await engine.run()
+        let child = try await store.reminders(inList: "Inbox").first { $0.title.contains("›") }!
+        store.simulateUserEdit(identifier: child.identifier) { $0.title = "Plan party › Book the big room" }
+        try await engine.run()
+        XCTAssertEqual(try inbox().tasks[1].title, "Book the big room")
+        XCTAssertEqual(try inbox().tasks[1].parentLineIndex, 0)
+        let idle = try await engine.run()
+        XCTAssertEqual(idle.changeCount, 0)
+    }
+
+    func testRenamingParentInNoteUpdatesSubtaskReminders() async throws {
+        try writeInbox("- [ ] Plan party\n    - [ ] Book room\n")
+        try await engine.run()
+        var note = try inbox()
+        var parent = note.tasks[0]
+        parent.title = "Plan launch"
+        note.replace(task: parent)
+        try vault.save(note)
+        let report = try await engine.run()
+        XCTAssertEqual(report.remindersUpdated, 2)
+        let titles = try await store.reminders(inList: "Inbox").map(\.title)
+        XCTAssertEqual(Set(titles), ["Plan launch", "Plan launch › Book room"])
+    }
+
+    func testCompletingSubtaskReminderMarksOnlyThatLine() async throws {
+        try writeInbox("- [ ] Plan party\n    - [ ] Book room\n")
+        try await engine.run()
+        let child = try await store.reminders(inList: "Inbox").first { $0.title.contains("›") }!
+        store.simulateUserEdit(identifier: child.identifier) { $0.isCompleted = true; $0.completedAt = self.fixedNow }
+        try await engine.run()
+        let tasks = try inbox().tasks
+        XCTAssertEqual(tasks[0].status, .open)
+        XCTAssertEqual(tasks[1].status, .done)
+    }
+}

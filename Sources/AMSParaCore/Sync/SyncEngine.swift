@@ -117,6 +117,11 @@ public final class SyncEngine {
         }
         indexTasks()
 
+        /// `Parent › Child` prefix for subtasks, nil for top-level tasks.
+        func parentPrefix(_ path: String, _ task: TaskItem) -> String? {
+            notesByPath[path]?.parentPrefix(for: task)
+        }
+
         func updateNote(_ path: String, _ mutate: (inout Note) -> Void) {
             guard var note = notesByPath[path] else { return }
             mutate(&note)
@@ -136,6 +141,7 @@ public final class SyncEngine {
                 handledReminderIDs.insert(reminder.identifier)
                 let listName = listForPath[location.path] ?? link.listName
                 let outcome = try await reconcile(task: location.task, at: location.path, listName: listName,
+                                                  parentPrefix: parentPrefix(location.path, location.task),
                                                   reminder: reminder, link: link, report: &report, updateNote: updateNote)
                 state.links[taskID] = outcome
             case let (location?, nil):
@@ -174,17 +180,19 @@ public final class SyncEngine {
                 let provisional = TaskLink(taskID: taskID, reminderID: reminder.identifier, notePath: location.path, listName: listName,
                                            lastTaskFingerprint: "", lastReminderFingerprint: "", lastSyncedAt: now())
                 state.links[taskID] = try await reconcile(task: location.task, at: location.path, listName: listName,
+                                                          parentPrefix: parentPrefix(location.path, location.task),
                                                           reminder: reminder, link: provisional, report: &report, updateNote: updateNote)
                 continue
             }
             guard !location.task.isDone else { continue }
+            let prefix = parentPrefix(location.path, location.task)
             var draft = ReminderRecord(listName: listName, title: location.task.title)
-            apply(task: location.task, to: &draft, listName: listName)
+            apply(task: location.task, to: &draft, listName: listName, parentPrefix: prefix)
             let created = try await store.create(draft)
             handledReminderIDs.insert(created.identifier)
             report.remindersCreated += 1
             state.links[taskID] = TaskLink(taskID: taskID, reminderID: created.identifier, notePath: location.path, listName: listName,
-                                           lastTaskFingerprint: Self.fingerprint(location.task),
+                                           lastTaskFingerprint: Self.fingerprint(location.task, parentPrefix: prefix),
                                            lastReminderFingerprint: Self.fingerprint(created), lastSyncedAt: now())
         }
 
@@ -245,9 +253,10 @@ public final class SyncEngine {
 
     // MARK: Reconciliation
 
-    private func reconcile(task: TaskItem, at path: String, listName: String, reminder: ReminderRecord, link: TaskLink,
+    private func reconcile(task: TaskItem, at path: String, listName: String, parentPrefix: String?,
+                           reminder: ReminderRecord, link: TaskLink,
                            report: inout SyncReport, updateNote: (String, (inout Note) -> Void) -> Void) async throws -> TaskLink {
-        let taskFP = Self.fingerprint(task)
+        let taskFP = Self.fingerprint(task, parentPrefix: parentPrefix)
         let reminderFP = Self.fingerprint(reminder)
         let taskChanged = taskFP != link.lastTaskFingerprint
         let reminderChanged = reminderFP != link.lastReminderFingerprint
@@ -273,7 +282,7 @@ public final class SyncEngine {
 
         if noteWins {
             var updated = reminder
-            apply(task: task, to: &updated, listName: listName)
+            apply(task: task, to: &updated, listName: listName, parentPrefix: parentPrefix)
             if updated != reminder {
                 try await store.update(updated)
                 report.remindersUpdated += 1
@@ -282,7 +291,7 @@ public final class SyncEngine {
             newLink.lastReminderFingerprint = Self.fingerprint(updated)
         } else {
             var t = task
-            apply(reminder: reminder, to: &t)
+            apply(reminder: reminder, to: &t, parentPrefix: parentPrefix)
             t = TaskParser.normalized(t)
             updateNote(path) { note in note.replace(task: t) }
             report.tasksUpdated += 1
@@ -292,7 +301,7 @@ public final class SyncEngine {
                 updated.listName = listName
                 try await store.update(updated)
             }
-            newLink.lastTaskFingerprint = Self.fingerprint(t)
+            newLink.lastTaskFingerprint = Self.fingerprint(t, parentPrefix: parentPrefix)
             newLink.lastReminderFingerprint = Self.fingerprint(updated)
         }
         return newLink
@@ -300,10 +309,11 @@ public final class SyncEngine {
 
     // MARK: Field mapping
 
-    func apply(task: TaskItem, to reminder: inout ReminderRecord, listName: String) {
+    func apply(task: TaskItem, to reminder: inout ReminderRecord, listName: String, parentPrefix: String? = nil) {
         reminder.listName = listName
-        reminder.title = task.title.isEmpty ? "Untitled task" : task.title
+        reminder.title = Self.reminderTitle(for: task.title, parentPrefix: parentPrefix)
         reminder.dueDate = task.dueDate
+        reminder.dueTime = task.dueDate == nil ? nil : task.dueTime
         reminder.priority = task.priority
         if task.isDone {
             if !reminder.isCompleted {
@@ -319,9 +329,10 @@ public final class SyncEngine {
         }
     }
 
-    func apply(reminder: ReminderRecord, to task: inout TaskItem) {
-        task.title = Self.singleLine(reminder.title)
+    func apply(reminder: ReminderRecord, to task: inout TaskItem, parentPrefix: String? = nil) {
+        task.title = Self.taskTitle(fromReminderTitle: reminder.title, parentPrefix: parentPrefix)
         task.dueDate = reminder.dueDate
+        task.dueTime = reminder.dueDate == nil ? nil : reminder.dueTime
         task.priority = reminder.priority
         if reminder.isCompleted && !task.isDone {
             task.markDone(at: reminder.completedAt ?? now())
@@ -330,22 +341,38 @@ public final class SyncEngine {
         }
     }
 
+    /// Subtasks are mirrored as `Parent › Child` because EventKit has no public subtask API.
+    static func reminderTitle(for taskTitle: String, parentPrefix: String?) -> String {
+        let base = taskTitle.isEmpty ? "Untitled task" : taskTitle
+        guard let parentPrefix, !parentPrefix.isEmpty else { return base }
+        return parentPrefix + Note.subtaskSeparator + base
+    }
+
+    /// Strips the `Parent › ` prefix again when a subtask's reminder comes back.
+    static func taskTitle(fromReminderTitle title: String, parentPrefix: String?) -> String {
+        let clean = singleLine(title)
+        guard let parentPrefix, !parentPrefix.isEmpty else { return clean }
+        let prefix = parentPrefix + Note.subtaskSeparator
+        return clean.hasPrefix(prefix) ? String(clean.dropFirst(prefix.count)).trimmingCharacters(in: .whitespaces) : clean
+    }
+
     static func singleLine(_ text: String) -> String {
         TaskParser.collapseWhitespace(text.replacingOccurrences(of: "\r", with: " ").replacingOccurrences(of: "\n", with: " "))
     }
 
     /// The part of a task or reminder that both sides share.
-    public static func fingerprint(_ task: TaskItem) -> String {
-        fingerprint(title: task.title, done: task.isDone, due: task.dueDate, priority: task.priority)
+    public static func fingerprint(_ task: TaskItem, parentPrefix: String? = nil) -> String {
+        fingerprint(title: reminderTitle(for: task.title, parentPrefix: parentPrefix), done: task.isDone,
+                    due: task.dueDate, time: task.dueDate == nil ? nil : task.dueTime, priority: task.priority)
     }
 
     public static func fingerprint(_ reminder: ReminderRecord) -> String {
-        fingerprint(title: singleLine(reminder.title),
-                    done: reminder.isCompleted, due: reminder.dueDate, priority: reminder.priority)
+        fingerprint(title: singleLine(reminder.title), done: reminder.isCompleted,
+                    due: reminder.dueDate, time: reminder.dueDate == nil ? nil : reminder.dueTime, priority: reminder.priority)
     }
 
-    private static func fingerprint(title: String, done: Bool, due: DateOnly?, priority: Int) -> String {
-        "\(TaskParser.collapseWhitespace(title))|\(done ? 1 : 0)|\(due?.description ?? "")|\(priority)"
+    private static func fingerprint(title: String, done: Bool, due: DateOnly?, time: TimeOfDay?, priority: Int) -> String {
+        "\(TaskParser.collapseWhitespace(title))|\(done ? 1 : 0)|\(due?.description ?? "")\(time.map { "T\($0)" } ?? "")|\(priority)"
     }
 
     // MARK: Marker in the reminder notes

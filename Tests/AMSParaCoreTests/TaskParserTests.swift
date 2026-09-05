@@ -75,3 +75,44 @@ final class TaskParserTests: XCTestCase {
         XCTAssertNotNil(TaskParser.parse(line: "- [ ] x ^\(id)")?.id)
     }
 }
+
+final class TaskTimeAndSubtaskParserTests: XCTestCase {
+    func testParsesDueTime() throws {
+        let task = try XCTUnwrap(TaskParser.parse(line: "- [ ] Dentist >2026-09-15T14:30 !"))
+        XCTAssertEqual(task.dueDate, DateOnly(year: 2026, month: 9, day: 15))
+        XCTAssertEqual(task.dueTime, TimeOfDay(hour: 14, minute: 30))
+        XCTAssertEqual(task.title, "Dentist")
+        XCTAssertEqual(task.serialized, "- [ ] Dentist ! >2026-09-15T14:30")
+        XCTAssertNotNil(task.dueMoment())
+
+        let dateOnly = try XCTUnwrap(TaskParser.parse(line: "- [ ] Dentist >2026-09-15"))
+        XCTAssertNil(dateOnly.dueTime)
+        XCTAssertEqual(dateOnly.serialized, "- [ ] Dentist >2026-09-15")
+    }
+
+    func testTimeOfDayParsing() {
+        XCTAssertEqual(TimeOfDay("9:05"), TimeOfDay(hour: 9, minute: 5))
+        XCTAssertEqual(TimeOfDay("23:59")?.description, "23:59")
+        XCTAssertNil(TimeOfDay("24:00"))
+        XCTAssertNil(TimeOfDay("nope"))
+        XCTAssertTrue(TimeOfDay(hour: 8, minute: 0) < TimeOfDay(hour: 8, minute: 1))
+    }
+
+    func testSubtasksGetParentLineIndex() {
+        let text = """
+        - [ ] Parent
+            - [ ] Child A
+            - [x] Child B
+                - [ ] Grandchild
+        - [ ] Sibling
+        ## Heading
+            - [ ] Indented but after a heading
+        """
+        let tasks = TaskParser.parse(text: text)
+        XCTAssertEqual(tasks.map(\.title), ["Parent", "Child A", "Child B", "Grandchild", "Sibling", "Indented but after a heading"])
+        XCTAssertEqual(tasks.map(\.parentLineIndex), [nil, 0, 0, 2, nil, nil])
+        XCTAssertEqual(tasks.map(\.indentLevel), [0, 2, 2, 4, 0, 2])
+        XCTAssertTrue(tasks[1].isSubtask)
+        XCTAssertFalse(tasks[4].isSubtask)
+    }
+}

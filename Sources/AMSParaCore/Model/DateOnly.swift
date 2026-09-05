@@ -52,6 +52,52 @@ public struct DateOnly: Hashable, Comparable, Codable, CustomStringConvertible, 
     }
 }
 
+/// A wall-clock time without a date, as written in `>2026-09-10T14:30`.
+public struct TimeOfDay: Hashable, Comparable, Codable, CustomStringConvertible, Sendable {
+    public var hour: Int
+    public var minute: Int
+
+    public init(hour: Int, minute: Int) {
+        self.hour = hour
+        self.minute = minute
+    }
+
+    /// Parses `HH:mm` (a single-digit hour is accepted).
+    public init?(_ string: String) {
+        let parts = string.split(separator: ":")
+        guard parts.count == 2, let h = Int(parts[0]), let m = Int(parts[1]),
+              (0...23).contains(h), (0...59).contains(m) else { return nil }
+        self.init(hour: h, minute: m)
+    }
+
+    public init?(components: DateComponents) {
+        guard let h = components.hour, let m = components.minute else { return nil }
+        self.init(hour: h, minute: m)
+    }
+
+    public var description: String { String(format: "%02d:%02d", hour, minute) }
+
+    public static func < (lhs: TimeOfDay, rhs: TimeOfDay) -> Bool {
+        (lhs.hour, lhs.minute) < (rhs.hour, rhs.minute)
+    }
+}
+
+public extension DateOnly {
+    /// Date components for this day, with the time added when given.
+    func dateComponents(at time: TimeOfDay?) -> DateComponents {
+        var c = dateComponents
+        if let time {
+            c.hour = time.hour
+            c.minute = time.minute
+        }
+        return c
+    }
+
+    func date(at time: TimeOfDay?, calendar: Calendar = .current) -> Date? {
+        calendar.date(from: dateComponents(at: time))
+    }
+}
+
 /// Formats and parses NotePlan style `@done(YYYY-MM-DD HH:mm)` stamps in local time.
 public enum DoneStamp {
     private static let formatter: DateFormatter = {

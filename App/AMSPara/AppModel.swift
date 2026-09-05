@@ -259,6 +259,13 @@ final class AppModel: ObservableObject {
         save(note)
     }
 
+    func addSubtask(_ title: String, to parent: TaskRef) {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, var note = note(at: parent.notePath) else { return }
+        note.appendSubtask(TaskParser.normalized(TaskItem(title: trimmed)), to: parent.task)
+        save(note)
+    }
+
     func select(_ ref: TaskRef) {
         selectedNotePath = ref.notePath
     }

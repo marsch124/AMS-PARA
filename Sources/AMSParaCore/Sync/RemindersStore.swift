@@ -9,6 +9,7 @@ public struct ReminderRecord: Equatable, Sendable {
     public var isCompleted: Bool
     public var completedAt: Date?
     public var dueDate: DateOnly?
+    public var dueTime: TimeOfDay?
     public var priority: Int
     public var notes: String?
     public var lastModified: Date?
@@ -19,6 +20,7 @@ public struct ReminderRecord: Equatable, Sendable {
                 isCompleted: Bool = false,
                 completedAt: Date? = nil,
                 dueDate: DateOnly? = nil,
+                dueTime: TimeOfDay? = nil,
                 priority: Int = 0,
                 notes: String? = nil,
                 lastModified: Date? = nil) {
@@ -28,6 +30,7 @@ public struct ReminderRecord: Equatable, Sendable {
         self.isCompleted = isCompleted
         self.completedAt = completedAt
         self.dueDate = dueDate
+        self.dueTime = dueDate == nil ? nil : dueTime
         self.priority = min(max(priority, 0), 3)
         self.notes = notes
         self.lastModified = lastModified
@@ -108,9 +111,10 @@ public final class InMemoryRemindersStore: RemindersStore {
 
     /// Adds a reminder as if the user created it in the Reminders app.
     @discardableResult
-    public func simulateUserCreate(list: String, title: String, dueDate: DateOnly? = nil, priority: Int = 0, completed: Bool = false) async throws -> ReminderRecord {
+    public func simulateUserCreate(list: String, title: String, dueDate: DateOnly? = nil, dueTime: TimeOfDay? = nil,
+                                   priority: Int = 0, completed: Bool = false) async throws -> ReminderRecord {
         try await create(ReminderRecord(listName: list, title: title, isCompleted: completed,
-                                        completedAt: completed ? now() : nil, dueDate: dueDate, priority: priority))
+                                        completedAt: completed ? now() : nil, dueDate: dueDate, dueTime: dueTime, priority: priority))
     }
 
     public func simulateUserEdit(identifier: String, _ edit: (inout ReminderRecord) -> Void) {

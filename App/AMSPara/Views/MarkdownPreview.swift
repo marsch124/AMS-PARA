@@ -141,7 +141,7 @@ struct MarkdownPreview: View {
                 beforeToggle()
                 model.toggle(TaskRef(notePath: note.relativePath, noteTitle: note.displayTitle, task: task))
             }
-            .padding(.leading, CGFloat(task.indent.count) * 8)
+            .padding(.leading, CGFloat(task.indentLevel) * 14)
         case .bullet(let indent, let text):
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text("•")

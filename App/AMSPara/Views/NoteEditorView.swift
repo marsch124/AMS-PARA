@@ -75,7 +75,7 @@ struct NoteEditorView: View {
             }
             Divider()
             HStack {
-                TextField("Add a task… (use >2026-09-10 for a date, !! for priority, #tag)", text: $newTask)
+                TextField("Add a task… (>2026-09-10 or >2026-09-10T14:30 for a date, !! for priority, #tag)", text: $newTask)
                     .textFieldStyle(.roundedBorder)
                     .onSubmit(addTask)
                 Button("Add", action: addTask)
@@ -198,6 +198,8 @@ struct TaskChecklist: View {
     @EnvironmentObject private var model: AppModel
     let note: Note
     let beforeToggle: () -> Void
+    @State private var subtaskParent: TaskItem?
+    @State private var subtaskTitle = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -206,9 +208,29 @@ struct TaskChecklist: View {
                     beforeToggle()
                     model.toggle(TaskRef(notePath: note.relativePath, noteTitle: note.title, task: task))
                 }
+                .padding(.leading, CGFloat(task.indentLevel) * 14)
+                .contextMenu {
+                    Button("Add subtask…") {
+                        subtaskTitle = ""
+                        subtaskParent = task
+                    }
+                }
             }
         }
         .padding(.top, 4)
+        .alert("New subtask", isPresented: Binding(get: { subtaskParent != nil }, set: { if !$0 { subtaskParent = nil } })) {
+            TextField("Subtask", text: $subtaskTitle)
+            Button("Add") {
+                if let parent = subtaskParent {
+                    beforeToggle()
+                    model.addSubtask(subtaskTitle, to: TaskRef(notePath: note.relativePath, noteTitle: note.title, task: parent))
+                }
+                subtaskParent = nil
+            }
+            Button("Cancel", role: .cancel) { subtaskParent = nil }
+        } message: {
+            Text(subtaskParent.map { "Under \"\($0.title)\". It syncs to Reminders as \"\($0.title) › …\"." } ?? "")
+        }
     }
 }
 
@@ -234,7 +256,8 @@ struct TaskRow: View {
                             .foregroundStyle(.orange)
                     }
                     if let due = ref.task.dueDate {
-                        Label(due.description, systemImage: "calendar")
+                        Label(due.description + (ref.task.dueTime.map { " \($0)" } ?? ""),
+                              systemImage: ref.task.dueTime == nil ? "calendar" : "clock")
                             .foregroundStyle(due < .today() && !ref.task.isDone ? Color.red : Color.secondary)
                     }
                     if showNote {

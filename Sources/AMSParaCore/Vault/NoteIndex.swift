@@ -116,13 +116,20 @@ public struct NoteIndex: Sendable {
         }
         return refs.sorted { a, b in
             switch (a.task.dueDate, b.task.dueDate) {
-            case let (x?, y?) where x != y: return x < y
+            case let (x?, y?):
+                if x != y { return x < y }
+                switch (a.task.dueTime, b.task.dueTime) {
+                case let (s?, t?) where s != t: return s < t
+                case (nil, _?): return false
+                case (_?, nil): return true
+                default: break
+                }
             case (nil, _?): return false
             case (_?, nil): return true
-            default:
-                if a.task.priority != b.task.priority { return a.task.priority > b.task.priority }
-                return a.noteTitle.localizedCaseInsensitiveCompare(b.noteTitle) == .orderedAscending
+            default: break
             }
+            if a.task.priority != b.task.priority { return a.task.priority > b.task.priority }
+            return a.noteTitle.localizedCaseInsensitiveCompare(b.noteTitle) == .orderedAscending
         }
     }
 }

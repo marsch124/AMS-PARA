@@ -151,6 +151,59 @@ public struct Note: Equatable, Identifiable, Sendable {
         return inserted
     }
 
+    /// Parent tasks of a subtask, outermost first.
+    public func parentChain(of task: TaskItem) -> [TaskItem] {
+        let byLine = Dictionary(tasks.map { ($0.lineIndex, $0) }, uniquingKeysWith: { a, _ in a })
+        var chain: [TaskItem] = []
+        var cursor = task.parentLineIndex
+        while let index = cursor, let parent = byLine[index], chain.count < 20 {
+            chain.insert(parent, at: 0)
+            cursor = parent.parentLineIndex
+        }
+        return chain
+    }
+
+    /// `Parent › Child` prefix used for the reminder title of a subtask, nil for top-level tasks.
+    public func parentPrefix(for task: TaskItem) -> String? {
+        let chain = parentChain(of: task)
+        return chain.isEmpty ? nil : chain.map(\.title).joined(separator: Self.subtaskSeparator)
+    }
+
+    /// The title a subtask carries in Apple Reminders: its parents' titles, then its own.
+    public func syncTitle(for task: TaskItem) -> String {
+        guard let prefix = parentPrefix(for: task) else { return task.title }
+        return prefix + Self.subtaskSeparator + task.title
+    }
+
+    public static let subtaskSeparator = " › "
+
+    public func subtasks(of task: TaskItem) -> [TaskItem] {
+        tasks.filter { $0.parentLineIndex == task.lineIndex }
+    }
+
+    /// Inserts a subtask after the parent's last descendant. Returns it with its final `lineIndex`.
+    @discardableResult
+    public mutating func appendSubtask(_ subtask: TaskItem, to parent: TaskItem) -> TaskItem {
+        var current = lines
+        let all = tasks
+        var insertAt = parent.lineIndex + 1
+        if let parentIndex = all.firstIndex(where: { $0.lineIndex == parent.lineIndex }) {
+            var j = parentIndex + 1
+            while j < all.count, all[j].indentLevel > parent.indentLevel {
+                insertAt = all[j].lineIndex + 1
+                j += 1
+            }
+        }
+        var child = subtask
+        child.indent = parent.indent + "    "
+        child.bullet = parent.bullet
+        child.lineIndex = insertAt
+        child.parentLineIndex = parent.lineIndex
+        current.insert(child.serialized, at: min(insertAt, current.count))
+        lines = current
+        return child
+    }
+
     public mutating func removeTask(at lineIndex: Int) {
         var current = lines
         guard lineIndex >= 0, lineIndex < current.count else { return }

@@ -109,11 +109,20 @@ Every note also gets a `## Tasks` section by template; imported reminders are ap
 - [>] Task scheduled elsewhere
 - [ ] Priority with !, !! or !!! anywhere in the line !!
 - [ ] Due date >2026-09-10
+- [ ] Due date with a time >2026-09-10T14:30
 - [ ] Tags stay in the text #finance #call
 - [ ] The sync adds a stable id at the end ^t3fa2c1
+- [ ] A parent task
+    - [ ] An indented line below it is a subtask
 ```
 
-Indented sub-tasks and `*` bullets work too. Anything inside a code fence is ignored.
+`*` bullets work too. Anything inside a code fence is ignored. A due time makes the reminder a timed one
+with an alarm at that moment; a date alone is an all-day reminder.
+
+Subtasks: Apple's EventKit has no public API for subtasks, so each subtask becomes its own reminder in the
+same list, titled `Parent › Subtask`. Renaming the subtask in Reminders keeps the prefix out of your note,
+renaming the parent in the note renames all its subtask reminders. In the app, right-click a task in the
+checklist to add a subtask.
 
 ### Reference material
 
@@ -129,7 +138,8 @@ note, so a project sees its resources and a resource sees where it is used. Sub-
   `sync: false` are left alone.
 - **Identity.** On first sync every task line gets an id (`^t3fa2c1`). The mirrored reminder carries
   `ams-para:^t3fa2c1` in its notes field. Both survive edits, moves between notes and other devices.
-- **Fields.** Title (including `#tags`), open/done, due date and priority are kept identical on both sides.
+- **Fields.** Title (including `#tags`), open/done, due date, due time and priority are kept identical on
+  both sides.
 - **Changes in a note** update, complete or delete the reminder. Moving a task line to another
   project note moves the reminder to that list.
 - **Changes in Reminders** update or complete the task line. A new reminder in a mapped list is appended
@@ -142,7 +152,6 @@ note, so a project sees its resources and a resource sees where it is used. Sub-
 
 ## Roadmap
 
-- Reminders subtasks and times on due dates
 - Week and month overview in the calendar, weekly notes
 - Quick capture from the share sheet on iOS and a menu bar item on macOS
 - Full-text search with tag and status filters
