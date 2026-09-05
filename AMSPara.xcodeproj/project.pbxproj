@@ -18,6 +18,7 @@
 		69D50D37D44839621E2B8E69 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 430BFC78AB8859246FCD8ADF /* ShareViewController.swift */; };
 		7D6D9A41515B97C47A2823F0 /* MarkdownPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 475521B1BB3F759D39D00A7F /* MarkdownPreview.swift */; };
 		86C54DC290836705CA9C3A92 /* AMSParaCore in Frameworks */ = {isa = PBXBuildFile; productRef = F7CF4C0007B418F963C29980 /* AMSParaCore */; };
+		87199E938B8710A8608E02F5 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C89ED3979DFE4EFB210B7A4C /* Assets.xcassets */; };
 		A9750BF51AD3DF889DB43016 /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59DD66653AAD1A175F8EE394 /* SearchView.swift */; };
 		ACABE9A7CCDD400655D1D1D7 /* AMSParaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50BF0E0DB1E09D863C11A8E7 /* AMSParaApp.swift */; };
 		C7021A1E9F577B7B88A2AF68 /* AMSParaShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = BB669E0865BFFF9DAAA0D3A6 /* AMSParaShare.appex */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -69,6 +70,7 @@
 		BCB04B70CDFB28FD255C4149 /* EventKitRemindersStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventKitRemindersStore.swift; sourceTree = "<group>"; };
 		C325F2E1C12D18223DCA517D /* QuickCaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickCaptureView.swift; sourceTree = "<group>"; };
 		C6D9406CB697C17B2747C712 /* CalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarView.swift; sourceTree = "<group>"; };
+		C89ED3979DFE4EFB210B7A4C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D2AE2B575A4F05EC63D4C938 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
 		D998BC850FEFFD3EE7DF84DD /* AMSPara.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AMSPara.entitlements; sourceTree = "<group>"; };
 		EAF9BFCE2DA28A17EAE0B303 /* ReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewView.swift; sourceTree = "<group>"; };
@@ -136,6 +138,7 @@
 				D998BC850FEFFD3EE7DF84DD /* AMSPara.entitlements */,
 				50BF0E0DB1E09D863C11A8E7 /* AMSParaApp.swift */,
 				D2AE2B575A4F05EC63D4C938 /* AppModel.swift */,
+				C89ED3979DFE4EFB210B7A4C /* Assets.xcassets */,
 				BCB04B70CDFB28FD255C4149 /* EventKitRemindersStore.swift */,
 				8F5093D66F6721E9FE21B241 /* Info.plist */,
 				3F62FB7C8EAC4FFE0112F2C8 /* Views */,
@@ -196,6 +199,7 @@
 			buildConfigurationList = 67F035893681B6256CBE114F /* Build configuration list for PBXNativeTarget "AMSPara" */;
 			buildPhases = (
 				1D2A38A9B27A3D21337C6852 /* Sources */,
+				5C1D00899BA1680BD79EDFD2 /* Resources */,
 				C2579376EDD550BBC57E4C67 /* Frameworks */,
 				93838859FB731A13669AB2FA /* Embed Foundation Extensions */,
 			);
@@ -251,6 +255,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		5C1D00899BA1680BD79EDFD2 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				87199E938B8710A8608E02F5 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		1D2A38A9B27A3D21337C6852 /* Sources */ = {
