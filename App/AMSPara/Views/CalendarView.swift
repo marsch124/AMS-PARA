@@ -69,7 +69,9 @@ struct DailyNoteRow: View {
     let note: Note
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        HStack(spacing: 10) {
+            TintStripe(color: ParaKind.daily.tint, height: 30)
+            VStack(alignment: .leading, spacing: 2) {
             HStack {
                 Text(note.displayTitle)
                     .font(.headline)
@@ -86,6 +88,7 @@ struct DailyNoteRow: View {
             Text(total == 0 ? "No tasks" : "\(open) open of \(total)")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            }
         }
         .padding(.vertical, 2)
     }
@@ -236,7 +239,7 @@ struct MonthDayCell: View {
                     Text("\(day.due.count)")
                         .font(.caption2)
                         .padding(.horizontal, 4)
-                        .background(day.overdueCount > 0 ? Color.red.opacity(0.2) : Color.accentColor.opacity(0.2), in: Capsule())
+                        .background(day.overdueCount > 0 ? Color.red.opacity(0.22) : ParaKind.daily.tint.opacity(0.25), in: Capsule())
                 }
                 if !day.completed.isEmpty {
                     Text("✓\(day.completed.count)")
@@ -244,14 +247,14 @@ struct MonthDayCell: View {
                         .foregroundStyle(.secondary)
                 }
                 if day.dailyNotePath != nil && day.due.isEmpty && day.completed.isEmpty {
-                    Circle().fill(Color.accentColor).frame(width: 4, height: 4)
+                    Circle().fill(ParaKind.daily.tint).frame(width: 4, height: 4)
                 }
             }
             .frame(height: 14)
         }
         .frame(maxWidth: .infinity)
         .frame(height: 44)
-        .background(isSelected ? Color.accentColor.opacity(0.18) : Color.clear, in: RoundedRectangle(cornerRadius: 6))
+        .background(isSelected ? ParaKind.daily.tint.opacity(0.20) : Color.clear, in: RoundedRectangle(cornerRadius: 6))
         .contentShape(Rectangle())
         .accessibilityLabel("\(day.date.description), \(day.due.count) due, \(day.completed.count) done")
     }

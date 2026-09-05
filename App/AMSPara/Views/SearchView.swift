@@ -22,7 +22,11 @@ struct SearchView: View {
                 HStack(spacing: 6) {
                     Menu {
                         ForEach([ParaKind.project, .area, .resource, .archive, .daily, .inbox], id: \.self) { kind in
-                            Button(kind.displayName) { toggle("type:\(kind.rawValue)") }
+                            Button {
+                                toggle("type:\(kind.rawValue)")
+                            } label: {
+                                Label(kind.displayName, systemImage: SidebarSection.kind(kind).systemImage)
+                            }
                         }
                     } label: {
                         chipLabel("Type", active: !query.kinds.isEmpty)
@@ -119,9 +123,8 @@ struct SearchHitRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
-            HStack {
-                Image(systemName: SidebarSection.kind(hit.note.kind).systemImage)
-                    .foregroundStyle(.secondary)
+            HStack(spacing: 8) {
+                KindBadge(kind: hit.note.kind, size: 20)
                 Text(hit.note.displayTitle)
                     .font(.headline)
                 Spacer()
@@ -130,7 +133,8 @@ struct SearchHitRow: View {
                         .font(.caption2)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
-                        .background(.quaternary, in: Capsule())
+                        .background(hit.note.tint.opacity(0.18), in: Capsule())
+                        .foregroundStyle(hit.note.tint)
                 }
             }
             ForEach(hit.snippets.prefix(2), id: \.self) { snippet in

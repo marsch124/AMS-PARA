@@ -69,9 +69,10 @@ struct HealthRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            HStack {
+            HStack(spacing: 8) {
+                KindBadge(kind: health.note.kind, size: 20)
                 Image(systemName: health.needsAttention ? "exclamationmark.triangle.fill" : "checkmark.circle")
-                    .foregroundStyle(health.needsAttention ? Color.orange : Color.green)
+                    .foregroundStyle(health.needsAttention ? Color.orange : health.note.tint)
                 Text(health.note.title)
                     .font(.headline)
                 Spacer()
@@ -106,6 +107,7 @@ struct HealthRow: View {
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
                             .background(flag == .onHold ? Color.secondary.opacity(0.15) : Color.orange.opacity(0.18), in: Capsule())
+                            .foregroundStyle(flag == .onHold ? Color.secondary : Color.orange)
                     }
                 }
             }

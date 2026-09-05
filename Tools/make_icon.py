@@ -4,10 +4,11 @@ from PIL import Image, ImageDraw
 
 SS = 4  # supersampling factor
 
-INK_TOP = (62, 124, 89)      # #3E7C59 accent green
-INK_BOTTOM = (26, 66, 47)    # deeper green
-TILE = (244, 247, 244)       # off white
-TILE_ALPHAS = (255, 200, 150, 105)  # Projects, Areas, Resources, Archive
+INK_TOP = (48, 55, 61)       # slate ground, so all four hues read clearly
+INK_BOTTOM = (20, 24, 27)
+# Projects green, Areas pink, Resources blue, Archive grey: the app's own palette
+TILES = ((95, 191, 146), (240, 127, 178), (111, 174, 232), (154, 154, 162))
+CHECK_INK = (20, 24, 27)
 
 def rounded_mask(size, radius):
     m = Image.new("L", (size, size), 0)
@@ -30,18 +31,18 @@ def draw_art(size):
     gap = size * 0.052
     cell = (size - 2 * margin - gap) / 2
     radius = cell * 0.26
-    for i, alpha in enumerate(TILE_ALPHAS):
+    for i, colour in enumerate(TILES):
         col, row = i % 2, i // 2
         x = margin + col * (cell + gap)
         y = margin + row * (cell + gap)
-        d.rounded_rectangle([x, y, x + cell, y + cell], radius=radius, fill=TILE + (alpha,))
+        d.rounded_rectangle([x, y, x + cell, y + cell], radius=radius, fill=colour + (255,))
     # tick on the first tile
     x0, y0 = margin, margin
     w = cell
     pts = [(x0 + w * 0.24, y0 + w * 0.52),
            (x0 + w * 0.44, y0 + w * 0.71),
            (x0 + w * 0.78, y0 + w * 0.30)]
-    d.line(pts, fill=INK_BOTTOM + (255,), width=max(int(w * 0.13), 1), joint="curve")
+    d.line(pts, fill=CHECK_INK + (255,), width=max(int(w * 0.13), 1), joint="curve")
     return art
 
 def render(size, rounded):

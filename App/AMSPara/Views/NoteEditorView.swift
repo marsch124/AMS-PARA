@@ -172,11 +172,14 @@ struct NoteHeader: View {
     var body: some View {
         HStack(spacing: 12) {
             Label(note.kind == .daily ? "Daily note" : note.kind.displayName, systemImage: SidebarSection.kind(note.kind).systemImage)
+                .foregroundStyle(note.tint)
+                .fontWeight(.semibold)
             if let status = note.status {
                 Label(status.capitalized, systemImage: "circle.fill")
             }
             if let area = note.area {
                 Label(area, systemImage: "circle.grid.2x2")
+                    .foregroundStyle(ParaKind.area.tint)
             }
             if let due = note.dueDate {
                 Label("Due \(due.description)", systemImage: "calendar")
@@ -195,6 +198,7 @@ struct NoteHeader: View {
         .lineLimit(1)
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
+        .background(note.tint.opacity(0.10))
     }
 }
 
@@ -239,15 +243,21 @@ struct TaskChecklist: View {
 }
 
 struct TaskRow: View {
+    @EnvironmentObject private var model: AppModel
     let ref: TaskRef
     let showNote: Bool
     let toggle: () -> Void
+
+    /// Tasks take the colour of the note they live in.
+    private var tint: Color {
+        model.note(at: ref.notePath)?.tint ?? .accentColor
+    }
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Button(action: toggle) {
                 Image(systemName: ref.task.status == .cancelled ? "xmark.circle" : (ref.task.isDone ? "checkmark.circle.fill" : "circle"))
-                    .foregroundStyle(ref.task.isDone ? Color.secondary : Color.accentColor)
+                    .foregroundStyle(ref.task.isDone ? Color.secondary : tint)
             }
             .buttonStyle(.plain)
             VStack(alignment: .leading, spacing: 2) {
@@ -266,6 +276,7 @@ struct TaskRow: View {
                     }
                     if showNote {
                         Label(ref.noteTitle, systemImage: "doc.text")
+                            .foregroundStyle(tint)
                     }
                 }
                 .font(.caption)
@@ -287,7 +298,10 @@ struct LinkedNotesList: View {
                     model.section = model.sidebarSection(for: linked)
                     model.selectedNotePath = linked.relativePath
                 } label: {
-                    Label(linked.displayTitle, systemImage: SidebarSection.kind(linked.kind).systemImage)
+                    HStack(spacing: 8) {
+                        KindBadge(kind: linked.kind, size: 18)
+                        Text(linked.displayTitle)
+                    }
                 }
                 .buttonStyle(.plain)
             }

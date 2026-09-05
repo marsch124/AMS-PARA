@@ -23,6 +23,7 @@ struct TodayView: View {
                     model.openDailyNote(for: today)
                 } label: {
                     Label(model.todayNote == nil ? "Create today's note" : "Open today's note", systemImage: "calendar")
+                        .foregroundStyle(ParaKind.daily.tint)
                 }
                 if !fromTodayNote.isEmpty {
                     rows(fromTodayNote)

@@ -107,9 +107,13 @@ struct WelcomeView: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            Image(systemName: "square.grid.2x2")
-                .font(.system(size: 48))
-                .foregroundStyle(.secondary)
+            HStack(spacing: 10) {
+                ForEach([ParaKind.project, .area, .resource, .archive], id: \.self) { kind in
+                    RoundedRectangle(cornerRadius: 9)
+                        .fill(kind.tint)
+                        .frame(width: 38, height: 38)
+                }
+            }
             Text("AMS PARA")
                 .font(.largeTitle.bold())
             Text("Projects, Areas, Resources and Archive as plain markdown files, with tasks that stay in sync with Apple Reminders.")
@@ -155,9 +159,14 @@ struct SidebarView: View {
     }
 
     private func row(_ section: SidebarSection) -> some View {
-        Label(section.title, systemImage: section.systemImage)
-            .badge(model.count(for: section))
-            .tag(section)
+        Label {
+            Text(section.title)
+        } icon: {
+            Image(systemName: section.systemImage)
+                .foregroundStyle(section.tint)
+        }
+        .badge(model.count(for: section))
+        .tag(section)
     }
 }
 
@@ -202,38 +211,44 @@ struct NoteRow: View {
     let note: Note
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            HStack {
-                Text(note.displayTitle)
-                    .font(.headline)
-                    .lineLimit(1)
-                Spacer()
-                if let status = note.status, status != "active" {
-                    Text(status.capitalized)
-                        .font(.caption2)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(.quaternary, in: Capsule())
+        HStack(spacing: 10) {
+            TintStripe(color: note.tint, height: 34)
+            VStack(alignment: .leading, spacing: 3) {
+                HStack {
+                    Text(note.title)
+                        .font(.headline)
+                        .lineLimit(1)
+                    Spacer()
+                    if let status = note.status, status != "active" {
+                        Text(status.capitalized)
+                            .font(.caption2)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(note.tint.opacity(0.18), in: Capsule())
+                            .foregroundStyle(note.tint)
+                    }
                 }
+                HStack(spacing: 8) {
+                    let open = note.openTasks.count
+                    if open > 0 {
+                        Label("\(open)", systemImage: "checklist")
+                            .foregroundStyle(note.tint)
+                    }
+                    if let due = note.dueDate {
+                        Label(due.description, systemImage: "calendar")
+                    }
+                    if let area = note.area {
+                        Label(area, systemImage: "circle.grid.2x2")
+                            .foregroundStyle(ParaKind.area.tint)
+                    }
+                    if note.kind == .resource, !note.related.isEmpty {
+                        Label("\(note.related.count)", systemImage: "link")
+                    }
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
             }
-            HStack(spacing: 8) {
-                let open = note.openTasks.count
-                if open > 0 {
-                    Label("\(open)", systemImage: "checklist")
-                }
-                if let due = note.dueDate {
-                    Label(due.description, systemImage: "calendar")
-                }
-                if let area = note.area {
-                    Label(area, systemImage: "circle.grid.2x2")
-                }
-                if note.kind == .resource, !note.related.isEmpty {
-                    Label("\(note.related.count)", systemImage: "link")
-                }
-            }
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .lineLimit(1)
         }
         .padding(.vertical, 2)
     }
@@ -269,5 +284,67 @@ struct SyncButton: View {
         }
         .disabled(model.isSyncing)
         .help(model.lastReport.map { "Last sync: \($0.summary)" } ?? "Sync tasks with Apple Reminders (⇧⌘R)")
+    }
+}
+
+// MARK: - Colour
+
+/// One colour per PARA bucket, carried through every screen: Projects green,
+/// Areas pink, Resources blue, Archive grey, plus a hue for each action list.
+/// Each name resolves to a colour set with a light and a dark variant.
+extension ParaKind {
+    var tint: Color {
+        switch self {
+        case .project: return Color("ProjectTint")
+        case .area: return Color("AreaTint")
+        case .resource: return Color("ResourceTint")
+        case .archive: return Color("ArchiveTint")
+        case .inbox: return Color("InboxTint")
+        case .daily: return Color("CalendarTint")
+        }
+    }
+}
+
+extension SidebarSection {
+    var tint: Color {
+        switch self {
+        case .inbox: return Color("InboxTint")
+        case .today: return Color("CalendarTint")
+        case .calendar: return Color("CalendarTint")
+        case .review: return Color("ReviewTint")
+        case .search: return Color("ResourceTint")
+        case .kind(let kind): return kind.tint
+        }
+    }
+}
+
+extension Note {
+    var tint: Color { kind.tint }
+}
+
+/// A small filled circle carrying a bucket's colour and symbol.
+struct KindBadge: View {
+    let kind: ParaKind
+    var size: CGFloat = 22
+
+    var body: some View {
+        Image(systemName: SidebarSection.kind(kind).systemImage)
+            .font(.system(size: size * 0.5, weight: .semibold))
+            .foregroundStyle(.white)
+            .frame(width: size, height: size)
+            .background(kind.tint, in: Circle())
+            .accessibilityLabel(kind.displayName)
+    }
+}
+
+/// The coloured stripe down the leading edge of a row.
+struct TintStripe: View {
+    let color: Color
+    var height: CGFloat = 30
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 2)
+            .fill(color)
+            .frame(width: 3, height: height)
     }
 }

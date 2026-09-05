@@ -100,6 +100,25 @@ Three ways to get a thought into the system without opening the right note first
 
 Captured text uses the task syntax: `>2026-09-10T14:30`, `!!` and `#tags` are picked up as usual.
 
+### Colour
+
+Each PARA bucket has its own colour, used everywhere it appears: the sidebar, note lists,
+note headers, tasks, search results, the review and the calendar.
+
+| Bucket | Colour |
+| --- | --- |
+| Projects | green |
+| Areas | pink |
+| Resources | blue |
+| Archive | grey |
+| Inbox | amber |
+| Calendar, daily and weekly notes | violet |
+| Weekly review | teal |
+
+A task takes the colour of the note it lives in, so a list mixing several notes stays readable.
+The colours are defined as colour sets in `App/AMSPara/Assets.xcassets`, each with a light and a
+dark variant; edit them there to change the scheme.
+
 ### Search
 
 The Search section (⇧⌘F) searches every note and task. Type words, quoted phrases, and filters in one

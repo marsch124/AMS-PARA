@@ -11,12 +11,19 @@ struct NewNoteSheet: View {
         VStack(alignment: .leading, spacing: 16) {
             Text("New note")
                 .font(.title2.bold())
+                .foregroundStyle(kind.tint)
             Picker("Type", selection: $kind) {
                 Text("Project").tag(ParaKind.project)
                 Text("Area").tag(ParaKind.area)
                 Text("Resource").tag(ParaKind.resource)
             }
             .pickerStyle(.segmented)
+            HStack(spacing: 8) {
+                KindBadge(kind: kind, size: 22)
+                Text(kind.displayName)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(kind.tint)
+            }
             TextField("Title", text: $title)
                 .textFieldStyle(.roundedBorder)
                 .onSubmit(create)
