@@ -197,7 +197,7 @@ struct TaskRow: View {
                     }
                     if let due = ref.task.dueDate {
                         Label(due.description, systemImage: "calendar")
-                            .foregroundStyle(due < .today() && !ref.task.isDone ? .red : .secondary)
+                            .foregroundStyle(due < .today() && !ref.task.isDone ? Color.red : Color.secondary)
                     }
                     if showNote {
                         Label(ref.noteTitle, systemImage: "doc.text")

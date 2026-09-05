@@ -72,7 +72,8 @@ public final class SyncEngine {
         report.notesSynced = notesByPath.count
 
         // 2. Fetch reminders for every mapped list.
-        let existingLists = Set(try await store.listNames())
+        let listNames = try await store.listNames()
+        let existingLists = Set(listNames)
         var remindersByID: [String: ReminderRecord] = [:]
         var remindersByMarker: [String: ReminderRecord] = [:]
         for list in pathForList.keys.sorted() {

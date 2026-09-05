@@ -70,7 +70,8 @@ final class SyncEngineTests: XCTestCase {
         project.body = "- [ ] Order timber\n"
         try vault.save(project)
         try await engine.run()
-        XCTAssertEqual(try await store.reminders(inList: "Home").map(\.title), ["Order timber"])
+        let actual1 = try await store.reminders(inList: "Home").map(\.title)
+        XCTAssertEqual(actual1, ["Order timber"])
     }
 
     func testEditingTaskInNoteUpdatesReminder() async throws {
@@ -112,7 +113,8 @@ final class SyncEngineTests: XCTestCase {
         try vault.save(note)
         let report = try await engine.run()
         XCTAssertEqual(report.remindersDeleted, 1)
-        XCTAssertEqual(try await store.reminders(inList: "Inbox").map(\.title), ["Keep me"])
+        let actual2 = try await store.reminders(inList: "Inbox").map(\.title)
+        XCTAssertEqual(actual2, ["Keep me"])
     }
 
     // MARK: Reminders -> Note
@@ -134,7 +136,9 @@ final class SyncEngineTests: XCTestCase {
         XCTAssertEqual(SyncEngine.markerTaskID(in: store.records[created.identifier]?.notes), imported.id)
         XCTAssertTrue(try inbox().body.hasSuffix("- [ ] Existing ^\(tasks[0].id!)\n- [ ] Call dentist !!! >2026-09-12 ^\(imported.id!)\n"))
 
-        XCTAssertEqual(try await engine.run().changeCount, 0)
+        let actual3 = try await engine.run().changeCount
+
+        XCTAssertEqual(actual3, 0)
     }
 
     func testCompletedUnlinkedRemindersAreSkippedByDefault() async throws {
@@ -175,7 +179,8 @@ final class SyncEngineTests: XCTestCase {
         XCTAssertEqual(task.title, "Buy milk and eggs #groceries")
         XCTAssertEqual(task.tags, ["groceries"])
         XCTAssertEqual(task.dueDate, DateOnly(year: 2026, month: 9, day: 8))
-        XCTAssertEqual(try await engine.run().changeCount, 0)
+        let actual4 = try await engine.run().changeCount
+        XCTAssertEqual(actual4, 0)
     }
 
     func testDeletingReminderCancelsTask() async throws {
@@ -186,7 +191,8 @@ final class SyncEngineTests: XCTestCase {
         let report = try await engine.run()
         XCTAssertEqual(report.tasksCancelled, 1)
         XCTAssertEqual(try inbox().tasks[0].status, .cancelled)
-        XCTAssertEqual(try await store.reminders(inList: "Inbox").count, 0)
+        let actual5 = try await store.reminders(inList: "Inbox").count
+        XCTAssertEqual(actual5, 0)
     }
 
     // MARK: Conflicts and edge cases
@@ -204,7 +210,8 @@ final class SyncEngineTests: XCTestCase {
 
         let report = try await engine.run()
         XCTAssertEqual(report.conflicts.count, 1)
-        XCTAssertEqual(try await store.reminders(inList: "Inbox")[0].title, "Buy milk (note)")
+        let actual6 = try await store.reminders(inList: "Inbox")[0].title
+        XCTAssertEqual(actual6, "Buy milk (note)")
         XCTAssertEqual(try inbox().tasks[0].title, "Buy milk (note)")
     }
 
@@ -229,14 +236,16 @@ final class SyncEngineTests: XCTestCase {
     func testFreshDeviceRelinksThroughMarkerInsteadOfDuplicating() async throws {
         try writeInbox("- [ ] Buy milk\n")
         try await engine.run()
-        XCTAssertEqual(try await store.reminders(inList: "Inbox").count, 1)
+        let actual7 = try await store.reminders(inList: "Inbox").count
+        XCTAssertEqual(actual7, 1)
 
         // Same vault and Reminders, but no sync state (e.g. a second Mac).
         let other = SyncEngine(vault: vault, store: store, deviceID: "second-device")
         let report = try await other.run()
         XCTAssertEqual(report.remindersCreated, 0)
         XCTAssertEqual(report.changeCount, 0)
-        XCTAssertEqual(try await store.reminders(inList: "Inbox").count, 1)
+        let actual8 = try await store.reminders(inList: "Inbox").count
+        XCTAssertEqual(actual8, 1)
         XCTAssertEqual(vault.loadSyncState(deviceID: "second-device").links.count, 1)
     }
 
@@ -247,7 +256,8 @@ final class SyncEngineTests: XCTestCase {
         let other = SyncEngine(vault: vault, store: store, deviceID: "second-device")
         let report = try await other.run()
         XCTAssertEqual(report.remindersDeleted, 1)
-        XCTAssertEqual(try await store.reminders(inList: "Inbox").count, 0)
+        let actual9 = try await store.reminders(inList: "Inbox").count
+        XCTAssertEqual(actual9, 0)
     }
 
     func testNotesWithSyncFalseAndArchivedAreIgnored() async throws {
@@ -273,7 +283,8 @@ final class SyncEngineTests: XCTestCase {
         try vault.archive(try vault.loadNote(relativePath: project.relativePath))
         let report = try await engine.run()
         XCTAssertEqual(report.remindersDeleted, 0)
-        XCTAssertEqual(try await store.reminders(inList: "Shed").count, 1)
+        let actual10 = try await store.reminders(inList: "Shed").count
+        XCTAssertEqual(actual10, 1)
     }
 
     func testTaskMovedBetweenNotesMovesReminder() async throws {
@@ -288,8 +299,10 @@ final class SyncEngineTests: XCTestCase {
         let report = try await engine.run()
         XCTAssertEqual(report.remindersDeleted, 0)
         XCTAssertEqual(report.remindersCreated, 0)
-        XCTAssertEqual(try await store.reminders(inList: "Inbox").count, 0)
-        XCTAssertEqual(try await store.reminders(inList: "Shed").map(\.title), ["Order timber"])
+        let actual11 = try await store.reminders(inList: "Inbox").count
+        XCTAssertEqual(actual11, 0)
+        let actual12 = try await store.reminders(inList: "Shed").map(\.title)
+        XCTAssertEqual(actual12, ["Order timber"])
     }
 
     func testMarkerHelpersPreserveUserNotes() {
