@@ -4,6 +4,7 @@ import AMSParaCore
 struct SettingsView: View {
     @EnvironmentObject private var model: AppModel
     @State private var showingImporter = false
+    @AppStorage("showMenuBarItem") private var showMenuBarItem = true
 
     var body: some View {
         Form {
@@ -64,6 +65,15 @@ struct SettingsView: View {
                 }
             }
             .disabled(model.vault == nil)
+
+            Section("Quick capture") {
+                #if os(macOS)
+                Toggle("Show capture panel in the menu bar", isOn: $showMenuBarItem)
+                #endif
+                Text("⇧⌘N opens the capture panel in the app. Other apps can add to the Inbox with a link like amspara://capture?text=Call%20the%20bank&target=inbox (Shortcuts: Open URL). On iOS, use Share › AMS PARA.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
 
             Section("Weekly review") {
                 Stepper("Flag projects unchanged for \(model.config.staleProjectDays) days", value: Binding(

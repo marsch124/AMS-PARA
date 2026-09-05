@@ -130,8 +130,17 @@ public struct Note: Equatable, Identifiable, Sendable {
     /// Returns the task with its final `lineIndex`.
     @discardableResult
     public mutating func append(task: TaskItem, sectionHeading: String = "Tasks") -> TaskItem {
-        var current = lines
         var inserted = task
+        inserted.lineIndex = appendLine(task.serialized, under: sectionHeading)
+        return inserted
+    }
+
+    /// Appends a line at the end of a `## Heading` section (created at the end of the note if missing).
+    /// Returns the index of the inserted line.
+    @discardableResult
+    public mutating func appendLine(_ line: String, under sectionHeading: String) -> Int {
+        var current = lines
+        let index: Int
         if let heading = current.firstIndex(where: { Self.isHeading($0, titled: sectionHeading) }) {
             let level = Self.headingLevel(current[heading])
             var end = heading + 1
@@ -144,20 +153,20 @@ public struct Note: Equatable, Identifiable, Sendable {
             while insertAt > heading + 1, current[insertAt - 1].trimmingCharacters(in: .whitespaces).isEmpty {
                 insertAt -= 1
             }
-            inserted.lineIndex = insertAt
-            current.insert(task.serialized, at: insertAt)
+            index = insertAt
+            current.insert(line, at: insertAt)
         } else {
             while let last = current.last, last.trimmingCharacters(in: .whitespaces).isEmpty {
                 current.removeLast()
             }
             if !current.isEmpty { current.append("") }
             current.append("## \(sectionHeading)")
-            inserted.lineIndex = current.count
-            current.append(task.serialized)
+            index = current.count
+            current.append(line)
             current.append("")
         }
         lines = current
-        return inserted
+        return index
     }
 
     /// Parent tasks of a subtask, outermost first.

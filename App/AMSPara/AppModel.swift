@@ -51,6 +51,8 @@ final class AppModel: ObservableObject {
     @Published private(set) var lastReport: SyncReport?
     @Published var errorMessage: String?
     @Published var showingNewNote = false
+    @Published var showingQuickCapture = false
+    @Published private(set) var lastCaptureMessage: String?
     @Published var selectedDate = DateOnly.today()
     @Published var selectedWeek = WeekRef.current()
     @Published var selectedMonth = MonthRef.current()
@@ -333,6 +335,80 @@ final class AppModel: ObservableObject {
         case .daily: return .calendar
         default: return .kind(note.kind)
         }
+    }
+
+    // MARK: Quick capture
+
+    static let appGroupID = "group.com.schabbauer.amspara"
+
+    /// Shared with the share extension through the App Group; falls back to Application Support.
+    static var outboxURL: URL {
+        let base = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupID)
+            ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!.appendingPathComponent("AMS PARA", isDirectory: true)
+        return base.appendingPathComponent("capture-outbox.jsonl")
+    }
+
+    /// Targets offered in the capture panel: Inbox, today's note, then every active project.
+    var captureTargets: [CaptureTarget] {
+        let projects = notes.filter { $0.kind == .project && !$0.isArchived && $0.status != "done" }
+        return [CaptureTarget.inbox, .today] + projects.map { CaptureTarget.note(path: $0.relativePath) }
+    }
+
+    func captureTargetLabel(_ target: CaptureTarget) -> String {
+        if case .note(let path) = target, let note = note(at: path) { return note.title }
+        return target.label
+    }
+
+    /// Writes a capture straight into the vault, or parks it in the outbox when no vault is open.
+    func capture(_ item: CaptureItem) {
+        guard let vault else {
+            try? CaptureOutbox(fileURL: Self.outboxURL).append(item)
+            lastCaptureMessage = "Saved, will be filed when a vault is open"
+            return
+        }
+        do {
+            let note = try vault.capture(item)
+            reload()
+            lastCaptureMessage = "Saved to \(note.displayTitle)"
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func capture(text: String, url: URL? = nil, target: CaptureTarget, asTask: Bool = true) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty || url != nil else { return }
+        capture(CaptureItem(text: trimmed, url: url, target: target, asTask: asTask))
+    }
+
+    /// Files everything the share extension left in the outbox. Returns how many items were filed.
+    @discardableResult
+    func drainOutbox() -> Int {
+        guard let vault else { return 0 }
+        let items = CaptureOutbox(fileURL: Self.outboxURL).drain()
+        guard !items.isEmpty else { return 0 }
+        var filed = 0
+        for item in items {
+            if (try? vault.capture(item)) != nil { filed += 1 }
+        }
+        reload()
+        lastCaptureMessage = "\(filed) captured item\(filed == 1 ? "" : "s") filed"
+        return filed
+    }
+
+    /// Handles `amspara://capture?...` and `amspara://<note title>` links.
+    func handle(url: URL) {
+        if let item = CaptureItem(url: url) {
+            capture(item)
+            return
+        }
+        if url.scheme?.lowercased() == CaptureItem.urlScheme, let host = url.host?.removingPercentEncoding, !host.isEmpty {
+            open(reference: host)
+        }
+    }
+
+    func clearCaptureMessage() {
+        lastCaptureMessage = nil
     }
 
     // MARK: Review

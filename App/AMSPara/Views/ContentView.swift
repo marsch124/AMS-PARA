@@ -4,6 +4,7 @@ import AMSParaCore
 
 struct ContentView: View {
     @EnvironmentObject private var model: AppModel
+    @Environment(\.scenePhase) private var scenePhase
     @State private var showingImporter = false
     @State private var showingSettings = false
 
@@ -21,6 +22,12 @@ struct ContentView: View {
                 }
                 .toolbar {
                     ToolbarItemGroup {
+                        Button {
+                            model.showingQuickCapture = true
+                        } label: {
+                            Label("Quick capture", systemImage: "tray.and.arrow.down")
+                        }
+                        .help("Capture a thought into the Inbox, today's note or a project (⇧⌘N)")
                         SyncButton()
                         #if !os(macOS)
                         Button {
@@ -42,6 +49,33 @@ struct ContentView: View {
             NewNoteSheet()
                 .environmentObject(model)
         }
+        .sheet(isPresented: $model.showingQuickCapture) {
+            QuickCaptureView()
+                .environmentObject(model)
+        }
+        .onOpenURL { url in
+            model.handle(url: url)
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { model.drainOutbox() }
+        }
+        .onAppear { model.drainOutbox() }
+        .overlay(alignment: .bottom) {
+            if let message = model.lastCaptureMessage {
+                Text(message)
+                    .font(.callout)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(.regularMaterial, in: Capsule())
+                    .padding(.bottom, 16)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .task {
+                        try? await Task.sleep(for: .seconds(2.5))
+                        model.clearCaptureMessage()
+                    }
+            }
+        }
+        .animation(.easeInOut(duration: 0.2), value: model.lastCaptureMessage)
         .sheet(isPresented: $showingSettings) {
             NavigationStack {
                 SettingsView()

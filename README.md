@@ -34,6 +34,10 @@ If you prefer not to use XcodeGen: create a new multiplatform SwiftUI app in Xco
 link `AMSParaCore`. Add `NSRemindersFullAccessUsageDescription` to the Info.plist and enable the
 Calendars personal-information entitlement plus user-selected file access under App Sandbox.
 
+The app and the iOS share extension share the App Group `group.com.schabbauer.amspara`. With automatic
+signing Xcode registers it for your team on first build; if you change the bundle id prefix in
+`project.yml`, change the group id in `AppModel.swift` and `ShareViewController.swift` to match.
+
 The code in this repository was written without access to a Mac, so the first `swift test` and the first
 Xcode build may surface compiler complaints that need a quick fix. The core logic is covered by tests so
 behaviour problems should show up there first.
@@ -78,6 +82,22 @@ of every active project and area. A project is flagged when it has no open task,
 its due date, has not changed for 14 days, or has not been reviewed for 7 days (both configurable in
 Settings). Right-click a project to mark it reviewed (writes `reviewed: YYYY-MM-DD` into the frontmatter),
 put it on hold, mark it done or archive it. "Mark all reviewed" stamps every active project at once.
+
+### Quick capture
+
+Three ways to get a thought into the system without opening the right note first:
+
+- **Menu bar (macOS).** A tray icon in the menu bar opens a small panel: text, a target (Inbox, today's
+  note, or any active project), and a checkbox to save it as a note line instead of a task. It can be
+  hidden in Settings. Inside the app, ⇧⌘N opens the same panel.
+- **Share sheet (iOS).** Share text or a web page to "AMS PARA". The extension can't reach the vault
+  directly, so it parks the capture in an App Group outbox; the app files it the next time it opens.
+- **URL scheme.** `amspara://capture?text=Call%20the%20bank&target=inbox` adds a task; `target=today`
+  or a note path such as `Projects/Shed.md` changes where it lands, `url=` attaches a link, `note=1`
+  saves a plain line under Notes instead of a task. Works from Shortcuts, Raycast, Alfred or a browser
+  bookmarklet. `amspara://Website%20relaunch` opens a note by title.
+
+Captured text uses the task syntax: `>2026-09-10T14:30`, `!!` and `#tags` are picked up as usual.
 
 ### Editor and preview
 
@@ -156,5 +176,4 @@ note, so a project sees its resources and a resource sees where it is used. Sub-
 
 ## Roadmap
 
-- Quick capture from the share sheet on iOS and a menu bar item on macOS
 - Full-text search with tag and status filters
