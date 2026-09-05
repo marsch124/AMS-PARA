@@ -118,14 +118,14 @@ public final class Vault {
     // MARK: Reading
 
     public func allNotes() throws -> [Note] {
-        var notes: [Note] = []
+        var result: [Note] = []
         if fm.fileExists(atPath: url(for: config.inboxFile).path) {
-            notes.append(try loadNote(relativePath: config.inboxFile))
+            result.append(try loadNote(relativePath: config.inboxFile))
         }
         for kind in [ParaKind.project, .area, .resource, .archive, .daily] {
-            notes.append(contentsOf: try notes(kind: kind))
+            result.append(contentsOf: try notes(kind: kind))
         }
-        return notes
+        return result
     }
 
     public func notes(kind: ParaKind) throws -> [Note] {
