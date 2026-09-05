@@ -46,3 +46,28 @@ jobs:
         with:
           name: xcodebuild-logs
           path: build-*.log
+
+  commit-project:
+    name: Commit generated Xcode project
+    runs-on: macos-15
+    needs: [core-tests, app-build]
+    if: github.event_name == 'push'
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate project
+        run: xcodegen generate
+      - name: Commit and push when it changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add AMSPara.xcodeproj
+          if git diff --cached --quiet; then
+            echo "Xcode project is up to date."
+            exit 0
+          fi
+          git commit -m "Regenerate Xcode project from project.yml"
+          git push

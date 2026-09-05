@@ -1,8 +1,6 @@
 # Xcode / SwiftPM
 .build/
-*.xcodeproj/
 *.xcworkspace/
-!*.xcodeproj/project.pbxproj
 xcuserdata/
 DerivedData/
 *.swp
