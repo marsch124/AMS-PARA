@@ -61,7 +61,7 @@
 		4AB07C9C7BE83CD6EAE3F4FA /* AMSPara.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = AMSPara.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		50BF0E0DB1E09D863C11A8E7 /* AMSParaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AMSParaApp.swift; sourceTree = "<group>"; };
 		59DD66653AAD1A175F8EE394 /* SearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchView.swift; sourceTree = "<group>"; };
-		7463939C951D940722996CF7 /* AMS-PARA */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "AMS-PARA"; path = .; sourceTree = SOURCE_ROOT; };
+		5B58A54A0D735E612BB2B249 /* Core */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Core; path = Core; sourceTree = SOURCE_ROOT; };
 		7C0DAA2A1126D74DAECDC589 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		8F5093D66F6721E9FE21B241 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		A28013418FEE2D1E68273077 /* NewNoteSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewNoteSheet.swift; sourceTree = "<group>"; };
@@ -164,7 +164,7 @@
 		FAF1EF377B767728CE8DE87F /* Packages */ = {
 			isa = PBXGroup;
 			children = (
-				7463939C951D940722996CF7 /* AMS-PARA */,
+				5B58A54A0D735E612BB2B249 /* Core */,
 			);
 			name = Packages;
 			sourceTree = "<group>";
@@ -239,7 +239,7 @@
 			mainGroup = B7E4D3CF5B4DBBCA0EDFDF4E;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				FCBC24FBC6949D723D6EE212 /* XCLocalSwiftPackageReference "." */,
+				775DE66629CBB54E134636B5 /* XCLocalSwiftPackageReference "Core" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 34E2D971766FAE700C1EB097 /* Products */;
@@ -543,9 +543,9 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		FCBC24FBC6949D723D6EE212 /* XCLocalSwiftPackageReference "." */ = {
+		775DE66629CBB54E134636B5 /* XCLocalSwiftPackageReference "Core" */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = .;
+			relativePath = Core;
 		};
 /* End XCLocalSwiftPackageReference section */
 
