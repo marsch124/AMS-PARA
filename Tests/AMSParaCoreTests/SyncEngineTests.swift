@@ -314,3 +314,65 @@ final class SyncEngineTests: XCTestCase {
         XCTAssertNil(SyncEngine.markerTaskID(in: nil))
     }
 }
+
+final class DailyNoteSyncTests: XCTestCase {
+    var vault: Vault!
+    var store: InMemoryRemindersStore!
+    var engine: SyncEngine!
+    let fixedNow = DoneStamp.date(from: "2026-09-05 12:00")!
+    let today = DateOnly(year: 2026, month: 9, day: 5)
+
+    override func setUpWithError() throws {
+        vault = try makeTemporaryVault()
+        store = InMemoryRemindersStore(lists: ["Reminders"])
+        store.now = { self.fixedNow }
+        engine = SyncEngine(vault: vault, store: store, deviceID: "test-device")
+        engine.now = { self.fixedNow }
+    }
+
+    override func tearDown() {
+        removeVault(vault)
+    }
+
+    func testTasksInDailyNotesShareOneList() async throws {
+        var yesterday = try vault.dailyNote(for: today.adding(days: -1))
+        yesterday.body += "- [ ] From yesterday\n"
+        try vault.save(yesterday)
+        var todayNote = try vault.dailyNote(for: today)
+        todayNote.body += "- [ ] From today >2026-09-05\n"
+        try vault.save(todayNote)
+
+        let report = try await engine.run()
+        XCTAssertEqual(report.remindersCreated, 2)
+        XCTAssertTrue(report.warnings.isEmpty)
+        let titles = try await store.reminders(inList: "Daily Notes").map(\.title)
+        XCTAssertEqual(Set(titles), ["From yesterday", "From today"])
+    }
+
+    func testReminderAddedToDailyListLandsInTodaysNote() async throws {
+        try await engine.run()
+        XCTAssertFalse(vault.dailyNoteExists(for: today))
+        try await store.simulateUserCreate(list: "Daily Notes", title: "Call the plumber")
+        let report = try await engine.run()
+        XCTAssertEqual(report.tasksCreated, 1)
+        XCTAssertTrue(vault.dailyNoteExists(for: today))
+        let note = try vault.dailyNote(for: today)
+        XCTAssertEqual(note.tasks.map(\.title), ["Call the plumber"])
+        XCTAssertNotNil(note.tasks[0].id)
+        let second = try await engine.run()
+        XCTAssertEqual(second.changeCount, 0)
+    }
+
+    func testDailySyncCanBeSwitchedOff() async throws {
+        var config = vault.config
+        config.syncDailyNotes = false
+        engine.config = config
+        var note = try vault.dailyNote(for: today)
+        note.body += "- [ ] Private\n"
+        try vault.save(note)
+        let report = try await engine.run()
+        XCTAssertEqual(report.remindersCreated, 0)
+        let lists = try await store.listNames()
+        XCTAssertFalse(lists.contains("Daily Notes"))
+    }
+}

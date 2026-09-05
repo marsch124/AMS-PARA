@@ -72,7 +72,7 @@ public final class Vault {
 
     /// Creates the PARA folders, the Inbox note and default templates when missing.
     public func bootstrap() throws {
-        for kind in [ParaKind.project, .area, .resource, .archive] {
+        for kind in [ParaKind.project, .area, .resource, .archive, .daily] {
             if let folder = config.folder(for: kind) {
                 try fm.createDirectory(at: rootURL.appendingPathComponent(folder, isDirectory: true), withIntermediateDirectories: true)
             }
@@ -109,7 +109,7 @@ public final class Vault {
     public func kind(forRelativePath path: String) -> ParaKind? {
         if path == config.inboxFile { return .inbox }
         guard let first = path.split(separator: "/").first.map(String.init) else { return nil }
-        for kind in [ParaKind.project, .area, .resource, .archive] where config.folder(for: kind) == first {
+        for kind in [ParaKind.project, .area, .resource, .archive, .daily] where config.folder(for: kind) == first {
             return kind
         }
         return nil
@@ -122,7 +122,7 @@ public final class Vault {
         if fm.fileExists(atPath: url(for: config.inboxFile).path) {
             notes.append(try loadNote(relativePath: config.inboxFile))
         }
-        for kind in [ParaKind.project, .area, .resource, .archive] {
+        for kind in [ParaKind.project, .area, .resource, .archive, .daily] {
             notes.append(contentsOf: try notes(kind: kind))
         }
         return notes
@@ -144,7 +144,33 @@ public final class Vault {
                   let rel = relativePath(for: fileURL) else { continue }
             result.append(try loadNote(relativePath: rel))
         }
+        if kind == .daily {
+            return result.sorted { $0.fileName > $1.fileName }
+        }
         return result.sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
+    }
+
+    // MARK: Daily notes
+
+    public func dailyNotePath(for date: DateOnly) -> String {
+        "\(config.calendarFolder)/\(Note.dailyFileName(for: date)).md"
+    }
+
+    public func dailyNoteExists(for date: DateOnly) -> Bool {
+        fm.fileExists(atPath: url(for: dailyNotePath(for: date)).path)
+    }
+
+    /// Loads the daily note for a date, creating it from the `Daily` template when missing.
+    public func dailyNote(for date: DateOnly) throws -> Note {
+        let path = dailyNotePath(for: date)
+        if fm.fileExists(atPath: url(for: path).path) {
+            return try loadNote(relativePath: path)
+        }
+        let template = (try? String(contentsOf: templatesURL.appendingPathComponent("Daily.md"), encoding: .utf8)) ?? Templates.daily
+        let text = Templates.fill(template, title: Note.dailyTitle(for: date), date: date)
+        let note = Note(relativePath: path, kind: .daily, text: text, modifiedAt: Date())
+        try save(note)
+        return note
     }
 
     public func loadNote(relativePath: String) throws -> Note {
@@ -168,7 +194,7 @@ public final class Vault {
     public func createNote(kind: ParaKind, title: String, extraFrontmatter: [(String, String)] = []) throws -> Note {
         let cleanTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         let fileName = Self.sanitizeFileName(cleanTitle)
-        guard !fileName.isEmpty, let folder = config.folder(for: kind) else { throw VaultError.invalidTitle }
+        guard !fileName.isEmpty, kind != .daily, let folder = config.folder(for: kind) else { throw VaultError.invalidTitle }
         let relativePath = "\(folder)/\(fileName).md"
         guard !fm.fileExists(atPath: url(for: relativePath).path) else { throw VaultError.noteAlreadyExists(relativePath) }
 
@@ -189,6 +215,7 @@ public final class Vault {
         case .project: name = "Project"
         case .area: name = "Area"
         case .resource: name = "Resource"
+        case .daily: name = "Daily"
         case .inbox, .archive: return nil
         }
         return try? String(contentsOf: templatesURL.appendingPathComponent("\(name).md"), encoding: .utf8)
@@ -197,7 +224,7 @@ public final class Vault {
     /// Moves a note into the Archive folder (keeping its original folder as a sub-folder) and marks it archived.
     @discardableResult
     public func archive(_ note: Note) throws -> Note {
-        guard note.kind != .archive, note.kind != .inbox else { return note }
+        guard note.kind != .archive, note.kind != .inbox, note.kind != .daily else { return note }
         var archived = note
         archived.frontmatter.set("status", "archived")
         archived.frontmatter.set("archived", DateOnly.today().description)

@@ -100,3 +100,56 @@ final class VaultTests: XCTestCase {
         XCTAssertEqual(vault.loadSyncState(deviceID: "other"), SyncState())
     }
 }
+
+final class DailyNoteTests: XCTestCase {
+    var vault: Vault!
+
+    override func setUpWithError() throws {
+        vault = try makeTemporaryVault()
+    }
+
+    override func tearDown() {
+        removeVault(vault)
+    }
+
+    func testDailyNoteIsCreatedOnDemandInCalendarFolder() throws {
+        let date = DateOnly(year: 2026, month: 9, day: 5)
+        XCTAssertFalse(vault.dailyNoteExists(for: date))
+        let note = try vault.dailyNote(for: date)
+        XCTAssertEqual(note.relativePath, "Calendar/20260905.md")
+        XCTAssertEqual(note.kind, .daily)
+        XCTAssertEqual(note.dailyDate, date)
+        XCTAssertTrue(note.body.contains("## Tasks"))
+        XCTAssertTrue(vault.dailyNoteExists(for: date))
+        XCTAssertEqual(vault.kind(forRelativePath: "Calendar/20260905.md"), .daily)
+
+        // Loading again returns the saved file rather than a fresh template.
+        var edited = note
+        edited.body += "- [ ] Water the plants\n"
+        try vault.save(edited)
+        XCTAssertEqual(try vault.dailyNote(for: date).tasks.map(\.title), ["Water the plants"])
+    }
+
+    func testDailyNotesAreListedNewestFirst() throws {
+        _ = try vault.dailyNote(for: DateOnly(year: 2026, month: 9, day: 3))
+        _ = try vault.dailyNote(for: DateOnly(year: 2026, month: 9, day: 5))
+        _ = try vault.dailyNote(for: DateOnly(year: 2026, month: 9, day: 4))
+        XCTAssertEqual(try vault.notes(kind: .daily).map(\.fileName), ["20260905", "20260904", "20260903"])
+        let index = NoteIndex(notes: try vault.allNotes())
+        XCTAssertEqual(index.dailyNotes.map(\.fileName), ["20260905", "20260904", "20260903"])
+        XCTAssertEqual(index.dailyNote(for: DateOnly(year: 2026, month: 9, day: 4))?.relativePath, "Calendar/20260904.md")
+    }
+
+    func testDailyFileNameParsing() {
+        XCTAssertEqual(Note.dailyDate(fromFileName: "20261231"), DateOnly(year: 2026, month: 12, day: 31))
+        XCTAssertNil(Note.dailyDate(fromFileName: "2026-12-31"))
+        XCTAssertNil(Note.dailyDate(fromFileName: "20261301"))
+        XCTAssertEqual(Note.dailyFileName(for: DateOnly(year: 2026, month: 1, day: 7)), "20260107")
+    }
+
+    func testDailyNotesCannotBeCreatedByTitleOrArchived() throws {
+        XCTAssertThrowsError(try vault.createNote(kind: .daily, title: "x"))
+        let note = try vault.dailyNote(for: DateOnly(year: 2026, month: 9, day: 5))
+        XCTAssertEqual(try vault.archive(note).relativePath, note.relativePath)
+    }
+}

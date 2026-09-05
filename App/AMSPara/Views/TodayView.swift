@@ -12,8 +12,22 @@ struct TodayView: View {
         let overdue = dated.filter { ($0.task.dueDate ?? today) < today }
         let dueToday = dated.filter { $0.task.dueDate == today }
         let important = index.openTasks().filter { $0.task.dueDate == nil && $0.task.priority >= 2 }
+        let todayNotePath = model.vault?.dailyNotePath(for: today)
+        let fromTodayNote = (model.todayNote?.openTasks ?? [])
+            .filter { $0.dueDate == nil }
+            .map { TaskRef(notePath: todayNotePath ?? "", noteTitle: "Today's note", task: $0) }
 
         List(selection: $model.selectedNotePath) {
+            Section {
+                Button {
+                    model.openDailyNote(for: today)
+                } label: {
+                    Label(model.todayNote == nil ? "Create today's note" : "Open today's note", systemImage: "calendar")
+                }
+                if !fromTodayNote.isEmpty {
+                    rows(fromTodayNote)
+                }
+            }
             if !overdue.isEmpty {
                 Section("Overdue") { rows(overdue) }
             }

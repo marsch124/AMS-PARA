@@ -13,7 +13,7 @@ You can keep editing the same files in NotePlan, Obsidian or any text editor.
 | --- | --- | --- |
 | `AMSParaCore` | `Sources/AMSParaCore` | Swift package, no UI. Markdown notes with frontmatter, NotePlan style task lines, the PARA vault on disk, a note index (backlinks, tags, open tasks) and the two-way Reminders sync engine. |
 | Unit tests | `Tests/AMSParaCoreTests` | Cover parsing, note editing, the vault and every sync scenario (create, edit, complete, delete, conflicts, second device). |
-| `AMSPara` app | `App/AMSPara` | SwiftUI app for macOS 14 and iOS 17. Sidebar (Inbox, Today, Projects, Areas, Resources, Archive), note list, markdown editor with a task checklist, Reminders sync via EventKit, settings. |
+| `AMSPara` app | `App/AMSPara` | SwiftUI app for macOS 14 and iOS 17. Sidebar (Inbox, Today, Calendar, Weekly review, Projects, Areas, Resources, Archive), note list, markdown editor with rendered preview and clickable wikilinks, task checklist, Reminders sync via EventKit, settings. |
 | `project.yml` | repository root | XcodeGen spec that produces the Xcode project for the app. |
 | `Example Vault` | `Example Vault/` | A small sample vault to try the app with. |
 
@@ -51,13 +51,35 @@ behaviour problems should show up there first.
 ```
 My PARA/
 ├── Inbox.md                 quick capture, mirrored to the "Inbox" list
+├── Calendar/                daily notes, YYYYMMDD.md like NotePlan, mirrored to the "Daily Notes" list
 ├── Projects/                one note per project, mirrored to a list with the project's name
 ├── Areas/                   one note per area, mirrored too (can be switched off)
 ├── Resources/               reference material, any depth of sub-folders
 ├── Archive/                 inactive notes, never synced
-├── Templates/               Project.md, Area.md, Resource.md (edit them as you like)
+├── Templates/               Project.md, Area.md, Resource.md, Daily.md (edit them as you like)
 └── .ams-para/               config.json and per-device sync state
 ```
+
+### Daily notes and the calendar
+
+The Calendar section shows a date picker. Picking a day opens `Calendar/YYYYMMDD.md`, creating it from
+`Templates/Daily.md` when needed. The top of a daily note lists every task in the vault that is due that day,
+with arrows to move to the previous or next day. Tasks written in daily notes sync to one shared
+"Daily Notes" list in Reminders; a reminder added to that list lands in today's note.
+
+### Weekly review
+
+The Weekly review section walks through: empty the inbox, reschedule overdue tasks, then a health check
+of every active project and area. A project is flagged when it has no open task, has overdue tasks, is past
+its due date, has not changed for 14 days, or has not been reviewed for 7 days (both configurable in
+Settings). Right-click a project to mark it reviewed (writes `reviewed: YYYY-MM-DD` into the frontmatter),
+put it on hold, mark it done or archive it. "Mark all reviewed" stamps every active project at once.
+
+### Editor and preview
+
+The editor toolbar switches between Edit, Split and Preview. The preview renders headings, lists, quotes,
+code and inline styles, tasks can be ticked off in place, and `[[wikilinks]]` are clickable. A link to a
+title that does not exist yet creates a new resource note with that title.
 
 ### Note frontmatter
 
@@ -66,6 +88,7 @@ My PARA/
 title: Website relaunch
 type: project            # project | area | resource
 status: active           # active | on-hold | done | archived
+reviewed: 2026-09-05     # set by the weekly review
 area: Business           # the area this project belongs to
 due: 2026-11-30
 tags: [web, marketing]
@@ -102,7 +125,8 @@ note, so a project sees its resources and a resource sees where it is used. Sub-
 ## How the Reminders sync works
 
 - **Mapping.** `Inbox.md` ↔ the `Inbox` list. Each project or area note ↔ a list named like the note
-  (or its `reminders-list`). Archived notes and notes with `sync: false` are left alone.
+  (or its `reminders-list`). All daily notes ↔ the `Daily Notes` list. Archived notes and notes with
+  `sync: false` are left alone.
 - **Identity.** On first sync every task line gets an id (`^t3fa2c1`). The mirrored reminder carries
   `ams-para:^t3fa2c1` in its notes field. Both survive edits, moves between notes and other devices.
 - **Fields.** Title (including `#tags`), open/done, due date and priority are kept identical on both sides.
@@ -118,8 +142,7 @@ note, so a project sees its resources and a resource sees where it is used. Sub-
 
 ## Roadmap
 
-- Calendar view and daily notes (NotePlan style `Calendar/YYYYMMDD.md`)
-- Rendered markdown preview next to the editor, clickable wikilinks
 - Reminders subtasks and times on due dates
-- Review workflows: weekly review of projects and areas, stale project detection
+- Week and month overview in the calendar, weekly notes
 - Quick capture from the share sheet on iOS and a menu bar item on macOS
+- Full-text search with tag and status filters

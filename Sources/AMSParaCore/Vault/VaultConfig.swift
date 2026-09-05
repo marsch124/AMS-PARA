@@ -14,9 +14,18 @@ public struct VaultConfig: Codable, Equatable, Sendable {
     public var resourcesFolder = "Resources"
     public var archiveFolder = "Archive"
     public var templatesFolder = "Templates"
+    public var calendarFolder = "Calendar"
     public var inboxFile = "Inbox.md"
     /// Reminders list that mirrors the Inbox note.
     public var inboxListName = "Inbox"
+    /// Reminders list shared by all daily notes. New reminders in it land in today's daily note.
+    public var dailyNotesListName = "Daily Notes"
+    /// Mirror tasks written in daily notes.
+    public var syncDailyNotes = true
+    /// A project without any change for this many days is flagged in the weekly review.
+    public var staleProjectDays = 14
+    /// Projects not reviewed for this many days are flagged in the weekly review.
+    public var reviewIntervalDays = 7
     public var conflictPolicy: ConflictPolicy = .noteWins
     /// Mirror tasks of Area notes as well as Project notes.
     public var syncAreas = true
@@ -28,7 +37,8 @@ public struct VaultConfig: Codable, Equatable, Sendable {
     public init() {}
 
     private enum CodingKeys: String, CodingKey {
-        case projectsFolder, areasFolder, resourcesFolder, archiveFolder, templatesFolder, inboxFile, inboxListName
+        case projectsFolder, areasFolder, resourcesFolder, archiveFolder, templatesFolder, calendarFolder, inboxFile, inboxListName
+        case dailyNotesListName, syncDailyNotes, staleProjectDays, reviewIntervalDays
         case conflictPolicy, syncAreas, createMissingLists, importCompletedReminders
     }
 
@@ -42,6 +52,11 @@ public struct VaultConfig: Codable, Equatable, Sendable {
         templatesFolder = try c.decodeIfPresent(String.self, forKey: .templatesFolder) ?? d.templatesFolder
         inboxFile = try c.decodeIfPresent(String.self, forKey: .inboxFile) ?? d.inboxFile
         inboxListName = try c.decodeIfPresent(String.self, forKey: .inboxListName) ?? d.inboxListName
+        calendarFolder = try c.decodeIfPresent(String.self, forKey: .calendarFolder) ?? d.calendarFolder
+        dailyNotesListName = try c.decodeIfPresent(String.self, forKey: .dailyNotesListName) ?? d.dailyNotesListName
+        syncDailyNotes = try c.decodeIfPresent(Bool.self, forKey: .syncDailyNotes) ?? d.syncDailyNotes
+        staleProjectDays = try c.decodeIfPresent(Int.self, forKey: .staleProjectDays) ?? d.staleProjectDays
+        reviewIntervalDays = try c.decodeIfPresent(Int.self, forKey: .reviewIntervalDays) ?? d.reviewIntervalDays
         conflictPolicy = try c.decodeIfPresent(ConflictPolicy.self, forKey: .conflictPolicy) ?? d.conflictPolicy
         syncAreas = try c.decodeIfPresent(Bool.self, forKey: .syncAreas) ?? d.syncAreas
         createMissingLists = try c.decodeIfPresent(Bool.self, forKey: .createMissingLists) ?? d.createMissingLists
@@ -54,6 +69,7 @@ public struct VaultConfig: Codable, Equatable, Sendable {
         case .area: return areasFolder
         case .resource: return resourcesFolder
         case .archive: return archiveFolder
+        case .daily: return calendarFolder
         case .inbox: return nil
         }
     }

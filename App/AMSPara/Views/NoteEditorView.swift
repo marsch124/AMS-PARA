@@ -11,6 +11,13 @@ struct NoteEditorView: View {
     @State private var pendingSave: Task<Void, Never>?
     @State private var showTasks = true
     @State private var showLinks = false
+    @AppStorage("editorMode") private var mode: EditorMode = .edit
+
+    enum EditorMode: String, CaseIterable, Identifiable {
+        case edit, split, preview
+        var id: String { rawValue }
+        var label: String { rawValue.capitalized }
+    }
 
     private var note: Note? { model.note(at: path) }
     private var storedText: String { note?.text ?? "" }
@@ -20,6 +27,10 @@ struct NoteEditorView: View {
             if let note {
                 NoteHeader(note: note)
                 Divider()
+                if let date = note.dailyDate {
+                    DayAgendaView(date: date)
+                    Divider()
+                }
                 if !note.tasks.isEmpty {
                     DisclosureGroup(isExpanded: $showTasks) {
                         TaskChecklist(note: note, beforeToggle: flushSave)
@@ -44,13 +55,24 @@ struct NoteEditorView: View {
                     Divider()
                 }
             }
-            TextEditor(text: $text)
-                .font(.system(.body, design: .monospaced))
-                .scrollContentBackground(.hidden)
-                .padding(8)
-                .onChange(of: text) { _, newValue in
-                    scheduleSave(newValue)
+            HStack(spacing: 0) {
+                if mode != .preview {
+                    TextEditor(text: $text)
+                        .font(.system(.body, design: .monospaced))
+                        .scrollContentBackground(.hidden)
+                        .padding(8)
+                        .onChange(of: text) { _, newValue in
+                            scheduleSave(newValue)
+                        }
                 }
+                if mode == .split {
+                    Divider()
+                }
+                if mode != .edit, let note {
+                    MarkdownPreview(note: note, beforeToggle: flushSave)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+            }
             Divider()
             HStack {
                 TextField("Add a task… (use >2026-09-10 for a date, !! for priority, #tag)", text: $newTask)
@@ -69,6 +91,13 @@ struct NoteEditorView: View {
         .navigationTitle(note?.title ?? path)
         .toolbar {
             ToolbarItemGroup {
+                Picker("Mode", selection: $mode) {
+                    ForEach(EditorMode.allCases) { m in
+                        Text(m.label).tag(m)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .help("Edit the markdown, see it rendered, or both")
                 if let note, note.kind == .project || note.kind == .area || note.kind == .resource {
                     Button {
                         flushSave()
@@ -125,11 +154,20 @@ struct NoteEditorView: View {
 }
 
 struct NoteHeader: View {
+    @EnvironmentObject private var model: AppModel
     let note: Note
+
+    private func listName(for note: Note) -> String {
+        switch note.kind {
+        case .inbox: return model.config.inboxListName
+        case .daily: return model.config.dailyNotesListName
+        default: return note.remindersListName
+        }
+    }
 
     var body: some View {
         HStack(spacing: 12) {
-            Label(note.kind.displayName, systemImage: SidebarSection.kind(note.kind).systemImage)
+            Label(note.kind == .daily ? "Daily note" : note.kind.displayName, systemImage: SidebarSection.kind(note.kind).systemImage)
             if let status = note.status {
                 Label(status.capitalized, systemImage: "circle.fill")
             }
@@ -144,7 +182,7 @@ struct NoteHeader: View {
             }
             Spacer()
             if note.kind.isTaskKind {
-                Label(note.isSyncEnabled && !note.isArchived ? "List: \(note.kind == .inbox ? "Inbox" : note.remindersListName)" : "Not synced",
+                Label(note.isSyncEnabled && !note.isArchived ? "List: \(listName(for: note))" : "Not synced",
                       systemImage: "arrow.triangle.2.circlepath")
             }
         }
@@ -219,14 +257,54 @@ struct LinkedNotesList: View {
         VStack(alignment: .leading, spacing: 4) {
             ForEach(notes) { linked in
                 Button {
-                    model.section = linked.kind == .inbox ? .inbox : .kind(linked.kind)
+                    model.section = model.sidebarSection(for: linked)
                     model.selectedNotePath = linked.relativePath
                 } label: {
-                    Label(linked.title, systemImage: SidebarSection.kind(linked.kind).systemImage)
+                    Label(linked.displayTitle, systemImage: SidebarSection.kind(linked.kind).systemImage)
                 }
                 .buttonStyle(.plain)
             }
         }
         .padding(.top, 4)
+    }
+}
+
+/// Tasks from the whole vault that are due on the day of a daily note.
+struct DayAgendaView: View {
+    @EnvironmentObject private var model: AppModel
+    let date: DateOnly
+
+    var body: some View {
+        let refs = model.index.openTasks(dueOn: date).filter { $0.notePath != model.selectedNotePath }
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text("Due on this day")
+                    .font(.subheadline.weight(.medium))
+                Spacer()
+                Button {
+                    model.openDailyNote(for: date.adding(days: -1))
+                } label: {
+                    Image(systemName: "chevron.left")
+                }
+                Button("Today") { model.openDailyNote(for: .today()) }
+                Button {
+                    model.openDailyNote(for: date.adding(days: 1))
+                } label: {
+                    Image(systemName: "chevron.right")
+                }
+            }
+            .buttonStyle(.borderless)
+            if refs.isEmpty {
+                Text("Nothing from other notes is due on this day.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(refs) { ref in
+                    TaskRow(ref: ref, showNote: true) { model.toggle(ref) }
+                }
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
     }
 }

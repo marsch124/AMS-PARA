@@ -29,12 +29,17 @@ public final class SyncEngine {
         notes.filter { note in
             guard note.kind.isTaskKind, note.isSyncEnabled, !note.isArchived else { return false }
             if note.kind == .area && !config.syncAreas { return false }
+            if note.kind == .daily && !config.syncDailyNotes { return false }
             return true
         }
     }
 
     public func listName(for note: Note) -> String {
-        note.kind == .inbox ? (note.frontmatter.string("reminders-list") ?? config.inboxListName) : note.remindersListName
+        switch note.kind {
+        case .inbox: return note.frontmatter.string("reminders-list") ?? config.inboxListName
+        case .daily: return note.frontmatter.string("reminders-list") ?? config.dailyNotesListName
+        default: return note.remindersListName
+        }
     }
 
     @discardableResult
@@ -48,7 +53,9 @@ public final class SyncEngine {
         var notesByPath: [String: Note] = [:]
         var dirtyPaths = Set<String>()
         var listForPath: [String: String] = [:]
+        /// The note that receives reminders created in a list. All daily notes share one list; today's note receives.
         var pathForList: [String: String] = [:]
+        let todayPath = vault.dailyNotePath(for: DateOnly(now()))
 
         for var note in syncableNotes(from: allNotes) {
             for var task in note.tasks where task.id == nil {
@@ -61,13 +68,19 @@ public final class SyncEngine {
                 dirtyPaths.insert(note.relativePath)
             }
             let list = listName(for: note)
-            if let existing = pathForList[list] {
+            if note.kind == .daily {
+                if pathForList[list] == nil || note.relativePath == todayPath { pathForList[list] = note.relativePath }
+            } else if let existing = pathForList[list] {
                 report.warnings.append("\(note.relativePath) and \(existing) both map to the list \"\(list)\"; only \(existing) is synced.")
                 continue
+            } else {
+                pathForList[list] = note.relativePath
             }
-            pathForList[list] = note.relativePath
             listForPath[note.relativePath] = list
             notesByPath[note.relativePath] = note
+        }
+        if config.syncDailyNotes, pathForList[config.dailyNotesListName] == nil {
+            pathForList[config.dailyNotesListName] = todayPath // fetched even before the first daily note exists
         }
         report.notesSynced = notesByPath.count
 
@@ -171,7 +184,7 @@ public final class SyncEngine {
 
         // 5. Reminders without a link: import into the note that owns the list.
         for reminder in remindersByID.values.sorted(by: { $0.identifier < $1.identifier }) where !handledReminderIDs.contains(reminder.identifier) {
-            guard let path = pathForList[reminder.listName] else { continue }
+            guard var path = pathForList[reminder.listName] else { continue }
             if let marker = Self.markerTaskID(in: reminder.notes) {
                 if allTaskIDs.contains(marker) {
                     continue // belongs to a task in a note that is not synced right now
@@ -181,6 +194,16 @@ public final class SyncEngine {
                 continue
             }
             if reminder.isCompleted && !config.importCompletedReminders { continue }
+
+            if config.syncDailyNotes, reminder.listName == config.dailyNotesListName {
+                // Reminders added to the daily list belong in today's note, created on demand.
+                if notesByPath[todayPath] == nil {
+                    notesByPath[todayPath] = try vault.dailyNote(for: DateOnly(now()))
+                    listForPath[todayPath] = reminder.listName
+                }
+                pathForList[reminder.listName] = todayPath
+                path = todayPath
+            }
 
             var id = TaskItem.makeID()
             while allTaskIDs.contains(id) { id = TaskItem.makeID() }

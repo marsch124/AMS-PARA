@@ -6,6 +6,8 @@ import AMSParaCore
 enum SidebarSection: Hashable, Identifiable {
     case inbox
     case today
+    case calendar
+    case review
     case kind(ParaKind)
 
     var id: String { title }
@@ -14,6 +16,8 @@ enum SidebarSection: Hashable, Identifiable {
         switch self {
         case .inbox: return "Inbox"
         case .today: return "Today"
+        case .calendar: return "Calendar"
+        case .review: return "Weekly review"
         case .kind(let kind): return kind.displayName
         }
     }
@@ -22,6 +26,9 @@ enum SidebarSection: Hashable, Identifiable {
         switch self {
         case .inbox: return "tray"
         case .today: return "sun.max"
+        case .calendar: return "calendar"
+        case .review: return "checklist.checked"
+        case .kind(.daily): return "calendar"
         case .kind(.project): return "flag"
         case .kind(.area): return "circle.grid.2x2"
         case .kind(.resource): return "books.vertical"
@@ -30,7 +37,7 @@ enum SidebarSection: Hashable, Identifiable {
         }
     }
 
-    static let all: [SidebarSection] = [.inbox, .today, .kind(.project), .kind(.area), .kind(.resource), .kind(.archive)]
+    static let all: [SidebarSection] = [.inbox, .today, .calendar, .review, .kind(.project), .kind(.area), .kind(.resource), .kind(.archive)]
 }
 
 @MainActor
@@ -44,6 +51,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var lastReport: SyncReport?
     @Published var errorMessage: String?
     @Published var showingNewNote = false
+    @Published var selectedDate = DateOnly.today()
 
     let remindersStore = EventKitRemindersStore()
 
@@ -100,7 +108,8 @@ final class AppModel: ObservableObject {
         switch section {
         case .inbox?: base = notes.filter { $0.kind == .inbox }
         case .kind(let kind)?: base = notes.filter { $0.kind == kind }
-        case .today?, nil: base = notes
+        case .calendar?: base = index.dailyNotes
+        case .today?, .review?, nil: base = notes
         }
         let query = searchText.trimmingCharacters(in: .whitespaces)
         guard !query.isEmpty else { return base }
@@ -110,7 +119,9 @@ final class AppModel: ObservableObject {
     func count(for section: SidebarSection) -> Int {
         switch section {
         case .inbox: return note(at: vault?.config.inboxFile)?.openTasks.count ?? 0
-        case .today: return index.openTasks(dueOnOrBefore: .today()).count
+        case .today: return index.openTasks(dueOnOrBefore: .today()).count + (todayNote?.openTasks.count ?? 0)
+        case .calendar: return 0
+        case .review: return index.review(config: config).projectsNeedingAttention.count
         case .kind(let kind): return notes.filter { $0.kind == kind }.count
         }
     }
@@ -250,6 +261,65 @@ final class AppModel: ObservableObject {
 
     func select(_ ref: TaskRef) {
         selectedNotePath = ref.notePath
+    }
+
+    // MARK: Daily notes
+
+    var todayNote: Note? {
+        guard let vault else { return nil }
+        return note(at: vault.dailyNotePath(for: .today()))
+    }
+
+    /// Shows the daily note for a date, creating the file when it does not exist yet.
+    func openDailyNote(for date: DateOnly) {
+        guard let vault else { return }
+        selectedDate = date
+        do {
+            let existed = vault.dailyNoteExists(for: date)
+            let note = try vault.dailyNote(for: date)
+            if !existed { reload() }
+            selectedNotePath = note.relativePath
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    /// Follows a `[[wikilink]]` or `related:` reference. Unknown titles become a new resource note.
+    func open(reference: String) {
+        if let target = index.note(matching: reference) {
+            section = sidebarSection(for: target)
+            selectedNotePath = target.relativePath
+        } else {
+            createNote(kind: .resource, title: reference)
+        }
+    }
+
+    func sidebarSection(for note: Note) -> SidebarSection {
+        switch note.kind {
+        case .inbox: return .inbox
+        case .daily: return .calendar
+        default: return .kind(note.kind)
+        }
+    }
+
+    // MARK: Review
+
+    func setStatus(_ status: String, for note: Note) {
+        var updated = note
+        updated.frontmatter.set("status", status)
+        save(updated)
+    }
+
+    func markReviewed(_ note: Note) {
+        var updated = note
+        updated.frontmatter.set("reviewed", DateOnly.today().description)
+        save(updated)
+    }
+
+    func markAllReviewed() {
+        for health in index.review(config: config).projects {
+            markReviewed(health.note)
+        }
     }
 
     // MARK: Sync

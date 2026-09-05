@@ -99,6 +99,8 @@ struct SidebarView: View {
             Section("Actions") {
                 row(.inbox)
                 row(.today)
+                row(.calendar)
+                row(.review)
             }
             Section("PARA") {
                 row(.kind(.project))
@@ -127,6 +129,10 @@ struct NoteListView: View {
         Group {
             if model.section == .today {
                 TodayView()
+            } else if model.section == .calendar {
+                CalendarView()
+            } else if model.section == .review {
+                ReviewView()
             } else {
                 List(model.notes(in: model.section), selection: $model.selectedNotePath) { note in
                     NoteRow(note: note)
@@ -157,7 +163,7 @@ struct NoteRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
             HStack {
-                Text(note.title)
+                Text(note.displayTitle)
                     .font(.headline)
                     .lineLimit(1)
                 Spacer()

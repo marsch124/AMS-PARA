@@ -82,10 +82,20 @@ public enum Templates {
 
     """
 
+    public static let daily = """
+    # {{title}}
+
+    ## Tasks
+
+    ## Notes
+
+    """
+
     public static let defaults: [(String, String)] = [
         ("Project", project),
         ("Area", area),
         ("Resource", resource),
+        ("Daily", daily),
     ]
 
     public static func minimal(kind: ParaKind) -> String {

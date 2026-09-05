@@ -48,6 +48,20 @@ public struct NoteIndex: Sendable {
         notes.filter { $0.kind == kind }
     }
 
+    public func dailyNote(for date: DateOnly) -> Note? {
+        notes.first { $0.kind == .daily && $0.dailyDate == date }
+    }
+
+    /// Daily notes, newest first.
+    public var dailyNotes: [Note] {
+        notes(kind: .daily).sorted { ($0.dailyDate ?? DateOnly(year: 0, month: 1, day: 1)) > ($1.dailyDate ?? DateOnly(year: 0, month: 1, day: 1)) }
+    }
+
+    /// Open tasks due on exactly this date, across the vault.
+    public func openTasks(dueOn date: DateOnly) -> [TaskRef] {
+        openTasks().filter { $0.task.dueDate == date }
+    }
+
     /// Notes that reference the given note through `related`, `area` or a wikilink.
     public func backlinks(to target: Note) -> [Note] {
         notes.filter { candidate in
@@ -97,7 +111,7 @@ public struct NoteIndex: Sendable {
                 if let limit {
                     guard let due = task.dueDate, due <= limit else { continue }
                 }
-                refs.append(TaskRef(notePath: note.relativePath, noteTitle: note.title, task: task))
+                refs.append(TaskRef(notePath: note.relativePath, noteTitle: note.displayTitle, task: task))
             }
         }
         return refs.sorted { a, b in

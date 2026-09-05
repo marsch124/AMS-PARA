@@ -52,9 +52,28 @@ struct SettingsView: View {
                     get: { model.config.importCompletedReminders },
                     set: { var c = model.config; c.importCompletedReminders = $0; model.config = c }
                 ))
+                Toggle("Sync tasks in daily notes", isOn: Binding(
+                    get: { model.config.syncDailyNotes },
+                    set: { var c = model.config; c.syncDailyNotes = $0; model.config = c }
+                ))
                 LabeledContent("Inbox list") {
                     Text(model.config.inboxListName).foregroundStyle(.secondary)
                 }
+                LabeledContent("Daily notes list") {
+                    Text(model.config.dailyNotesListName).foregroundStyle(.secondary)
+                }
+            }
+            .disabled(model.vault == nil)
+
+            Section("Weekly review") {
+                Stepper("Flag projects unchanged for \(model.config.staleProjectDays) days", value: Binding(
+                    get: { model.config.staleProjectDays },
+                    set: { var c = model.config; c.staleProjectDays = $0; model.config = c }
+                ), in: 3...90)
+                Stepper("Review projects every \(model.config.reviewIntervalDays) days", value: Binding(
+                    get: { model.config.reviewIntervalDays },
+                    set: { var c = model.config; c.reviewIntervalDays = $0; model.config = c }
+                ), in: 1...60)
             }
             .disabled(model.vault == nil)
 

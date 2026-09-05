@@ -54,6 +54,45 @@ public struct Note: Equatable, Identifiable, Sendable {
 
     public var isArchived: Bool { kind == .archive || status == "archived" }
 
+    /// Date of the last review (frontmatter `reviewed: YYYY-MM-DD`).
+    public var reviewedDate: DateOnly? { frontmatter.string("reviewed").flatMap(DateOnly.init) }
+
+    // MARK: Daily notes
+
+    /// The date of a daily note, parsed from its `YYYYMMDD` file name.
+    public var dailyDate: DateOnly? {
+        guard kind == .daily else { return nil }
+        return Self.dailyDate(fromFileName: fileName)
+    }
+
+    /// Title for lists: daily notes show their date, everything else its title.
+    public var displayTitle: String {
+        if let dailyDate { return Self.dailyTitle(for: dailyDate) }
+        return title
+    }
+
+    public static func dailyFileName(for date: DateOnly) -> String {
+        String(format: "%04d%02d%02d", date.year, date.month, date.day)
+    }
+
+    public static func dailyDate(fromFileName name: String) -> DateOnly? {
+        guard name.count == 8, name.allSatisfy(\.isNumber),
+              let y = Int(name.prefix(4)), let m = Int(name.dropFirst(4).prefix(2)), let d = Int(name.suffix(2)) else { return nil }
+        guard (1...12).contains(m), (1...31).contains(d) else { return nil }
+        return DateOnly(year: y, month: m, day: d)
+    }
+
+    private static let dailyTitleFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.setLocalizedDateFormatFromTemplate("EEEE d MMMM yyyy")
+        return f
+    }()
+
+    public static func dailyTitle(for date: DateOnly) -> String {
+        guard let d = date.date() else { return date.description }
+        return dailyTitleFormatter.string(from: d)
+    }
+
     // MARK: Tasks
 
     public var tasks: [TaskItem] { TaskParser.parse(text: body) }
