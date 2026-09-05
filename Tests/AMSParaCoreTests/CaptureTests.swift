@@ -45,7 +45,7 @@ final class CaptureTests: XCTestCase {
         XCTAssertEqual(proj.tasks.map(\.title).last, "Order timber")
 
         let asNote = try vault.capture(CaptureItem(text: "Idea: paint it green", target: .note(path: project.relativePath), asTask: false))
-        XCTAssertTrue(asNote.body.contains("## Notes\n\n- Idea: paint it green"), asNote.body)
+        XCTAssertTrue(asNote.body.contains("## Notes\n- Idea: paint it green\n\n## Log"), asNote.body)
         XCTAssertEqual(asNote.tasks.count, proj.tasks.count)
 
         // Unknown target falls back to the Inbox.

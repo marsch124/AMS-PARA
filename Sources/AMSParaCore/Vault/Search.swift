@@ -137,7 +137,8 @@ public extension NoteIndex {
                     if snippets.count >= 3 { break }
                 }
             }
-            let score = titleHits * 100 + snippets.count * 10 + matchingTasks.count
+            // Filter-only queries rank alphabetically; text queries rank title hits, then matching lines and tasks.
+            let score = terms.isEmpty ? 0 : titleHits * 100 + snippets.count * 10 + matchingTasks.count
             hits.append(SearchHit(note: note, snippets: snippets, tasks: matchingTasks, score: score))
         }
         return hits.sorted { a, b in
