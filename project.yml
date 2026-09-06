@@ -21,7 +21,7 @@ targets:
     supportedDestinations: [macOS, iOS]
     sources:
       - path: App/AMSPara
-      # The built-in manual (Help window / Settings › Help).
+      # The built-in manual (Help window on the Mac, Settings › Help on iOS).
       - path: Docs
         buildPhase: resources
     dependencies:

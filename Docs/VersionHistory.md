@@ -2,7 +2,7 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
-## Build 36 · 6 September 2026
+## Build 38 · 6 September 2026
 
 - Help window with "How it works" and this version history (Help menu on the Mac, Settings on the iPhone).
 
