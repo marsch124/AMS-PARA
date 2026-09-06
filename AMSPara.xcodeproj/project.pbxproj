@@ -11,14 +11,17 @@
 		0BD4DC143F66D61A46238F28 /* EventKitRemindersStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCB04B70CDFB28FD255C4149 /* EventKitRemindersStore.swift */; };
 		30DF8BF3C1DD0B32BA9D8073 /* NoteEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 403193EDBD38B8EB95F7C32E /* NoteEditorView.swift */; };
 		367B46E4AD9FBE0BF3EA3D67 /* NewNoteSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A28013418FEE2D1E68273077 /* NewNoteSheet.swift */; };
+		3F0E4FE31790FED26C66AD0F /* EventKitCalendarStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEED58829F0DE7A3707EF53D /* EventKitCalendarStore.swift */; };
 		3FA8B1783809D1503A596D6E /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4343D781DF4A81E01E682FF0 /* SettingsView.swift */; };
 		4AE4994914726E80EA9C8683 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2AE2B575A4F05EC63D4C938 /* AppModel.swift */; };
 		55C0764CEA0669DB4C911299 /* AMSParaCore in Frameworks */ = {isa = PBXBuildFile; productRef = 9E8CFBF9DD318F6701D06248 /* AMSParaCore */; };
 		634C64428784F5535783DC9A /* CalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6D9406CB697C17B2747C712 /* CalendarView.swift */; };
+		63E046AEA3C04F78D93BBA87 /* MapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F563A6A27F37FC6C941E37C9 /* MapView.swift */; };
 		69D50D37D44839621E2B8E69 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 430BFC78AB8859246FCD8ADF /* ShareViewController.swift */; };
 		7D6D9A41515B97C47A2823F0 /* MarkdownPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = 475521B1BB3F759D39D00A7F /* MarkdownPreview.swift */; };
 		86C54DC290836705CA9C3A92 /* AMSParaCore in Frameworks */ = {isa = PBXBuildFile; productRef = F7CF4C0007B418F963C29980 /* AMSParaCore */; };
 		87199E938B8710A8608E02F5 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C89ED3979DFE4EFB210B7A4C /* Assets.xcassets */; };
+		A72635878B8AC29A52635331 /* CalendarEventsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 016F923C39E3E0D45D10EE6A /* CalendarEventsView.swift */; };
 		A9750BF51AD3DF889DB43016 /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59DD66653AAD1A175F8EE394 /* SearchView.swift */; };
 		ACABE9A7CCDD400655D1D1D7 /* AMSParaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50BF0E0DB1E09D863C11A8E7 /* AMSParaApp.swift */; };
 		C7021A1E9F577B7B88A2AF68 /* AMSParaShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = BB669E0865BFFF9DAAA0D3A6 /* AMSParaShare.appex */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -52,6 +55,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		016F923C39E3E0D45D10EE6A /* CalendarEventsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarEventsView.swift; sourceTree = "<group>"; };
 		01F12F197F301FEABE165113 /* AMSParaShare.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AMSParaShare.entitlements; sourceTree = "<group>"; };
 		18996845A6C27F5C318269B6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		2DD675CDC0435EC39A5C6B82 /* TodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayView.swift; sourceTree = "<group>"; };
@@ -71,9 +75,11 @@
 		C325F2E1C12D18223DCA517D /* QuickCaptureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickCaptureView.swift; sourceTree = "<group>"; };
 		C6D9406CB697C17B2747C712 /* CalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarView.swift; sourceTree = "<group>"; };
 		C89ED3979DFE4EFB210B7A4C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		CEED58829F0DE7A3707EF53D /* EventKitCalendarStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventKitCalendarStore.swift; sourceTree = "<group>"; };
 		D2AE2B575A4F05EC63D4C938 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
 		D998BC850FEFFD3EE7DF84DD /* AMSPara.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AMSPara.entitlements; sourceTree = "<group>"; };
 		EAF9BFCE2DA28A17EAE0B303 /* ReviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewView.swift; sourceTree = "<group>"; };
+		F563A6A27F37FC6C941E37C9 /* MapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -118,8 +124,10 @@
 		3F62FB7C8EAC4FFE0112F2C8 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				016F923C39E3E0D45D10EE6A /* CalendarEventsView.swift */,
 				C6D9406CB697C17B2747C712 /* CalendarView.swift */,
 				7C0DAA2A1126D74DAECDC589 /* ContentView.swift */,
+				F563A6A27F37FC6C941E37C9 /* MapView.swift */,
 				475521B1BB3F759D39D00A7F /* MarkdownPreview.swift */,
 				A28013418FEE2D1E68273077 /* NewNoteSheet.swift */,
 				403193EDBD38B8EB95F7C32E /* NoteEditorView.swift */,
@@ -139,6 +147,7 @@
 				50BF0E0DB1E09D863C11A8E7 /* AMSParaApp.swift */,
 				D2AE2B575A4F05EC63D4C938 /* AppModel.swift */,
 				C89ED3979DFE4EFB210B7A4C /* Assets.xcassets */,
+				CEED58829F0DE7A3707EF53D /* EventKitCalendarStore.swift */,
 				BCB04B70CDFB28FD255C4149 /* EventKitRemindersStore.swift */,
 				8F5093D66F6721E9FE21B241 /* Info.plist */,
 				3F62FB7C8EAC4FFE0112F2C8 /* Views */,
@@ -274,9 +283,12 @@
 			files = (
 				ACABE9A7CCDD400655D1D1D7 /* AMSParaApp.swift in Sources */,
 				4AE4994914726E80EA9C8683 /* AppModel.swift in Sources */,
+				A72635878B8AC29A52635331 /* CalendarEventsView.swift in Sources */,
 				634C64428784F5535783DC9A /* CalendarView.swift in Sources */,
 				DE75D183962F75FD70FB939B /* ContentView.swift in Sources */,
+				3F0E4FE31790FED26C66AD0F /* EventKitCalendarStore.swift in Sources */,
 				0BD4DC143F66D61A46238F28 /* EventKitRemindersStore.swift in Sources */,
+				63E046AEA3C04F78D93BBA87 /* MapView.swift in Sources */,
 				7D6D9A41515B97C47A2823F0 /* MarkdownPreview.swift in Sources */,
 				367B46E4AD9FBE0BF3EA3D67 /* NewNoteSheet.swift in Sources */,
 				30DF8BF3C1DD0B32BA9D8073 /* NoteEditorView.swift in Sources */,
