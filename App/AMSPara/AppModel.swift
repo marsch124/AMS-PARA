@@ -137,6 +137,17 @@ final class AppModel: ObservableObject {
                 set: { value in self.afterUpdate { if self.section != value { self.section = value } } })
     }
 
+    /// Sheet dismissal and alert dismissal are also written by SwiftUI mid-update.
+    var sheetSelection: Binding<AppSheet?> {
+        Binding(get: { self.activeSheet },
+                set: { value in self.afterUpdate { if self.activeSheet != value { self.activeSheet = value } } })
+    }
+
+    var errorPresented: Binding<Bool> {
+        Binding(get: { self.errorMessage != nil },
+                set: { shown in if !shown { self.afterUpdate { self.errorMessage = nil } } })
+    }
+
     var noteSelection: Binding<String?> {
         Binding(get: { self.selectedNotePath },
                 set: { value in self.afterUpdate { if self.selectedNotePath != value { self.selectedNotePath = value } } })

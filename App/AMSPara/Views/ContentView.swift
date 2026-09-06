@@ -48,7 +48,7 @@ struct ContentView: View {
         }
         // One sheet modifier for the whole window: stacking several of them makes
         // SwiftUI present an empty sheet and leave the window modal.
-        .sheet(item: $model.activeSheet) { sheet in
+        .sheet(item: model.sheetSelection) { sheet in
             switch sheet {
             case .newNote:
                 NewNoteSheet()
@@ -91,10 +91,7 @@ struct ContentView: View {
             }
         }
         .animation(.easeInOut(duration: 0.2), value: model.lastCaptureMessage)
-        .alert("Something went wrong", isPresented: Binding(
-            get: { model.errorMessage != nil },
-            set: { if !$0 { model.errorMessage = nil } }
-        )) {
+        .alert("Something went wrong", isPresented: model.errorPresented) {
             Button("OK") { model.errorMessage = nil }
         } message: {
             Text(model.errorMessage ?? "")
