@@ -15,6 +15,7 @@ public struct VaultConfig: Codable, Equatable, Sendable {
     public var archiveFolder = "Archive"
     public var templatesFolder = "Templates"
     public var calendarFolder = "Calendar"
+    public var goalsFolder = "Goals"
     public var inboxFile = "Inbox.md"
     /// Reminders list that mirrors the Inbox note.
     public var inboxListName = "Inbox"
@@ -37,7 +38,7 @@ public struct VaultConfig: Codable, Equatable, Sendable {
     public init() {}
 
     private enum CodingKeys: String, CodingKey {
-        case projectsFolder, areasFolder, resourcesFolder, archiveFolder, templatesFolder, calendarFolder, inboxFile, inboxListName
+        case projectsFolder, areasFolder, resourcesFolder, archiveFolder, templatesFolder, calendarFolder, goalsFolder, inboxFile, inboxListName
         case dailyNotesListName, syncDailyNotes, staleProjectDays, reviewIntervalDays
         case conflictPolicy, syncAreas, createMissingLists, importCompletedReminders
     }
@@ -53,6 +54,7 @@ public struct VaultConfig: Codable, Equatable, Sendable {
         inboxFile = try c.decodeIfPresent(String.self, forKey: .inboxFile) ?? d.inboxFile
         inboxListName = try c.decodeIfPresent(String.self, forKey: .inboxListName) ?? d.inboxListName
         calendarFolder = try c.decodeIfPresent(String.self, forKey: .calendarFolder) ?? d.calendarFolder
+        goalsFolder = try c.decodeIfPresent(String.self, forKey: .goalsFolder) ?? d.goalsFolder
         dailyNotesListName = try c.decodeIfPresent(String.self, forKey: .dailyNotesListName) ?? d.dailyNotesListName
         syncDailyNotes = try c.decodeIfPresent(Bool.self, forKey: .syncDailyNotes) ?? d.syncDailyNotes
         staleProjectDays = try c.decodeIfPresent(Int.self, forKey: .staleProjectDays) ?? d.staleProjectDays
@@ -70,6 +72,7 @@ public struct VaultConfig: Codable, Equatable, Sendable {
         case .resource: return resourcesFolder
         case .archive: return archiveFolder
         case .daily: return calendarFolder
+        case .goal: return goalsFolder
         case .inbox: return nil
         }
     }

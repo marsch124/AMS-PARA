@@ -21,7 +21,7 @@ struct SearchView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
                     Menu {
-                        ForEach([ParaKind.project, .area, .resource, .archive, .daily, .inbox], id: \.self) { kind in
+                        ForEach([ParaKind.goal, .project, .area, .resource, .archive, .daily, .inbox], id: \.self) { kind in
                             Button {
                                 toggle("type:\(kind.rawValue)")
                             } label: {

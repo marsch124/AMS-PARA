@@ -35,6 +35,10 @@ struct NoteEditorView: View {
                     WeekAgendaView(week: week)
                     Divider()
                 }
+                if note.kind == .goal {
+                    GoalDashboardView(goal: note)
+                    Divider()
+                }
                 if !note.tasks.isEmpty {
                     DisclosureGroup(isExpanded: $showTasks) {
                         TaskChecklist(note: note, beforeToggle: flushSave)
@@ -180,6 +184,22 @@ struct NoteHeader: View {
             if let area = note.area {
                 Label(area, systemImage: "circle.grid.2x2")
                     .foregroundStyle(ParaKind.area.tint)
+            }
+            if let goal = note.goal {
+                Button {
+                    model.open(reference: goal)
+                } label: {
+                    Label(goal, systemImage: "star")
+                        .foregroundStyle(ParaKind.goal.tint)
+                }
+                .buttonStyle(.plain)
+                .help("Open the goal this note serves")
+            }
+            if let horizon = note.horizon {
+                Label(horizon.label, systemImage: "scope")
+            }
+            if let target = note.targetDate {
+                Label("Target \(target.description)", systemImage: "flag.checkered")
             }
             if let due = note.dueDate {
                 Label("Due \(due.description)", systemImage: "calendar")
@@ -391,5 +411,79 @@ struct WeekAgendaView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
+    }
+}
+
+/// What serves a goal and whether it is moving: linked projects and areas, rolled-up tasks, recent completions.
+struct GoalDashboardView: View {
+    @EnvironmentObject private var model: AppModel
+    let goal: Note
+
+    var body: some View {
+        let health = model.index.goalHealth(of: goal, today: .today())
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 14) {
+                stat("\(health.projects.count)", "projects")
+                stat("\(health.areas.count)", "areas")
+                stat("\(health.openTaskCount)", "open tasks")
+                stat("\(health.completedLast30Days)", "done in 30 days")
+                if let days = health.daysSinceActivity {
+                    stat(days == 0 ? "today" : "\(days)d", "last activity")
+                }
+                Spacer()
+            }
+            if !health.flags.isEmpty {
+                HStack(spacing: 6) {
+                    ForEach(health.flags, id: \.self) { flag in
+                        Text(flag.label)
+                            .font(.caption2)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(flag == .achieved ? goal.tint.opacity(0.18) : Color.orange.opacity(0.18), in: Capsule())
+                            .foregroundStyle(flag == .achieved ? goal.tint : Color.orange)
+                    }
+                }
+            }
+            if let measure = goal.measure {
+                Text("Measure: \(measure)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            let serving = health.subgoals + health.projects + health.areas
+            if serving.isEmpty {
+                Text("Nothing serves this goal yet. Add `goal: \(goal.title)` to a project or area's frontmatter.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(serving) { note in
+                    Button {
+                        model.section = model.sidebarSection(for: note)
+                        model.selectedNotePath = note.relativePath
+                    } label: {
+                        HStack(spacing: 8) {
+                            KindBadge(kind: note.kind, size: 18)
+                            Text(note.title)
+                            Spacer()
+                            let open = note.openTasks.count
+                            if open > 0 {
+                                Text("\(open) open")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+    }
+
+    private func stat(_ value: String, _ label: String) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(value).font(.headline).foregroundStyle(goal.tint)
+            Text(label).font(.caption2).foregroundStyle(.secondary)
+        }
     }
 }

@@ -72,7 +72,7 @@ public final class Vault {
 
     /// Creates the PARA folders, the Inbox note and default templates when missing.
     public func bootstrap() throws {
-        for kind in [ParaKind.project, .area, .resource, .archive, .daily] {
+        for kind in [ParaKind.project, .area, .resource, .archive, .daily, .goal] {
             if let folder = config.folder(for: kind) {
                 try fm.createDirectory(at: rootURL.appendingPathComponent(folder, isDirectory: true), withIntermediateDirectories: true)
             }
@@ -109,7 +109,7 @@ public final class Vault {
     public func kind(forRelativePath path: String) -> ParaKind? {
         if path == config.inboxFile { return .inbox }
         guard let first = path.split(separator: "/").first.map(String.init) else { return nil }
-        for kind in [ParaKind.project, .area, .resource, .archive, .daily] where config.folder(for: kind) == first {
+        for kind in [ParaKind.project, .area, .resource, .archive, .daily, .goal] where config.folder(for: kind) == first {
             return kind
         }
         return nil
@@ -122,7 +122,7 @@ public final class Vault {
         if fm.fileExists(atPath: url(for: config.inboxFile).path) {
             result.append(try loadNote(relativePath: config.inboxFile))
         }
-        for kind in [ParaKind.project, .area, .resource, .archive, .daily] {
+        for kind in [ParaKind.project, .area, .resource, .archive, .daily, .goal] {
             result.append(contentsOf: try notes(kind: kind))
         }
         return result
@@ -246,6 +246,7 @@ public final class Vault {
         case .area: name = "Area"
         case .resource: name = "Resource"
         case .daily: name = "Daily"
+        case .goal: name = "Goal"
         case .inbox, .archive: return nil
         }
         return try? String(contentsOf: templatesURL.appendingPathComponent("\(name).md"), encoding: .utf8)

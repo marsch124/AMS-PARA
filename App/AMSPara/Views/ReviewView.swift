@@ -12,6 +12,9 @@ struct ReviewView: View {
                 LabeledContent("Completed in the last 7 days", value: "\(report.completedLast7Days)")
                 LabeledContent("Overdue tasks", value: "\(report.overdueTasks.count)")
                 LabeledContent("Projects needing attention", value: "\(report.projectsNeedingAttention.count)")
+                if !report.goals.isEmpty {
+                    LabeledContent("Goals needing attention", value: "\(report.goalsNeedingAttention.count)")
+                }
             }
 
             Section("1. Empty the inbox") {
@@ -33,6 +36,15 @@ struct ReviewView: View {
                     ForEach(report.overdueTasks) { ref in
                         TaskRow(ref: ref, showNote: true) { model.toggle(ref) }
                             .tag(ref.notePath)
+                    }
+                }
+            }
+
+            if !report.goals.isEmpty {
+                Section("Goals") {
+                    ForEach(report.goals) { health in
+                        GoalHealthRow(health: health)
+                            .tag(health.note.relativePath)
                     }
                 }
             }
@@ -125,5 +137,57 @@ struct HealthRow: View {
                 Button("Archive") { model.archive(health.note) }
             }
         }
+    }
+}
+
+struct GoalHealthRow: View {
+    let health: GoalHealth
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
+                KindBadge(kind: .goal, size: 20)
+                Text(health.note.title)
+                    .font(.headline)
+                if let horizon = health.note.horizon {
+                    Text(horizon.label)
+                        .font(.caption2)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(health.note.tint.opacity(0.18), in: Capsule())
+                        .foregroundStyle(health.note.tint)
+                }
+                Spacer()
+                if let days = health.daysSinceActivity {
+                    Text(days == 0 ? "moved today" : "moved \(days)d ago")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            HStack(spacing: 8) {
+                Label("\(health.projects.count) projects", systemImage: "flag")
+                Label("\(health.areas.count) areas", systemImage: "circle.grid.2x2")
+                Label("\(health.openTaskCount) open", systemImage: "checklist")
+                Label("\(health.completedLast30Days) done in 30d", systemImage: "checkmark")
+                if let target = health.note.targetDate {
+                    Label(target.description, systemImage: "flag.checkered")
+                }
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            if !health.flags.isEmpty {
+                HStack(spacing: 6) {
+                    ForEach(health.flags, id: \.self) { flag in
+                        Text(flag.label)
+                            .font(.caption2)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(flag == .achieved ? health.note.tint.opacity(0.18) : Color.orange.opacity(0.18), in: Capsule())
+                            .foregroundStyle(flag == .achieved ? health.note.tint : Color.orange)
+                    }
+                }
+            }
+        }
+        .padding(.vertical, 3)
     }
 }

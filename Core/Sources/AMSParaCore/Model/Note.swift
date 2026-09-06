@@ -1,5 +1,20 @@
 import Foundation
 
+/// How far out a goal reaches.
+public enum GoalHorizon: String, CaseIterable, Codable, Sendable {
+    case life
+    case long
+    case year
+
+    public var label: String {
+        switch self {
+        case .life: return "Life goal"
+        case .long: return "Long term"
+        case .year: return "This year"
+        }
+    }
+}
+
 /// A markdown note: optional YAML frontmatter followed by a body.
 public struct Note: Equatable, Identifiable, Sendable {
     /// Path relative to the vault root, e.g. `Projects/Website relaunch.md`.
@@ -44,6 +59,19 @@ public struct Note: Equatable, Identifiable, Sendable {
     public var tags: [String] { frontmatter.list("tags") }
     public var related: [String] { frontmatter.list("related") }
     public var area: String? { frontmatter.string("area") }
+    /// The goal this note serves (projects, areas, or a dated goal pointing at a life goal).
+    public var goal: String? { frontmatter.string("goal") }
+
+    // MARK: Goal notes
+
+    /// `life` for enduring direction without a date, `long` for 3 to 10 years, `year` for 1 to 2 years.
+    public var horizon: GoalHorizon? {
+        guard kind == .goal else { return nil }
+        return frontmatter.string("horizon").flatMap { GoalHorizon(rawValue: $0.lowercased()) } ?? .year
+    }
+    public var targetDate: DateOnly? { frontmatter.string("target").flatMap(DateOnly.init) }
+    public var measure: String? { frontmatter.string("measure") }
+    public var isAchieved: Bool { status == "achieved" || status == "done" }
     public var dueDate: DateOnly? { frontmatter.string("due").flatMap(DateOnly.init) }
 
     /// `sync: false` in the frontmatter keeps a note out of Reminders.
@@ -246,10 +274,11 @@ public struct Note: Equatable, Identifiable, Sendable {
         return out
     }
 
-    /// Everything this note points at: frontmatter `related`, `area`, and wikilinks.
+    /// Everything this note points at: frontmatter `related`, `area`, `goal`, and wikilinks.
     public var outgoingReferences: [String] {
         var refs = related
         if let area { refs.append(area) }
+        if let goal { refs.append(goal) }
         refs.append(contentsOf: wikilinks)
         return refs
     }

@@ -34,16 +34,50 @@ public struct ProjectHealth: Identifiable, Equatable, Sendable {
     public var needsAttention: Bool { !flags.isEmpty && flags != [.onHold] }
 }
 
+/// Health of one goal: what serves it and whether anything is moving.
+public struct GoalHealth: Identifiable, Equatable, Sendable {
+    public enum Flag: String, CaseIterable, Sendable {
+        case nothingServing
+        case pastTarget
+        case noRecentActivity
+        case achieved
+
+        public var label: String {
+            switch self {
+            case .nothingServing: return "No project or area serves this"
+            case .pastTarget: return "Past its target date"
+            case .noRecentActivity: return "Nothing moved in 30 days"
+            case .achieved: return "Achieved"
+            }
+        }
+    }
+
+    public var note: Note
+    public var projects: [Note]
+    public var areas: [Note]
+    /// Dated goals that point at this (life) goal.
+    public var subgoals: [Note]
+    public var openTaskCount: Int
+    public var completedLast30Days: Int
+    public var daysSinceActivity: Int?
+    public var flags: [Flag]
+
+    public var id: String { note.relativePath }
+    public var needsAttention: Bool { !flags.isEmpty && flags != [.achieved] }
+}
+
 /// Everything the weekly review screen needs.
 public struct ReviewReport: Equatable, Sendable {
     public var today: DateOnly
     public var inboxOpenTasks: Int
     public var projects: [ProjectHealth]
     public var areas: [ProjectHealth]
+    public var goals: [GoalHealth]
     public var completedLast7Days: Int
     public var overdueTasks: [TaskRef]
 
     public var projectsNeedingAttention: [ProjectHealth] { projects.filter(\.needsAttention) }
+    public var goalsNeedingAttention: [GoalHealth] { goals.filter(\.needsAttention) }
 }
 
 public extension NoteIndex {
@@ -90,6 +124,52 @@ public extension NoteIndex {
                              daysSinceReview: daysSinceReview, flags: flags)
     }
 
+    // MARK: Goals
+
+    /// Notes whose `goal:` key resolves to this goal, split by kind.
+    func serving(_ goal: Note) -> (projects: [Note], areas: [Note], subgoals: [Note]) {
+        let linked = notes.filter { candidate in
+            candidate.relativePath != goal.relativePath && !candidate.isArchived &&
+            candidate.goal.map { note(matching: $0)?.relativePath == goal.relativePath } == true
+        }
+        return (linked.filter { $0.kind == .project && $0.status != "done" && $0.status != "completed" },
+                linked.filter { $0.kind == .area },
+                linked.filter { $0.kind == .goal })
+    }
+
+    func goalHealth(of goal: Note, today: DateOnly, calendar: Calendar = .current) -> GoalHealth {
+        let (projects, areas, subgoals) = serving(goal)
+        let servingNotes = projects + areas + subgoals
+        let monthAgo = today.adding(days: -30, calendar: calendar)
+        var open = 0
+        var completed = 0
+        var lastActivity: DateOnly? = goal.modifiedAt.map { DateOnly($0, calendar: calendar) }
+        for note in servingNotes {
+            open += note.openTasks.count
+            for task in note.tasks where task.status == .done {
+                guard let stamp = task.doneStamp, let day = DateOnly(String(stamp.prefix(10))) else { continue }
+                if day >= monthAgo { completed += 1 }
+                if lastActivity.map({ day > $0 }) ?? true { lastActivity = day }
+            }
+            if let modified = note.modifiedAt.map({ DateOnly($0, calendar: calendar) }), lastActivity.map({ modified > $0 }) ?? true {
+                lastActivity = modified
+            }
+        }
+        let daysSinceActivity = lastActivity.map { today.days(since: $0, calendar: calendar) }
+
+        var flags: [GoalHealth.Flag] = []
+        if goal.isAchieved {
+            flags.append(.achieved)
+        } else {
+            if servingNotes.isEmpty { flags.append(.nothingServing) }
+            if let target = goal.targetDate, target < today { flags.append(.pastTarget) }
+            if let days = daysSinceActivity, days >= 30 { flags.append(.noRecentActivity) }
+        }
+        return GoalHealth(note: goal, projects: projects, areas: areas, subgoals: subgoals,
+                          openTaskCount: open, completedLast30Days: completed,
+                          daysSinceActivity: daysSinceActivity, flags: flags)
+    }
+
     func review(today: DateOnly = .today(), config: VaultConfig, calendar: Calendar = .current) -> ReviewReport {
         let active = { (note: Note) in !note.isArchived && note.status != "done" && note.status != "completed" }
         let projects = notes(kind: .project).filter(active).map { health(of: $0, today: today, config: config, calendar: calendar) }
@@ -101,7 +181,15 @@ public extension NoteIndex {
         let inbox = notes(kind: .inbox).first?.openTasks.count ?? 0
         let completed = tasksCompleted(since: today.adding(days: -7, calendar: calendar)).count
         let overdue = openTasks(dueOnOrBefore: today.adding(days: -1, calendar: calendar))
-        return ReviewReport(today: today, inboxOpenTasks: inbox, projects: projects, areas: areas,
+        let goals = notes(kind: .goal).filter { !$0.isArchived }
+            .map { goalHealth(of: $0, today: today, calendar: calendar) }
+            .sorted { a, b in
+                if a.needsAttention != b.needsAttention { return a.needsAttention }
+                let ha = a.note.horizon ?? .year, hb = b.note.horizon ?? .year
+                if ha != hb { return ha == .life }
+                return a.note.title.localizedCaseInsensitiveCompare(b.note.title) == .orderedAscending
+            }
+        return ReviewReport(today: today, inboxOpenTasks: inbox, projects: projects, areas: areas, goals: goals,
                             completedLast7Days: completed, overdueTasks: overdue)
     }
 }

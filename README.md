@@ -57,6 +57,7 @@ behaviour problems should show up there first.
 My PARA/
 ├── Inbox.md                 quick capture, mirrored to the "Inbox" list
 ├── Calendar/                daily notes YYYYMMDD.md and weekly notes YYYY-Www.md, like NotePlan
+├── Goals/                   life goals and dated goals, never synced; projects and areas link up with goal:
 ├── Projects/                one note per project, mirrored to a list with the project's name
 ├── Areas/                   one note per area, mirrored too (can be switched off)
 ├── Resources/               reference material, any depth of sub-folders
@@ -100,6 +101,34 @@ Three ways to get a thought into the system without opening the right note first
 
 Captured text uses the task syntax: `>2026-09-10T14:30`, `!!` and `#tags` are picked up as usual.
 
+### Goals
+
+Goals sit above PARA: they are the reason projects and areas exist, so they get their own `Goals/` folder
+and a gold colour rather than a place inside the four buckets. Two horizons:
+
+- **Life goals** (`horizon: life`) have no date. They give direction.
+- **Dated goals** (`horizon: year` or `long`) carry a `target:` date and a `measure:`, and can point at a
+  life goal with `goal:`.
+
+A project or area serves a goal by naming it in its frontmatter: `goal: Walk the Kungsleden`. The goal note
+then shows everything that serves it, with open tasks rolled up, what got completed in the last 30 days,
+and how long since anything moved. Goal notes are never synced to Reminders; their work lives in projects.
+
+The weekly review gains a goals pass that flags a goal nothing serves, a goal past its target date, and a
+goal nothing has touched for 30 days. That check is what keeps a goals folder from turning into a museum.
+
+```yaml
+---
+title: Walk the Kungsleden
+type: goal
+horizon: year          # life | long | year
+status: active         # active | achieved
+target: 2028-08-15
+measure: All 440 km in one summer
+goal: Stay fit for the mountains   # optional parent life goal
+---
+```
+
 ### Colour
 
 Each PARA bucket has its own colour, used everywhere it appears: the sidebar, note lists,
@@ -107,6 +136,7 @@ note headers, tasks, search results, the review and the calendar.
 
 | Bucket | Colour |
 | --- | --- |
+| Goals | gold |
 | Projects | green |
 | Areas | pink |
 | Resources | blue |

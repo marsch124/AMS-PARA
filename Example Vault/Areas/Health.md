@@ -2,6 +2,7 @@
 title: Health
 type: area
 status: active
+goal: Stay fit for the mountains
 created: 2026-09-05
 tags: [health]
 ---

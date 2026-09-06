@@ -32,6 +32,7 @@ enum SidebarSection: Hashable, Identifiable {
         case .review: return "checklist.checked"
         case .search: return "magnifyingglass"
         case .kind(.daily): return "calendar"
+        case .kind(.goal): return "star"
         case .kind(.project): return "flag"
         case .kind(.area): return "circle.grid.2x2"
         case .kind(.resource): return "books.vertical"
@@ -40,7 +41,7 @@ enum SidebarSection: Hashable, Identifiable {
         }
     }
 
-    static let all: [SidebarSection] = [.inbox, .today, .calendar, .review, .search, .kind(.project), .kind(.area), .kind(.resource), .kind(.archive)]
+    static let all: [SidebarSection] = [.inbox, .today, .calendar, .review, .search, .kind(.goal), .kind(.project), .kind(.area), .kind(.resource), .kind(.archive)]
 }
 
 /// The sheets the main window can present.
@@ -248,10 +249,10 @@ final class AppModel: ObservableObject {
         save(note)
     }
 
-    func createNote(kind: ParaKind, title: String) {
+    func createNote(kind: ParaKind, title: String, extraFrontmatter: [(String, String)] = []) {
         guard let vault else { return }
         do {
-            let note = try vault.createNote(kind: kind, title: title)
+            let note = try vault.createNote(kind: kind, title: title, extraFrontmatter: extraFrontmatter)
             reload()
             section = .kind(kind)
             selectedNotePath = note.relativePath

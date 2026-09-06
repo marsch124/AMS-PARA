@@ -59,7 +59,7 @@ public struct SearchQuery: Equatable, Sendable {
 
     private static let kindAliases: [String: ParaKind] = [
         "projects": .project, "areas": .area, "resources": .resource, "archived": .archive,
-        "calendar": .daily, "week": .daily, "weekly": .daily, "note": .resource,
+        "calendar": .daily, "week": .daily, "weekly": .daily, "note": .resource, "goals": .goal,
     ]
 
     /// Splits on whitespace, keeping quoted phrases together (quotes removed).

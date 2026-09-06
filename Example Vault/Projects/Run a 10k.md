@@ -3,6 +3,7 @@ title: Run a 10k
 type: project
 status: active
 area: Health
+goal: Walk the Kungsleden
 due: 2026-10-25
 created: 2026-09-05
 tags: [running]

@@ -145,6 +145,9 @@ struct SidebarView: View {
                 row(.review)
                 row(.search)
             }
+            Section("Goals") {
+                row(.kind(.goal))
+            }
             Section("PARA") {
                 row(.kind(.project))
                 row(.kind(.area))
@@ -237,6 +240,17 @@ struct NoteRow: View {
                     if let due = note.dueDate {
                         Label(due.description, systemImage: "calendar")
                     }
+                    if let horizon = note.horizon {
+                        Label(horizon.label, systemImage: "scope")
+                            .foregroundStyle(note.tint)
+                    }
+                    if let target = note.targetDate {
+                        Label(target.description, systemImage: "flag.checkered")
+                    }
+                    if let goal = note.goal, note.kind != .goal {
+                        Label(goal, systemImage: "star")
+                            .foregroundStyle(ParaKind.goal.tint)
+                    }
                     if let area = note.area {
                         Label(area, systemImage: "circle.grid.2x2")
                             .foregroundStyle(ParaKind.area.tint)
@@ -299,6 +313,7 @@ extension ParaKind {
         case .area: return Color("AreaTint")
         case .resource: return Color("ResourceTint")
         case .archive: return Color("ArchiveTint")
+        case .goal: return Color("GoalTint")
         case .inbox: return Color("InboxTint")
         case .daily: return Color("CalendarTint")
         }
