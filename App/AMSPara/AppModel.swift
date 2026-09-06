@@ -91,8 +91,20 @@ final class AppModel: ObservableObject {
     private var securityScopedURL: URL?
     private var autoSyncTask: Task<Void, Never>?
 
+    private var publishWatch: AnyCancellable?
+
     init() {
         restoreVault()
+        #if DEBUG
+        // Reports our own frames whenever a change is published while SwiftUI is mid-update,
+        // which is what "Publishing changes from within view updates" complains about.
+        publishWatch = objectWillChange.sink { _ in
+            let frames = Thread.callStackSymbols
+            guard frames.contains(where: { $0.contains("AG::") || $0.contains("AttributeGraph") || $0.contains("ViewGraph") }) else { return }
+            let ours = frames.filter { $0.contains("AMSPara") }.prefix(8)
+            print("AMSPARA-PUBLISH during view update:\n" + ours.joined(separator: "\n"))
+        }
+        #endif
     }
 
     // MARK: Derived state

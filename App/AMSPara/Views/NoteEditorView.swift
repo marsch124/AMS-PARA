@@ -92,7 +92,16 @@ struct NoteEditorView: View {
             .padding(8)
         }
         .onAppear { text = storedText }
-        .onDisappear { flushSave() }
+        .onDisappear {
+            // Runs while SwiftUI is swapping views; save after the update, not inside it.
+            pendingSave?.cancel()
+            pendingSave = nil
+            if isDirty {
+                let unsaved = text
+                isDirty = false
+                model.afterUpdate { model.saveText(unsaved, forNoteAt: path) }
+            }
+        }
         .onChange(of: storedText) { _, newValue in
             if !isDirty && newValue != text { text = newValue }
         }
