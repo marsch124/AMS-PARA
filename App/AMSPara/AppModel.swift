@@ -12,6 +12,7 @@ enum SidebarSection: Hashable, Identifiable {
     case calendar
     case review
     case map
+    case timeBlocks
     case search
     case kind(ParaKind)
 
@@ -24,6 +25,7 @@ enum SidebarSection: Hashable, Identifiable {
         case .calendar: return "Calendar"
         case .review: return "Weekly review"
         case .map: return "Map"
+        case .timeBlocks: return "Time Blocks"
         case .search: return "Search"
         case .kind(let kind): return kind.displayName
         }
@@ -36,6 +38,7 @@ enum SidebarSection: Hashable, Identifiable {
         case .calendar: return "calendar"
         case .review: return "checklist.checked"
         case .map: return "point.3.filled.connected.trianglepath.dotted"
+        case .timeBlocks: return "calendar.badge.clock"
         case .search: return "magnifyingglass"
         case .kind(.daily): return "calendar"
         case .kind(.goal): return "star"
@@ -47,7 +50,7 @@ enum SidebarSection: Hashable, Identifiable {
         }
     }
 
-    static let all: [SidebarSection] = [.inbox, .today, .calendar, .review, .map, .search, .kind(.goal), .kind(.project), .kind(.area), .kind(.resource), .kind(.archive)]
+    static let all: [SidebarSection] = [.inbox, .today, .calendar, .timeBlocks, .review, .map, .search, .kind(.goal), .kind(.project), .kind(.area), .kind(.resource), .kind(.archive)]
 }
 
 /// The sheets the main window can present.
@@ -61,7 +64,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 34
+    static let number = 35
 }
 
 @MainActor
@@ -113,12 +116,18 @@ final class AppModel: ObservableObject {
     @Published private(set) var eventsByDay: [DateOnly: [CalendarEvent]] = [:]
     /// nil until Calendar access has been asked for; false when it was refused.
     @Published private(set) var calendarAccessGranted: Bool?
+    /// Every calendar on this Mac, loaded once access is granted.
+    @Published private(set) var calendars: [CalendarInfo] = []
+    /// The blocks AMS PARA wrote to Apple Calendar, a week back and two months ahead.
+    @Published private(set) var timeBlocks: [TimeBlock] = []
 
     private let defaults = UserDefaults.standard
     private let bookmarkKey = "vaultBookmark"
     private let deviceIDKey = "deviceID"
     private let autoSyncKey = "autoSyncMinutes"
     private let showCalendarKey = "showCalendarEvents"
+    private let visibleCalendarsKey = "visibleCalendarIDs"
+    private let timeBlockCalendarKey = "timeBlockCalendarID"
     private var securityScopedURL: URL?
     private var autoSyncTask: Task<Void, Never>?
 
@@ -133,6 +142,11 @@ final class AppModel: ObservableObject {
         restoreVault()
         calendarStore.onChange = { [weak self] in
             Task { await self?.refreshEvents() }
+        }
+        if calendarStore.hasAccess {
+            calendarAccessGranted = true
+            calendars = calendarStore.calendars()
+            Task { await loadTimeBlocks() }
         }
         #if os(macOS)
         installClickMonitor()
@@ -199,6 +213,37 @@ final class AppModel: ObservableObject {
         }
     }
 
+    /// Calendars whose events are shown; nil means all of them.
+    var visibleCalendarIDs: Set<String>? {
+        get { (defaults.array(forKey: visibleCalendarsKey) as? [String]).map(Set.init) }
+        set {
+            objectWillChange.send()
+            if let newValue { defaults.set(Array(newValue).sorted(), forKey: visibleCalendarsKey) }
+            else { defaults.removeObject(forKey: visibleCalendarsKey) }
+            Task { await refreshEvents() }
+        }
+    }
+
+    func isCalendarVisible(_ id: String) -> Bool {
+        visibleCalendarIDs?.contains(id) ?? true
+    }
+
+    func setCalendar(_ id: String, visible: Bool) {
+        var ids = visibleCalendarIDs ?? Set(calendars.map(\.id))
+        if visible { ids.insert(id) } else { ids.remove(id) }
+        visibleCalendarIDs = ids.count == calendars.count ? nil : ids
+    }
+
+    /// The calendar new time blocks are written to; nil means Calendar's default.
+    var timeBlockCalendarID: String? {
+        get { defaults.string(forKey: timeBlockCalendarKey) ?? calendarStore.defaultCalendarID }
+        set {
+            objectWillChange.send()
+            if let newValue { defaults.set(newValue, forKey: timeBlockCalendarKey) }
+            else { defaults.removeObject(forKey: timeBlockCalendarKey) }
+        }
+    }
+
     /// Whether Today and daily notes show the day's Apple Calendar events (on by default).
     var showsCalendarEvents: Bool {
         get { defaults.object(forKey: showCalendarKey) as? Bool ?? true }
@@ -252,7 +297,7 @@ final class AppModel: ObservableObject {
         case .inbox?: base = notes.filter { $0.kind == .inbox }
         case .kind(let kind)?: base = notes.filter { $0.kind == kind }
         case .calendar?: base = index.dailyNotes
-        case .today?, .review?, .map?, .search?, nil: base = notes
+        case .today?, .review?, .map?, .timeBlocks?, .search?, nil: base = notes
         }
         let query = searchText.trimmingCharacters(in: .whitespaces)
         guard !query.isEmpty else { return base }
@@ -264,6 +309,7 @@ final class AppModel: ObservableObject {
         case .inbox: return note(at: vault?.config.inboxFile)?.openTasks.count ?? 0
         case .today: return index.openTasks(dueOnOrBefore: .today()).count + (todayNote?.openTasks.count ?? 0)
         case .calendar, .map, .search: return 0
+        case .timeBlocks: return timeBlocks.filter { $0.day == .today() }.count
         case .review: return index.review(config: config).projectsNeedingAttention.count
         case .kind(let kind): return notes.filter { $0.kind == kind }.count
         }
@@ -754,22 +800,104 @@ final class AppModel: ObservableObject {
         eventsByDay[day] ?? []
     }
 
-    /// Loads a day's events, asking for Calendar access the first time. Read only.
-    func loadEvents(for day: DateOnly) async {
-        guard showsCalendarEvents else { return }
+    /// Asks for Calendar access the first time and loads the calendar list.
+    @discardableResult
+    func ensureCalendarAccess() async -> Bool {
         if calendarAccessGranted == nil {
             let granted = await calendarStore.requestAccess()
             calendarAccessGranted = granted
             log("calendar access \(granted ? "granted" : "refused")")
         }
-        guard calendarAccessGranted == true else { return }
-        let events = calendarStore.events(on: day)
+        guard calendarAccessGranted == true else { return false }
+        if calendars.isEmpty { calendars = calendarStore.calendars() }
+        return true
+    }
+
+    /// Loads a day's events from the chosen calendars.
+    func loadEvents(for day: DateOnly) async {
+        guard showsCalendarEvents, await ensureCalendarAccess() else { return }
+        let events = calendarStore.events(on: day, calendarIDs: visibleCalendarIDs)
         if eventsByDay[day] != events { eventsByDay[day] = events }
     }
 
-    /// Reloads every day shown so far, e.g. after Calendar reported a change.
+    /// Reloads every day shown so far and the time blocks, e.g. after Calendar reported a change.
     func refreshEvents() async {
+        guard calendarAccessGranted == true else { return }
+        calendars = calendarStore.calendars()
         for day in Array(eventsByDay.keys) { await loadEvents(for: day) }
+        await loadTimeBlocks()
+    }
+
+    /// Opens the event in the Calendar app.
+    func openInCalendar(_ event: CalendarEvent) {
+        openInCalendar(eventIdentifier: event.eventIdentifier, start: event.start)
+    }
+
+    func openInCalendar(_ block: TimeBlock) {
+        openInCalendar(eventIdentifier: block.id, start: block.start)
+    }
+
+    private func openInCalendar(eventIdentifier: String, start: Date) {
+        #if os(macOS)
+        if let url = URL(string: "ical://ekevent/\(eventIdentifier)") {
+            NSWorkspace.shared.open(url)
+        }
+        #else
+        if let url = URL(string: "calshow:\(start.timeIntervalSinceReferenceDate)") {
+            UIApplication.shared.open(url)
+        }
+        #endif
+    }
+
+    // MARK: Time blocks
+
+    func loadTimeBlocks() async {
+        guard await ensureCalendarAccess() else { return }
+        let now = Date()
+        let from = Calendar.current.date(byAdding: .day, value: -7, to: now) ?? now
+        let to = Calendar.current.date(byAdding: .day, value: 60, to: now) ?? now
+        let blocks = calendarStore.timeBlocks(from: from, to: to)
+        if blocks != timeBlocks { timeBlocks = blocks }
+    }
+
+    /// Creates or updates a block in Apple Calendar. Returns false when it could not be saved.
+    @discardableResult
+    func saveTimeBlock(id: String?, title: String, start: Date, end: Date, notes: String, calendarID: String?) async -> Bool {
+        guard await ensureCalendarAccess() else {
+            errorMessage = "AMS PARA needs Calendar access to write time blocks. Allow it in System Settings › Privacy & Security › Calendars."
+            return false
+        }
+        let name = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return false }
+        guard end > start else {
+            errorMessage = "A time block has to end after it starts."
+            return false
+        }
+        do {
+            let block = try calendarStore.saveTimeBlock(id: id, title: name, start: start, end: end, notes: notes,
+                                                        calendarID: calendarID ?? timeBlockCalendarID)
+            log("time block \(id == nil ? "created" : "updated"): \(block.title) \(block.start)")
+            await loadTimeBlocks()
+            eventsByDay[block.day] = nil
+            await loadEvents(for: block.day)
+            flash(id == nil ? "Added to \(block.calendarTitle)" : "Time block updated")
+            return true
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
+        }
+    }
+
+    func deleteTimeBlock(_ block: TimeBlock) async {
+        do {
+            try calendarStore.deleteTimeBlock(id: block.id)
+            log("time block deleted: \(block.title)")
+            await loadTimeBlocks()
+            eventsByDay[block.day] = nil
+            await loadEvents(for: block.day)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 
     // MARK: Sync

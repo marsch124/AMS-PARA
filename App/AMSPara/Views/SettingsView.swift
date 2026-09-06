@@ -76,7 +76,35 @@ struct SettingsView: View {
                         .font(.caption)
                         .foregroundStyle(.orange)
                 }
-                Text("Events are read from Apple Calendar only. Nothing is written to your calendars.")
+                if model.calendarAccessGranted == true, !model.calendars.isEmpty {
+                    DisclosureGroup("Calendars to show") {
+                        ForEach(model.calendars) { calendar in
+                            Toggle(isOn: Binding(
+                                get: { model.isCalendarVisible(calendar.id) },
+                                set: { model.setCalendar(calendar.id, visible: $0) }
+                            )) {
+                                Label {
+                                    Text(calendar.title) + Text("  \(calendar.sourceTitle)").foregroundStyle(.secondary)
+                                } icon: {
+                                    Image(systemName: "circle.fill").foregroundStyle(calendar.color)
+                                }
+                            }
+                        }
+                    }
+                    Picker("Time blocks go to", selection: Binding(
+                        get: { model.timeBlockCalendarID },
+                        set: { model.timeBlockCalendarID = $0 }
+                    )) {
+                        ForEach(model.calendars.filter(\.isWritable)) { calendar in
+                            Text(calendar.title).tag(Optional(calendar.id))
+                        }
+                    }
+                } else if model.calendarAccessGranted == nil {
+                    Button("Connect Apple Calendar…") {
+                        Task { await model.ensureCalendarAccess() }
+                    }
+                }
+                Text("Events are only read. The one thing written to your calendar is the time blocks you add in the Time Blocks section.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

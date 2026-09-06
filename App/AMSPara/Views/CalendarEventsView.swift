@@ -28,6 +28,7 @@ struct CalendarEventRows: View {
 }
 
 struct CalendarEventRow: View {
+    @EnvironmentObject private var model: AppModel
     let event: CalendarEvent
     let date: DateOnly
 
@@ -42,8 +43,17 @@ struct CalendarEventRow: View {
                 .foregroundStyle(.secondary)
                 .frame(minWidth: 96, alignment: .leading)
             VStack(alignment: .leading, spacing: 1) {
-                Text(event.title)
-                    .lineLimit(1)
+                HStack(spacing: 6) {
+                    Text(event.title)
+                        .lineLimit(1)
+                    if event.isTimeBlock {
+                        Text("block")
+                            .font(.caption2)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 1)
+                            .background(event.color.opacity(0.18), in: Capsule())
+                    }
+                }
                 if let location = event.location {
                     Text(location)
                         .font(.caption)
@@ -52,7 +62,20 @@ struct CalendarEventRow: View {
                 }
             }
             Spacer(minLength: 0)
+            Button {
+                model.openInCalendar(event)
+            } label: {
+                Image(systemName: "arrow.up.forward.app")
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+            .help("Open in Calendar")
         }
-        .help("\(event.title) (\(event.calendarTitle))")
+        .contentShape(Rectangle())
+        .onTapGesture(count: 2) { model.openInCalendar(event) }
+        .contextMenu {
+            Button("Open in Calendar") { model.openInCalendar(event) }
+        }
+        .help("\(event.title) (\(event.calendarTitle)). Double-click to open in Calendar.")
     }
 }

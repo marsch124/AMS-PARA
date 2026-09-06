@@ -91,6 +91,19 @@ scroll views, so list rows keep their heights), and runs at launch, after
 section/note changes and after every click; `repairOverflow` also resets the
 host frame if it still overflows. Help › Copy Diagnostics shows "tamed N".
 
+## Calendar choice, Time Blocks, open in Calendar (build 35)
+
+Settings › Apple Calendar lists every calendar with a toggle (`visibleCalendarIDs`,
+nil = all) and "Time blocks go to" (`timeBlockCalendarID`). Sidebar **Time
+Blocks** (`TimeBlocksView`): a form (title, day, start, duration, calendar,
+notes) writes ordinary events to Apple Calendar marked with URL
+`amspara://timeblock` and the note marker `ams-para:timeblock`; the list shows
+blocks from a week back to 60 days ahead, click to edit, right-click to open
+in Calendar or delete. Blocks are deliberately separate from tasks. Every
+event row has "Open in Calendar" (double-click, arrow button, context menu):
+macOS `ical://ekevent/<id>`, iOS `calshow:`. Adding a source file needs a
+`project.yml` change so CI regenerates the committed Xcode project.
+
 ## Not built (by choice)
 
 Saved searches. Roadmap stopped there on his request.

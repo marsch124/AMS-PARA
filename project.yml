@@ -1,4 +1,5 @@
 # XcodeGen spec. Run `xcodegen generate` and open AMSPara.xcodeproj.
+# Any change here makes CI regenerate the committed project (needed after adding source files).
 name: AMSPara
 options:
   bundleIdPrefix: com.schabbauer

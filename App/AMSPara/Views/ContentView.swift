@@ -139,6 +139,7 @@ struct SidebarView: View {
                 row(.inbox)
                 row(.today)
                 row(.calendar)
+                row(.timeBlocks)
                 row(.review)
                 row(.map)
                 row(.search)
@@ -194,6 +195,8 @@ struct NoteListView: View {
                 ReviewView()
             } else if model.section == .map {
                 MapView()
+            } else if model.section == .timeBlocks {
+                TimeBlocksView()
             } else if model.section == .search {
                 SearchView()
             } else {
@@ -302,6 +305,9 @@ struct DetailView: View {
         if let path = model.selectedNotePath, model.note(at: path) != nil {
             NoteEditorView(path: path)
                 .id(path)
+        } else if model.section == .timeBlocks {
+            ContentUnavailableView("Time blocks live in Apple Calendar", systemImage: "calendar.badge.clock",
+                                   description: Text("Add a block on the left. It becomes an event in the calendar you chose and shows up on all your devices. Click a block to edit it, right-click to open it in Calendar or delete it."))
         } else {
             ContentUnavailableView("No note selected", systemImage: "doc.text",
                                    description: Text("Choose a note on the left, or press ⌘N to create one."))
@@ -353,6 +359,7 @@ extension SidebarSection {
         case .inbox: return Color("InboxTint")
         case .today: return Color("CalendarTint")
         case .calendar: return Color("CalendarTint")
+        case .timeBlocks: return Color("CalendarTint")
         case .review: return Color("ReviewTint")
         case .map: return Color("GoalTint")
         case .search: return Color("ResourceTint")
