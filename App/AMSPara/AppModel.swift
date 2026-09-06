@@ -61,7 +61,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 33
+    static let number = 34
 }
 
 @MainActor
@@ -73,10 +73,20 @@ final class AppModel: ObservableObject {
     /// Rebuilt whenever `notes` changes, so views never build it during a redraw.
     @Published private(set) var index = NoteIndex(notes: [])
     @Published var section: SidebarSection? = .inbox {
-        didSet { if section != oldValue { log("section -> \(section.map(\.title) ?? "nil")") } }
+        didSet { if section != oldValue { log("section -> \(section.map(\.title) ?? "nil")"); tameSoon() } }
     }
     @Published var selectedNotePath: String? {
-        didSet { if selectedNotePath != oldValue { log("note -> \(selectedNotePath ?? "nil")") } }
+        didSet { if selectedNotePath != oldValue { log("note -> \(selectedNotePath ?? "nil")"); tameSoon() } }
+    }
+
+    /// Columns are re-created when the section changes; tame the new ones once they exist.
+    private func tameSoon() {
+        #if os(macOS)
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(400))
+            tameSplitViewColumns()
+        }
+        #endif
     }
     /// The full-text search query (Search section), separate from the list filter.
     @Published var queryText = ""
@@ -126,6 +136,12 @@ final class AppModel: ObservableObject {
         }
         #if os(macOS)
         installClickMonitor()
+        for delay in [0.5, 2.0, 5.0] {
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(delay))
+                tameSplitViewColumns()
+            }
+        }
         #endif
         // Reports our own frames whenever a change is published while SwiftUI is mid-update,
         // which is what "Publishing changes from within view updates" complains about.
@@ -530,13 +546,52 @@ final class AppModel: ObservableObject {
         }
     }
 
+    /// The split view sizes itself from its columns' intrinsic content size, and a column
+    /// whose SwiftUI content fills the space it is given reports "what I have, plus the
+    /// toolbar inset" every time it is re-measured. Each change (a task added, a section
+    /// opened) then grew the split view past the window. Dropping the columns' intrinsic
+    /// sizing breaks that loop; the split view is laid out by the window alone.
+    @discardableResult
+    func tameSplitViewColumns(in window: NSWindow? = nil) -> Int {
+        guard let window = window ?? NSApp.keyWindow ?? NSApp.windows.first(where: { $0.isVisible }),
+              let content = window.contentView, let root = content.subviews.first else { return 0 }
+        var changed = 0
+        func walk(_ view: NSView, underSplit: Bool) {
+            for sub in view.subviews {
+                if sub is NSScrollView { continue }   // list rows and text views keep their sizing
+                let inSplit = underSplit || sub is NSSplitView
+                if inSplit, let host = sub as? IntrinsicSizingResettable, host.resetIntrinsicSizing() {
+                    changed += 1
+                }
+                walk(sub, underSplit: inSplit)
+            }
+        }
+        walk(root, underSplit: false)
+        if changed > 0 {
+            log("tamed \(changed) split view column(s)")
+            content.needsLayout = true
+        }
+        return changed
+    }
+
     private func repairOverflow(after cause: String) {
         guard let window = NSApp.keyWindow ?? NSApp.windows.first(where: { $0.isVisible }),
               let content = window.contentView, let host = content.subviews.first else { return }
+        tameSplitViewColumns(in: window)
         let grown = host.subviews.first { $0.frame.height > content.bounds.height + 1 || $0.frame.minY < -1 }
         guard let grown else { return }
         log("OVERFLOW after \(cause): \(type(of: grown)) frame=\(grown.frame) in \(content.bounds.size)")
         log(layoutReport("overflow"))
+        // Put the split view back where the window is; SwiftUI's next pass keeps it there
+        // now that the columns no longer ask for more.
+        grown.frame = CGRect(origin: .zero, size: content.bounds.size)
+        grown.subviews.first?.frame = grown.bounds
+        content.needsLayout = true
+        content.layoutSubtreeIfNeeded()
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(300))
+            self.log(self.layoutReport("after repair"))
+        }
     }
 
     /// Records the window's view tree, so a layout that went wrong can be read from the
@@ -554,17 +609,21 @@ final class AppModel: ObservableObject {
               let content = window.contentView else { return "LAYOUT \(label): no window" }
         var lines = ["LAYOUT \(label): window \(window.frame.size) content \(content.bounds.size) safeArea \(content.safeAreaInsets)"]
         func walk(_ view: NSView, depth: Int) {
-            if depth <= 2 || view is NSScrollView {
+            if depth <= 6 || view is NSScrollView {
                 var line = String(repeating: "  ", count: depth) + "\(type(of: view)) frame=\(view.frame)"
+                if let host = view as? IntrinsicSizingResettable {
+                    line += " hosting(intrinsic=\((host as? NSView)?.intrinsicContentSize ?? .zero))"
+                }
                 if let scroll = view as? NSScrollView {
                     line += " visibleOrigin=\(scroll.documentVisibleRect.origin) insets=\(scroll.contentInsets) doc=\(scroll.documentView?.frame.size ?? .zero)"
                 }
                 lines.append(line)
             }
+            if view is NSScrollView { return }
             for sub in view.subviews { walk(sub, depth: depth + 1) }
         }
         walk(content, depth: 0)
-        return lines.joined(separator: "\n")
+        return lines.prefix(80).joined(separator: "\n")
     }
     #endif
 
@@ -746,3 +805,20 @@ final class AppModel: ObservableObject {
         }
     }
 }
+
+#if os(macOS)
+/// Lets any NSHostingView, whatever its content type, drop its intrinsic content size.
+@MainActor protocol IntrinsicSizingResettable: AnyObject {
+    /// Returns true when something changed.
+    func resetIntrinsicSizing() -> Bool
+}
+
+extension NSHostingView: IntrinsicSizingResettable {
+    func resetIntrinsicSizing() -> Bool {
+        guard !sizingOptions.isEmpty else { return false }
+        sizingOptions = []
+        invalidateIntrinsicContentSize()
+        return true
+    }
+}
+#endif

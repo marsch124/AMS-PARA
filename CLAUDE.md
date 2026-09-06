@@ -78,6 +78,19 @@ the day's events above the tasks. Settings › Apple Calendar can turn it off.
 Info.plist carries `NSCalendarsFullAccessUsageDescription` via `project.yml`.
 Nothing is written to Calendar; tasks are not turned into events.
 
+## Split view sizing (build 34)
+
+Root cause of every "columns hidden under the toolbar" report: on macOS the
+NavigationSplitView representable sizes itself from its columns' NSHostingView
+intrinsic content size, and a column whose content fills its space reports
+"current height + toolbar inset" whenever it is re-measured (task added,
+disclosure opened, section switched), so the split view grew past the window
+each time. `AppModel.tameSplitViewColumns` walks the window, sets
+`sizingOptions = []` on every NSHostingView under the NSSplitView (not inside
+scroll views, so list rows keep their heights), and runs at launch, after
+section/note changes and after every click; `repairOverflow` also resets the
+host frame if it still overflows. Help › Copy Diagnostics shows "tamed N".
+
 ## Not built (by choice)
 
 Saved searches. Roadmap stopped there on his request.
