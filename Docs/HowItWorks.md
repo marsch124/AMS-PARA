@@ -126,7 +126,9 @@ Time Blocks are the one thing the app writes to Calendar. They are blocks of tim
 
 ## Mac and iPhone together
 
-Keep the vault in iCloud Drive and pick the same folder on both devices. iCloud carries the files across. Each device syncs with Reminders on its own. If you edit the same note on both devices at the same moment, iCloud keeps one version, so let one device finish first.
+Keep the vault in iCloud Drive and pick the same folder on both devices. iCloud carries the files across. Each device syncs with Reminders on its own.
+
+The app checks every few seconds whether files changed outside it and reloads them. It never writes over a newer file. If you were typing in a note that changed elsewhere at the same time, your text is saved as a copy named "… (conflict date time).md" next to the note, and the note shows the other version. Merge the two by hand when that happens; it is rare.
 
 ## Keyboard shortcuts
 

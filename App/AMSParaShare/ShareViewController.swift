@@ -52,13 +52,19 @@ final class ShareViewController: UIViewController {
         }
     }
 
-    private var outboxURL: URL {
-        let base = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: Self.appGroupID)
-            ?? FileManager.default.temporaryDirectory
-        return base.appendingPathComponent("capture-outbox.jsonl")
+    /// The shared outbox. Nil when the App Group is not available, in which case the capture
+    /// must fail visibly instead of landing somewhere the app never looks.
+    private var outboxURL: URL? {
+        FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: Self.appGroupID)?
+            .appendingPathComponent("capture-outbox.jsonl")
     }
 
     private func save(_ item: CaptureItem) {
+        guard let outboxURL else {
+            extensionContext?.cancelRequest(withError: NSError(domain: "AMSParaShare", code: 1, userInfo: [
+                NSLocalizedDescriptionKey: "AMS PARA's shared folder is not available. Open the app once and try again."]))
+            return
+        }
         do {
             try CaptureOutbox(fileURL: outboxURL).append(item)
             extensionContext?.completeRequest(returningItems: nil)

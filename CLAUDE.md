@@ -106,6 +106,39 @@ event row has "Open in Calendar" (double-click, arrow button, context menu):
 macOS `ical://ekevent/<id>`, iOS `calshow:`. Adding a source file needs a
 `project.yml` change so CI regenerates the committed Xcode project.
 
+## Hardening audit (build 39)
+
+Three reviews (sync engine, vault/markdown/capture, app layer) and the fixes:
+- `Frontmatter` keeps unknown lines as `.raw` entries in an ordered list; a
+  leading `---` around prose is not frontmatter; CRLF/BOM handled; quotes unescaped.
+- `Vault.save` throws `modifiedOnDisk` when the file is newer than
+  `note.modifiedAt` (1 s tolerance) and returns the note with the new date;
+  `saveConflictCopy` writes "<name> (conflict yyyy-MM-dd HHmm).md".
+  `loadNote` decodes UTF-8 → UTF-16 (BOM) → CP1252; unreadable files land in
+  `vault.skippedFiles` instead of failing `allNotes()`. `isNotePath` guards
+  paths from links. `archive` never overwrites an older archived note.
+- `Note.replace(task:previousID:)` matches by id/title and searches when lines
+  moved. `@done` stamps survive on cancelled tasks.
+- `SyncEngine.run`: ids persisted before Reminders is touched; every note
+  change is recorded as a mutation and re-applied to a fresh copy on
+  `modifiedOnDisk`; lists from existing links are fetched too (rename moves
+  reminders); a link whose list was not fetched or whose note is missing is
+  kept, never cancelled/deleted; marked reminders unknown to this device are
+  never deleted; duplicate ids get fresh ones; `^t`/`@done` stripped from
+  reminder titles; imported reminders get their marker after notes+state are
+  saved; on error the partial state is saved before rethrowing.
+  `InMemoryRemindersStore` has `beforeFetch`, `failNextCreate`, `failNextUpdate`.
+- App: `flushEditor` hook (NoteEditorView) is called before every model write,
+  before sync, on scene background and `NSApplication.willTerminate`;
+  `saveText` keeps a conflict copy on `modifiedOnDisk`, `save` reloads and asks
+  to redo; `checkForExternalChanges` (10 s signature poll + on activate)
+  reloads; `openVault` opens the new folder before dropping the old scope;
+  open/close refuse while syncing; `drainOutbox` requeues failures; capture
+  keeps items on failure; `handle(url:)` never creates notes; the share
+  extension fails visibly without the App Group.
+- Not done (by choice): caching task parsing for the month view (perf only),
+  limiting first sync of old daily notes.
+
 ## Not built (by choice)
 
 Saved searches. Roadmap stopped there on his request.

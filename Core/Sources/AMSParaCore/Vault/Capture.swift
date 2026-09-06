@@ -60,7 +60,10 @@ public struct CaptureItem: Codable, Equatable, Identifiable, Sendable {
         let items = components.queryItems ?? []
         func value(_ name: String) -> String? { items.first { $0.name == name }?.value }
         let text = (value("text") ?? value("title") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        let link = value("url").flatMap(URL.init(string:))
+        // Only web and mail links are kept; anything else (file:, javascript:) is dropped.
+        let link = value("url").flatMap(URL.init(string:)).flatMap { url -> URL? in
+            ["http", "https", "mailto"].contains(url.scheme?.lowercased() ?? "") ? url : nil
+        }
         guard !text.isEmpty || link != nil else { return nil }
         let asNote = ["1", "true", "yes"].contains((value("note") ?? "").lowercased())
         self.init(text: text.isEmpty ? (link?.absoluteString ?? "") : text, url: link,
@@ -114,13 +117,13 @@ public struct CaptureOutbox: Sendable {
         try FileManager.default.createDirectory(at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
         var line = try Self.encoder.encode(item)
         line.append(contentsOf: [0x0A])
-        if let handle = try? FileHandle(forWritingTo: fileURL) {
-            defer { try? handle.close() }
-            try handle.seekToEnd()
-            try handle.write(contentsOf: line)
-        } else {
-            try line.write(to: fileURL, options: .atomic)
-        }
+        // O_APPEND makes each line land at the end even when the app and the share
+        // extension write at the same moment.
+        let fd = open(fileURL.path, O_WRONLY | O_APPEND | O_CREAT, 0o644)
+        guard fd >= 0 else { throw CocoaError(.fileWriteUnknown) }
+        let handle = FileHandle(fileDescriptor: fd, closeOnDealloc: true)
+        defer { try? handle.close() }
+        try handle.write(contentsOf: line)
     }
 
     /// Items waiting in the outbox, oldest first. Lines that fail to decode are skipped.
@@ -130,11 +133,20 @@ public struct CaptureOutbox: Sendable {
             .sorted { $0.createdAt < $1.createdAt }
     }
 
-    /// Returns the waiting items and empties the outbox.
+    /// Returns the waiting items and empties the outbox. The file is renamed first, so an
+    /// item the share extension appends meanwhile lands in a fresh outbox and is not lost.
     public func drain() -> [CaptureItem] {
-        let items = peek()
-        try? FileManager.default.removeItem(at: fileURL)
-        return items
+        let taken = fileURL.deletingLastPathComponent().appendingPathComponent("capture-outbox.\(UUID().uuidString).jsonl")
+        guard (try? FileManager.default.moveItem(at: fileURL, to: taken)) != nil else { return [] }
+        defer { try? FileManager.default.removeItem(at: taken) }
+        guard let data = try? Data(contentsOf: taken) else { return [] }
+        return data.split(separator: 0x0A).compactMap { try? Self.decoder.decode(CaptureItem.self, from: $0) }
+            .sorted { $0.createdAt < $1.createdAt }
+    }
+
+    /// Puts items back, e.g. ones that could not be filed yet.
+    public func requeue(_ items: [CaptureItem]) {
+        for item in items { try? append(item) }
     }
 }
 
@@ -149,7 +161,8 @@ public extension Vault {
         case .today:
             note = try dailyNote(for: today)
         case .note(let path):
-            if let existing = try? loadNote(relativePath: path) {
+            // The path may come from a link another app opened: it has to be a note inside the vault.
+            if isNotePath(path), let existing = try? loadNote(relativePath: path) {
                 note = existing
             } else {
                 note = try inboxNote()

@@ -2,6 +2,19 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 39 · 6 September 2026
+
+Hardening after a code audit. Nothing new to learn; the app is more careful with your files.
+
+- A note changed on the iPhone, in iCloud or in another editor is never overwritten. The app reloads such changes every few seconds and when it comes to the front. If you were typing in that note at the same time, your version is kept as a "(conflict …)" copy next to it.
+- Unsaved typing is written before every sync, before ticking a task, and when the app quits or goes to the background.
+- Frontmatter lines the app does not understand (comments, nested values, keys with spaces) are kept exactly as written. Windows line endings are read correctly. Quoted values no longer gain backslashes.
+- Reminders sync: renaming a project moves its reminders instead of cancelling its tasks; a second device never deletes reminders for notes it has not received yet; a task line copied into another note gets its own id; ids typed into a reminder title cannot hijack a task; a failure while talking to Reminders no longer leaves half-done work.
+- A note the app cannot read is skipped and logged instead of hiding the whole vault. Files in Windows text encoding are read.
+- Archiving a second note with the same name keeps both. Cancelled tasks keep their done stamp.
+- Capture links can no longer point at files outside the vault or at the app's own settings; only web and mail links are kept. Captures that cannot be filed yet wait in the outbox instead of being dropped.
+- Choosing a folder that cannot be opened leaves the current vault working.
+
 ## Build 38 · 6 September 2026
 
 - Help window with "How it works" and this version history (Help menu on the Mac, Settings on the iPhone).

@@ -130,7 +130,7 @@ public extension NoteIndex {
     func serving(_ goal: Note) -> (projects: [Note], areas: [Note], subgoals: [Note]) {
         let linked = notes.filter { candidate in
             candidate.relativePath != goal.relativePath && !candidate.isArchived &&
-            candidate.goal.map { note(matching: $0)?.relativePath == goal.relativePath } == true
+            candidate.goal.map { self.goal(matching: $0)?.relativePath == goal.relativePath } == true
         }
         return (linked.filter { $0.kind == .project && $0.status != "done" && $0.status != "completed" },
                 linked.filter { $0.kind == .area },

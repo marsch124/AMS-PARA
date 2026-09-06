@@ -64,7 +64,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 38
+    static let number = 39
 }
 
 @MainActor
@@ -133,6 +133,14 @@ final class AppModel: ObservableObject {
 
     private var publishWatch: AnyCancellable?
 
+    /// Set by the note editor while a note is open: writes any unsaved text now. Called before
+    /// every change the model makes to notes, before a sync, and when the app quits, so the
+    /// editor's text and the model's copy never overwrite each other.
+    var flushEditor: (() -> Void)?
+    private var externalChangeTask: Task<Void, Never>?
+    private var vaultSignature: String?
+    private var terminationObserver: NSObjectProtocol?
+
     /// A short in-memory log of what the app did, for Help \u{203A} Copy Diagnostics.
     /// Not published: the publish watcher below appends to it.
     private(set) var diagnostics: [String] = []
@@ -140,6 +148,12 @@ final class AppModel: ObservableObject {
     init() {
         log("launch build \(BuildStamp.number)")
         restoreVault()
+        #if os(macOS)
+        terminationObserver = NotificationCenter.default.addObserver(forName: NSApplication.willTerminateNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.flushPendingEdits() }
+        }
+        #endif
+        watchForExternalChanges()
         calendarStore.onChange = { [weak self] in
             Task { await self?.refreshEvents() }
         }
@@ -318,22 +332,37 @@ final class AppModel: ObservableObject {
     // MARK: Vault lifecycle
 
     func openVault(at url: URL) {
-        securityScopedURL?.stopAccessingSecurityScopedResource()
-        securityScopedURL = url.startAccessingSecurityScopedResource() ? url : nil
-        do {
-            let vault = try Vault(rootURL: url)
-            try vault.bootstrap()
-            storeBookmark(for: url)
-            self.vault = vault
-            selectedNotePath = nil
-            reload()
-            scheduleAutoSync()
-        } catch {
-            errorMessage = error.localizedDescription
+        guard !isSyncing else {
+            errorMessage = "A sync is running. Try again when it has finished."
+            return
         }
+        flushPendingEdits()
+        // Open the new folder first; the current vault stays usable if that fails.
+        let scoped = url.startAccessingSecurityScopedResource()
+        let opened: Vault
+        do {
+            opened = try Vault(rootURL: url)
+            try opened.bootstrap()
+        } catch {
+            if scoped { url.stopAccessingSecurityScopedResource() }
+            errorMessage = error.localizedDescription
+            return
+        }
+        securityScopedURL?.stopAccessingSecurityScopedResource()
+        securityScopedURL = scoped ? url : nil
+        storeBookmark(for: url)
+        selectedNotePath = nil
+        vault = opened
+        reload()
+        scheduleAutoSync()
     }
 
     func closeVault() {
+        guard !isSyncing else {
+            errorMessage = "A sync is running. Try again when it has finished."
+            return
+        }
+        flushPendingEdits()
         autoSyncTask?.cancel()
         autoSyncTask = nil
         securityScopedURL?.stopAccessingSecurityScopedResource()
@@ -342,6 +371,48 @@ final class AppModel: ObservableObject {
         vault = nil
         notes = []
         selectedNotePath = nil
+    }
+
+    /// Writes the editor's unsaved text, if any.
+    func flushPendingEdits() {
+        flushEditor?()
+    }
+
+    // MARK: Changes made outside the app
+
+    /// A cheap fingerprint of every note file's path and modification date.
+    private func currentVaultSignature() -> String? {
+        guard let vault else { return nil }
+        var parts: [String] = []
+        for note in notes {
+            parts.append("\(note.relativePath)@\(vault.modificationDate(of: note.relativePath)?.timeIntervalSince1970 ?? 0)")
+        }
+        // Folder dates change when notes are added or removed.
+        for folder in [vault.config.projectsFolder, vault.config.areasFolder, vault.config.resourcesFolder,
+                       vault.config.archiveFolder, vault.config.calendarFolder, vault.config.goalsFolder] {
+            parts.append("\(folder)/@\(vault.modificationDate(of: folder)?.timeIntervalSince1970 ?? 0)")
+        }
+        return parts.joined(separator: "|")
+    }
+
+    /// Reloads when files changed on disk (iCloud, the iPhone, another editor), checking every
+    /// few seconds. A dirty editor keeps its text; its save then meets the conflict check.
+    func checkForExternalChanges() {
+        guard vault != nil, !isSyncing else { return }
+        let signature = currentVaultSignature()
+        if vaultSignature == nil { vaultSignature = signature; return }
+        guard signature != vaultSignature else { return }
+        log("files changed outside the app; reloading")
+        reload()
+    }
+
+    private func watchForExternalChanges() {
+        externalChangeTask = Task { [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(10))
+                self?.checkForExternalChanges()
+            }
+        }
     }
 
     private func restoreVault() {
@@ -382,32 +453,64 @@ final class AppModel: ObservableObject {
         }
         do {
             notes = try vault.allNotes()
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-    }
-
-    // MARK: Editing
-
-    func save(_ note: Note) {
-        guard let vault else { return }
-        do {
-            try vault.save(note)
-            if let i = notes.firstIndex(where: { $0.relativePath == note.relativePath }) {
-                notes[i] = note
-            } else {
-                reload()
+            if !vault.skippedFiles.isEmpty {
+                log("skipped unreadable files: \(vault.skippedFiles)")
             }
         } catch {
             errorMessage = error.localizedDescription
         }
+        vaultSignature = currentVaultSignature()
     }
 
+    // MARK: Editing
+
+    /// Saves a change made from the app (a task ticked, a status set). Returns false when the
+    /// file changed on disk meanwhile: the notes are reloaded and the change has to be redone.
+    @discardableResult
+    func save(_ note: Note) -> Bool {
+        guard let vault else { return false }
+        do {
+            let saved = try vault.save(note)
+            if let i = notes.firstIndex(where: { $0.relativePath == note.relativePath }) {
+                notes[i] = saved
+            } else {
+                reload()
+            }
+            vaultSignature = currentVaultSignature()
+            return true
+        } catch VaultError.modifiedOnDisk {
+            log("save refused, changed on disk: \(note.relativePath)")
+            reload()
+            errorMessage = "\"\(note.displayTitle)\" was changed outside the app, so it was reloaded. Please make your change again."
+            return false
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
+        }
+    }
+
+    /// Saves the editor's text. If the file changed on disk meanwhile, the editor's version is
+    /// kept as a conflict copy next to it and the fresh file is shown, so nothing is lost.
     func saveText(_ text: String, forNoteAt path: String) {
-        guard var note = note(at: path), note.text != text else { return }
+        guard let vault, var note = note(at: path), note.text != text else { return }
         note.text = text
-        note.modifiedAt = Date()
-        save(note)
+        note.modifiedAt = note.modifiedAt ?? Date()
+        do {
+            let saved = try vault.save(note)
+            if let i = notes.firstIndex(where: { $0.relativePath == path }) { notes[i] = saved } else { reload() }
+            vaultSignature = currentVaultSignature()
+        } catch VaultError.modifiedOnDisk {
+            do {
+                let copy = try vault.saveConflictCopy(of: note)
+                log("conflict copy written: \(copy.relativePath)")
+                reload()
+                errorMessage = "\"\(note.displayTitle)\" was changed outside the app while you were editing it. Your version is saved as \"\(copy.displayTitle)\" next to it; the note now shows the other version."
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 
     func createNote(kind: ParaKind, title: String, extraFrontmatter: [(String, String)] = []) {
@@ -422,6 +525,7 @@ final class AppModel: ObservableObject {
     }
 
     func archive(_ note: Note) {
+        flushPendingEdits()
         guard let vault else { return }
         do {
             let archived = try vault.archive(note)
@@ -434,6 +538,7 @@ final class AppModel: ObservableObject {
 
     /// Moves a note to the Trash. The Inbox note stays; empty it instead.
     func trash(_ note: Note) {
+        flushPendingEdits()
         guard let vault, note.kind != .inbox else { return }
         do {
             try vault.trash(note)
@@ -452,6 +557,7 @@ final class AppModel: ObservableObject {
     }
 
     func toggle(_ ref: TaskRef) {
+        flushPendingEdits()
         guard var note = note(at: ref.notePath) else { return }
         var task = ref.task
         if task.isDone { task.markOpen() } else { task.markDone() }
@@ -460,6 +566,7 @@ final class AppModel: ObservableObject {
     }
 
     func addTask(_ title: String, to path: String) {
+        flushPendingEdits()
         let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, var note = note(at: path) else { return }
         note.append(task: TaskParser.normalized(TaskItem(title: trimmed)))
@@ -467,6 +574,7 @@ final class AppModel: ObservableObject {
     }
 
     func addSubtask(_ title: String, to parent: TaskRef) {
+        flushPendingEdits()
         let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, var note = note(at: parent.notePath) else { return }
         note.appendSubtask(TaskParser.normalized(TaskItem(title: trimmed)), to: parent.task)
@@ -716,12 +824,15 @@ final class AppModel: ObservableObject {
             lastCaptureMessage = "Saved, will be filed when a vault is open"
             return
         }
+        flushPendingEdits()
         do {
             let note = try vault.capture(item)
             reload()
             lastCaptureMessage = "Saved to \(note.displayTitle)"
         } catch {
-            errorMessage = error.localizedDescription
+            // Keep it for later rather than lose it.
+            try? CaptureOutbox(fileURL: Self.outboxURL).append(item)
+            errorMessage = "Could not file the capture now (\(error.localizedDescription)). It is kept and will be filed later."
         }
     }
 
@@ -735,14 +846,27 @@ final class AppModel: ObservableObject {
     @discardableResult
     func drainOutbox() -> Int {
         guard let vault else { return 0 }
-        let items = CaptureOutbox(fileURL: Self.outboxURL).drain()
+        let outbox = CaptureOutbox(fileURL: Self.outboxURL)
+        let items = outbox.drain()
         guard !items.isEmpty else { return 0 }
+        flushPendingEdits()
         var filed = 0
+        var failed: [CaptureItem] = []
         for item in items {
-            if (try? vault.capture(item)) != nil { filed += 1 }
+            do {
+                try vault.capture(item)
+                filed += 1
+            } catch {
+                log("capture kept for later: \(error.localizedDescription)")
+                failed.append(item)
+            }
         }
+        // Anything that could not be filed (folder not downloaded yet, no permission) goes back.
+        outbox.requeue(failed)
         reload()
-        lastCaptureMessage = "\(filed) captured item\(filed == 1 ? "" : "s") filed"
+        lastCaptureMessage = failed.isEmpty
+            ? "\(filed) captured item\(filed == 1 ? "" : "s") filed"
+            : "\(filed) filed, \(failed.count) kept for later"
         return filed
     }
 
@@ -752,8 +876,16 @@ final class AppModel: ObservableObject {
             capture(item)
             return
         }
-        if url.scheme?.lowercased() == CaptureItem.urlScheme, let host = url.host?.removingPercentEncoding, !host.isEmpty {
-            open(reference: host)
+        // `amspara://<note title>` opens an existing note; unknown titles go to search rather
+        // than creating a note from a link someone else made.
+        if url.scheme?.lowercased() == CaptureItem.urlScheme, let host = url.host?.removingPercentEncoding,
+           !host.isEmpty, host.lowercased() != "capture", host.lowercased() != "timeblock" {
+            if let target = index.note(matching: host) {
+                show(target)
+            } else {
+                queryText = host
+                show(section: .search, notePath: nil)
+            }
         }
     }
 
@@ -777,12 +909,14 @@ final class AppModel: ObservableObject {
     // MARK: Review
 
     func setStatus(_ status: String, for note: Note) {
+        flushPendingEdits()
         var updated = note
         updated.frontmatter.set("status", status)
         save(updated)
     }
 
     func markReviewed(_ note: Note) {
+        flushPendingEdits()
         var updated = note
         updated.frontmatter.set("reviewed", DateOnly.today().description)
         save(updated)
@@ -904,6 +1038,7 @@ final class AppModel: ObservableObject {
 
     func syncNow() async {
         guard let vault, !isSyncing else { return }
+        flushPendingEdits()
         isSyncing = true
         defer { isSyncing = false }
         do {
@@ -912,10 +1047,14 @@ final class AppModel: ObservableObject {
                 return
             }
             let engine = SyncEngine(vault: vault, store: remindersStore, deviceID: deviceID)
-            lastReport = try await engine.run()
+            let report = try await engine.run()
+            guard self.vault === vault else { return }
+            lastReport = report
+            for warning in report.warnings { log("sync: \(warning)") }
             reload()
         } catch {
             errorMessage = error.localizedDescription
+            if self.vault === vault { reload() }
         }
     }
 

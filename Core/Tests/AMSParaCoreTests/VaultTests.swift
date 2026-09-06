@@ -161,4 +161,59 @@ final class DailyNoteTests: XCTestCase {
         let note = try vault.dailyNote(for: DateOnly(year: 2026, month: 9, day: 5))
         XCTAssertEqual(try vault.archive(note).relativePath, note.relativePath)
     }
+
+    func testSaveRefusesToOverwriteANewerFileAndKeepsAConflictCopy() throws {
+        var note = try vault.createNote(kind: .project, title: "Race")
+        note.body = "first"
+        note = try vault.save(note)
+        let url = vault.url(for: note.relativePath)
+        try "changed elsewhere".write(to: url, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.modificationDate: Date().addingTimeInterval(10)], ofItemAtPath: url.path)
+        note.body = "second"
+        XCTAssertThrowsError(try vault.save(note)) { error in
+            XCTAssertEqual(error as? VaultError, .modifiedOnDisk(note.relativePath))
+        }
+        XCTAssertEqual(try String(contentsOf: url, encoding: .utf8), "changed elsewhere")
+        let copy = try vault.saveConflictCopy(of: note)
+        XCTAssertTrue(copy.relativePath.contains("(conflict"))
+        XCTAssertTrue(try vault.loadNote(relativePath: copy.relativePath).body.contains("second"))
+    }
+
+    func testUnreadableFileIsSkippedNotFatal() throws {
+        let bad = vault.url(for: "Projects/Broken.md")
+        try "# Locked\n".write(to: bad, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0], ofItemAtPath: bad.path)
+        defer { try? FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: bad.path) }
+        let good = try vault.createNote(kind: .project, title: "Fine")
+        let notes = try vault.allNotes()
+        XCTAssertTrue(notes.contains { $0.relativePath == good.relativePath })
+        XCTAssertEqual(vault.skippedFiles, ["Projects/Broken.md"])
+    }
+
+    func testLatinTextFilesAreRead() throws {
+        let url = vault.url(for: "Resources/Legacy.md")
+        try "# Café\n".data(using: .windowsCP1252)!.write(to: url)
+        let note = try vault.loadNote(relativePath: "Resources/Legacy.md")
+        XCTAssertTrue(note.body.contains("Café"))
+    }
+
+    func testArchivingTwiceWithTheSameNameKeepsBoth() throws {
+        let first = try vault.createNote(kind: .project, title: "Tax return")
+        let archivedFirst = try vault.archive(first)
+        let second = try vault.createNote(kind: .project, title: "Tax return")
+        let archivedSecond = try vault.archive(second)
+        XCTAssertNotEqual(archivedFirst.relativePath, archivedSecond.relativePath)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: vault.url(for: archivedFirst.relativePath).path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: vault.url(for: archivedSecond.relativePath).path))
+    }
+
+    func testNotePathsOutsideTheVaultAreRejected() {
+        XCTAssertTrue(vault.isNotePath("Projects/Shed.md"))
+        XCTAssertTrue(vault.isNotePath("Inbox.md"))
+        XCTAssertFalse(vault.isNotePath("../Documents/Contract.md"))
+        XCTAssertFalse(vault.isNotePath("Projects/../../x.md"))
+        XCTAssertFalse(vault.isNotePath("/etc/passwd"))
+        XCTAssertFalse(vault.isNotePath(".ams-para/config.json"))
+        XCTAssertFalse(vault.isNotePath("Templates/Daily.md"))
+    }
 }

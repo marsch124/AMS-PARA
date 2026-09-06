@@ -71,4 +71,60 @@ final class FrontmatterEmptyValueTests: XCTestCase {
         let empty = Note(relativePath: "Projects/R.md", kind: .project, text: "---\ntitle: R\ngoal:\n---\n")
         XCTAssertNil(empty.goal)
     }
+
+    func testUnknownLinesSurviveARoundTrip() {
+        let text = """
+        ---
+        title: Trip
+        # planning notes
+        dates:
+          start: 2026-01-01
+          end: 2026-01-09
+        due date: soon
+        status: active
+        ---
+        Body
+        """
+        var (fm, body) = Frontmatter.parse(text)
+        XCTAssertEqual(fm.string("title"), "Trip")
+        XCTAssertEqual(fm.string("status"), "active")
+        XCTAssertEqual(body, "Body")
+        fm.set("status", "done")
+        XCTAssertEqual(fm.serialized(), """
+        ---
+        title: Trip
+        # planning notes
+        dates:
+          start: 2026-01-01
+          end: 2026-01-09
+        due date: soon
+        status: done
+        ---
+
+        """)
+    }
+
+    func testHorizontalRuleWithProseIsNotFrontmatter() {
+        let text = "---\nJust a note that starts with a rule.\nNote: call Anna\n---\nMore"
+        let (fm, body) = Frontmatter.parse(text)
+        XCTAssertTrue(fm.isEmpty)
+        XCTAssertEqual(body, text)
+    }
+
+    func testQuotedValuesDoNotGrowBackslashes() {
+        var fm = Frontmatter()
+        fm.set("title", "Meeting: \"Q3\" plan")
+        let once = fm.serialized()
+        let (again, _) = Frontmatter.parse(once + "Body")
+        XCTAssertEqual(again.string("title"), "Meeting: \"Q3\" plan")
+        XCTAssertEqual(again.serialized(), once)
+    }
+
+    func testWindowsLineEndingsAndBOMAreRecognised() {
+        let text = "\u{FEFF}---\r\ntitle: Windows note\r\nstatus: active\r\n---\r\nBody\r\n"
+        let (fm, body) = Frontmatter.parse(text)
+        XCTAssertEqual(fm.string("title"), "Windows note")
+        XCTAssertEqual(fm.string("status"), "active")
+        XCTAssertTrue(body.hasPrefix("Body"))
+    }
 }

@@ -6,25 +6,40 @@ public enum FrontmatterValue: Equatable, Sendable {
 }
 
 /// A small, order-preserving YAML subset: `key: value`, `key: [a, b]` and block lists.
+/// Lines it does not understand (comments, nested blocks, keys with spaces) are kept
+/// verbatim and written back in place, so saving never loses what another editor wrote.
 public struct Frontmatter: Equatable, Sendable {
-    public private(set) var keys: [String] = []
+    enum Entry: Equatable, Sendable {
+        case key(String)
+        case raw(String)
+    }
+
+    private var order: [Entry] = []
     private var storage: [String: FrontmatterValue] = [:]
 
     public init() {}
 
-    public var isEmpty: Bool { keys.isEmpty }
+    public var keys: [String] {
+        order.compactMap { if case .key(let k) = $0 { return k } else { return nil } }
+    }
+
+    public var isEmpty: Bool { order.isEmpty }
 
     public subscript(key: String) -> FrontmatterValue? {
         get { storage[key] }
         set {
             if let newValue {
-                if storage[key] == nil { keys.append(key) }
+                if storage[key] == nil { order.append(.key(key)) }
                 storage[key] = newValue
             } else {
                 storage[key] = nil
-                keys.removeAll { $0 == key }
+                order.removeAll { $0 == .key(key) }
             }
         }
+    }
+
+    private mutating func appendRaw(_ line: String) {
+        order.append(.raw(line))
     }
 
     public func string(_ key: String) -> String? {
@@ -68,19 +83,23 @@ public struct Frontmatter: Equatable, Sendable {
     // MARK: Parsing
 
     /// Splits a document into frontmatter (if it starts with a `---` fence) and body.
+    /// A leading `---` that turns out to enclose prose (a horizontal rule) is left as body.
     public static func parse(_ text: String) -> (frontmatter: Frontmatter, body: String) {
-        let lines = text.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
-        guard lines.first?.trimmingCharacters(in: .whitespaces) == "---" else {
-            return (Frontmatter(), text)
+        let cleaned = text.hasPrefix("\u{FEFF}") ? String(text.dropFirst()) : text
+        let lines = cleaned.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+        guard lines.first?.trimmingCharacters(in: .whitespacesAndNewlines) == "---" else {
+            return (Frontmatter(), cleaned)
         }
-        guard let closing = lines.dropFirst().firstIndex(where: { $0.trimmingCharacters(in: .whitespaces) == "---" }) else {
-            return (Frontmatter(), text)
+        guard let closing = lines.dropFirst().firstIndex(where: { $0.trimmingCharacters(in: .whitespacesAndNewlines) == "---" }) else {
+            return (Frontmatter(), cleaned)
         }
         var fm = Frontmatter()
         var pendingListKey: String?
         for raw in lines[1..<closing] {
             let line = raw.trimmingCharacters(in: .init(charactersIn: "\r"))
-            if line.trimmingCharacters(in: .whitespaces).isEmpty || line.trimmingCharacters(in: .whitespaces).hasPrefix("#") {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            if trimmed.isEmpty || trimmed.hasPrefix("#") {
+                fm.appendRaw(line)
                 continue
             }
             if let key = pendingListKey, let item = listItem(line) {
@@ -89,10 +108,19 @@ public struct Frontmatter: Equatable, Sendable {
                 fm.set(key, list: items)
                 continue
             }
+            let indented = line.first?.isWhitespace == true
+            guard let colon = line.firstIndex(of: ":"), !indented else {
+                // An indented line belongs to a nested block we keep as written; an
+                // unindented line without a colon is prose, so this is not frontmatter.
+                if indented { fm.appendRaw(line); continue }
+                return (Frontmatter(), cleaned)
+            }
             pendingListKey = nil
-            guard let colon = line.firstIndex(of: ":") else { continue }
             let key = String(line[..<colon]).trimmingCharacters(in: .whitespaces)
-            guard !key.isEmpty, !key.contains(" ") else { continue }
+            guard !key.isEmpty, !key.contains(" "), !key.contains("\t") else {
+                fm.appendRaw(line)
+                continue
+            }
             let rest = String(line[line.index(after: colon)...]).trimmingCharacters(in: .whitespaces)
             if rest.isEmpty {
                 fm.set(key, list: [])
@@ -136,8 +164,13 @@ public struct Frontmatter: Equatable, Sendable {
 
     private static func unquote(_ s: String) -> String {
         guard s.count >= 2 else { return s }
-        if (s.hasPrefix("\"") && s.hasSuffix("\"")) || (s.hasPrefix("'") && s.hasSuffix("'")) {
+        if s.hasPrefix("\"") && s.hasSuffix("\"") {
             return String(s.dropFirst().dropLast())
+                .replacingOccurrences(of: "\\\"", with: "\"")
+                .replacingOccurrences(of: "\\\\", with: "\\")
+        }
+        if s.hasPrefix("'") && s.hasSuffix("'") {
+            return String(s.dropFirst().dropLast()).replacingOccurrences(of: "''", with: "'")
         }
         return s
     }
@@ -148,15 +181,20 @@ public struct Frontmatter: Equatable, Sendable {
     public func serialized() -> String {
         guard !isEmpty else { return "" }
         var out = "---\n"
-        for key in keys {
-            switch storage[key] {
-            case .string(let s):
-                out += "\(key): \(Self.quoteIfNeeded(s))\n"
-            case .list(let items):
-                // An empty value is written as `key:` so templates invite plain text, not typing inside `[]`.
-                out += items.isEmpty ? "\(key):\n" : "\(key): [\(items.map(Self.quoteIfNeeded).joined(separator: ", "))]\n"
-            case nil:
-                break
+        for entry in order {
+            switch entry {
+            case .raw(let line):
+                out += line + "\n"
+            case .key(let key):
+                switch storage[key] {
+                case .string(let s):
+                    out += "\(key): \(Self.quoteIfNeeded(s))\n"
+                case .list(let items):
+                    // An empty value is written as `key:` so templates invite plain text, not typing inside `[]`.
+                    out += items.isEmpty ? "\(key):\n" : "\(key): [\(items.map(Self.quoteIfNeeded).joined(separator: ", "))]\n"
+                case nil:
+                    break
+                }
             }
         }
         out += "---\n"

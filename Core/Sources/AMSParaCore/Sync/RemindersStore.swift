@@ -70,6 +70,10 @@ public final class InMemoryRemindersStore: RemindersStore {
     public private(set) var records: [String: ReminderRecord] = [:]
     public var now: () -> Date = { Date() }
     private var counter = 0
+    /// Test hooks: something that happens while the engine waits on Reminders, and simulated failures.
+    public var beforeFetch: (() throws -> Void)?
+    public var failNextCreate = false
+    public var failNextUpdate = false
 
     public init(lists: [String] = []) {
         self.lists = lists
@@ -82,10 +86,12 @@ public final class InMemoryRemindersStore: RemindersStore {
     }
 
     public func reminders(inList name: String) async throws -> [ReminderRecord] {
-        records.values.filter { $0.listName == name }.sorted { $0.identifier < $1.identifier }
+        if let beforeFetch { self.beforeFetch = nil; try beforeFetch() }
+        return records.values.filter { $0.listName == name }.sorted { $0.identifier < $1.identifier }
     }
 
     public func create(_ draft: ReminderRecord) async throws -> ReminderRecord {
+        if failNextCreate { failNextCreate = false; throw RemindersStoreError.reminderNotFound("simulated failure") }
         try await ensureList(named: draft.listName)
         counter += 1
         var record = draft
@@ -96,6 +102,7 @@ public final class InMemoryRemindersStore: RemindersStore {
     }
 
     public func update(_ record: ReminderRecord) async throws {
+        if failNextUpdate { failNextUpdate = false; throw RemindersStoreError.reminderNotFound("simulated failure") }
         guard records[record.identifier] != nil else { throw RemindersStoreError.reminderNotFound(record.identifier) }
         try await ensureList(named: record.listName)
         var updated = record

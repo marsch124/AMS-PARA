@@ -145,15 +145,33 @@ public struct Note: Equatable, Identifiable, Sendable {
         set { body = newValue.joined(separator: "\n") }
     }
 
-    /// Rewrites the line the task came from. Returns false if the line no longer holds a task.
+    /// Rewrites the line the task came from. The line must still hold the same task (same id,
+    /// or the same title when it has no id); if lines moved, the task is found by its id or,
+    /// for a task getting its first id, by its title. `previousID` names the id the line
+    /// carried before, for the case where a task is given a fresh id.
+    /// Returns false when the task is no longer in the note.
     @discardableResult
-    public mutating func replace(task: TaskItem) -> Bool {
+    public mutating func replace(task: TaskItem, previousID: String? = nil) -> Bool {
         var current = lines
-        guard task.lineIndex >= 0, task.lineIndex < current.count,
-              TaskParser.parse(line: current[task.lineIndex]) != nil else { return false }
+        let wantedID = previousID ?? task.id
+        func matches(_ line: String) -> Bool {
+            guard let existing = TaskParser.parse(line: line) else { return false }
+            if let wantedID, let existingID = existing.id { return wantedID == existingID }
+            return existing.title == task.title
+        }
+        var index = task.lineIndex
+        if !(index >= 0 && index < current.count && matches(current[index])) {
+            let byID = wantedID.flatMap { id in current.firstIndex { TaskParser.parse(line: $0)?.id == id } }
+            let byTitle = current.firstIndex {
+                guard let existing = TaskParser.parse(line: $0), existing.id == nil else { return false }
+                return existing.title == task.title
+            }
+            guard let found = byID ?? (previousID == nil ? byTitle : nil) else { return false }
+            index = found
+        }
         let newLine = task.serialized
-        guard current[task.lineIndex] != newLine else { return true }
-        current[task.lineIndex] = newLine
+        guard current[index] != newLine else { return true }
+        current[index] = newLine
         lines = current
         return true
     }

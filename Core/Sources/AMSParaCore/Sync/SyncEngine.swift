@@ -47,25 +47,54 @@ public final class SyncEngine {
         var report = SyncReport(startedAt: now())
         var state = vault.loadSyncState(deviceID: deviceID)
 
-        // 1. Load notes, assign ids to tasks that have none.
+        // 1. Load notes, assign ids to tasks that have none, and give copies of an id a fresh one.
         let allNotes = try vault.allNotes()
+        for skipped in vault.skippedFiles {
+            report.warnings.append("\(skipped) could not be read and was left alone.")
+        }
+        let loadedPaths = Set(allNotes.map(\.relativePath))
         var allTaskIDs = Set(allNotes.flatMap { $0.tasks.compactMap(\.id) })
         var notesByPath: [String: Note] = [:]
         var dirtyPaths = Set<String>()
+        /// Every change made to a note during the run, so it can be applied again to a fresher
+        /// copy when the file changed on disk in the meantime.
+        var mutations: [String: [(inout Note) -> Bool]] = [:]
         var listForPath: [String: String] = [:]
         /// The note that receives reminders created in a list. All daily notes share one list; today's note receives.
         var pathForList: [String: String] = [:]
         let todayPath = vault.dailyNotePath(for: DateOnly(now()))
+        let syncable = syncableNotes(from: allNotes)
 
-        for var note in syncableNotes(from: allNotes) {
-            for var task in note.tasks where task.id == nil {
+        // The note an id belongs to: the one this device linked it to, else the first that has it.
+        // A line copied into a second note keeps its text but gets a fresh id there.
+        var idOwners: [String: String] = [:]
+        for note in syncable {
+            for task in note.tasks {
+                guard let id = task.id else { continue }
+                if idOwners[id] == nil || state.links[id]?.notePath == note.relativePath { idOwners[id] = note.relativePath }
+            }
+        }
+
+        func record(_ path: String, _ mutate: @escaping (inout Note) -> Bool) {
+            mutations[path, default: []].append(mutate)
+        }
+
+        for var note in syncable {
+            for var task in note.tasks where task.id == nil || idOwners[task.id ?? ""] != note.relativePath {
+                let previousID = task.id
+                if let previousID {
+                    report.warnings.append("\(note.relativePath): \"\(task.title)\" had the id of a task in \(idOwners[previousID] ?? "another note") and got a new one.")
+                }
                 var id = TaskItem.makeID()
                 while allTaskIDs.contains(id) { id = TaskItem.makeID() }
                 allTaskIDs.insert(id)
                 task.id = id
-                note.replace(task: task)
-                report.idsAssigned += 1
-                dirtyPaths.insert(note.relativePath)
+                let assigned = task
+                if note.replace(task: assigned, previousID: previousID) {
+                    report.idsAssigned += 1
+                    dirtyPaths.insert(note.relativePath)
+                    record(note.relativePath) { $0.replace(task: assigned, previousID: previousID) }
+                }
             }
             let list = listName(for: note)
             if note.kind == .daily {
@@ -84,169 +113,224 @@ public final class SyncEngine {
         }
         report.notesSynced = notesByPath.count
 
-        // 2. Fetch reminders for every mapped list.
-        let listNames = try await store.listNames()
-        let existingLists = Set(listNames)
-        var remindersByID: [String: ReminderRecord] = [:]
-        var remindersByMarker: [String: ReminderRecord] = [:]
-        for list in pathForList.keys.sorted() {
-            if !existingLists.contains(list) {
-                if config.createMissingLists {
-                    try await store.ensureList(named: list)
-                } else {
-                    continue
+        /// Writes the changed notes. A note that changed on disk while the engine worked (the editor,
+        /// another device) is reloaded and the engine's changes are applied to the fresh copy.
+        func persistNotes() throws {
+            for path in dirtyPaths.sorted() {
+                guard let note = notesByPath[path] else { continue }
+                do {
+                    notesByPath[path] = try vault.save(note)
+                } catch VaultError.modifiedOnDisk {
+                    var fresh = try vault.loadNote(relativePath: path)
+                    for mutate in mutations[path] ?? [] { _ = mutate(&fresh) }
+                    notesByPath[path] = try vault.save(fresh)
+                    report.warnings.append("\(path) changed while syncing; the sync's changes were added to the new version.")
                 }
             }
-            for record in try await store.reminders(inList: list) {
-                remindersByID[record.identifier] = record
-                if let marker = Self.markerTaskID(in: record.notes), remindersByMarker[marker] == nil {
-                    remindersByMarker[marker] = record
-                }
-            }
+            dirtyPaths = []
         }
 
-        // Index tasks by id (rebuilt after reconciliation so later steps see the current lines).
-        var taskLocations: [String: (path: String, task: TaskItem)] = [:]
-        func indexTasks() {
-            taskLocations = [:]
-            for (path, note) in notesByPath {
-                for task in note.tasks {
-                    if let id = task.id { taskLocations[id] = (path, task) }
-                }
-            }
-        }
-        indexTasks()
-
-        /// `Parent › Child` prefix for subtasks, nil for top-level tasks.
-        func parentPrefix(_ path: String, _ task: TaskItem) -> String? {
-            notesByPath[path]?.parentPrefix(for: task)
-        }
-
-        func updateNote(_ path: String, _ mutate: (inout Note) -> Void) {
-            guard var note = notesByPath[path] else { return }
-            mutate(&note)
-            notesByPath[path] = note
-            dirtyPaths.insert(path)
-        }
+        // Ids are written before Reminders is touched, so a failure later cannot leave
+        // reminders carrying ids no note knows about.
+        try persistNotes()
 
         var handledReminderIDs = Set<String>()
+        /// Marker writes for imported reminders, done after the notes and state are saved.
+        var pendingReminderUpdates: [ReminderRecord] = []
 
-        // 3. Reconcile existing links.
-        for (taskID, link) in state.links.sorted(by: { $0.key < $1.key }) {
-            let location = taskLocations[taskID]
-            let reminder = remindersByID[link.reminderID] ?? remindersByMarker[taskID]
-
-            switch (location, reminder) {
-            case let (location?, reminder?):
-                handledReminderIDs.insert(reminder.identifier)
-                let listName = listForPath[location.path] ?? link.listName
-                let outcome = try await reconcile(task: location.task, at: location.path, listName: listName,
-                                                  parentPrefix: parentPrefix(location.path, location.task),
-                                                  reminder: reminder, link: link, report: &report, updateNote: updateNote)
-                state.links[taskID] = outcome
-            case let (location?, nil):
-                // Reminder deleted in Apple Reminders: cancel the task instead of deleting the user's text.
-                if !location.task.isDone {
-                    updateNote(location.path) { note in
-                        var t = location.task
-                        t.markCancelled()
-                        note.replace(task: t)
+        do {
+            // 2. Fetch reminders for every mapped list, plus lists that linked reminders were last seen in,
+            // so a renamed note finds its reminders instead of treating them as deleted.
+            let listNames = try await store.listNames()
+            let existingLists = Set(listNames)
+            var remindersByID: [String: ReminderRecord] = [:]
+            var remindersByMarker: [String: ReminderRecord] = [:]
+            var fetchedLists = Set<String>()
+            let linkedLists = Set(state.links.values.map(\.listName)).filter { existingLists.contains($0) }
+            for list in Set(pathForList.keys).union(linkedLists).sorted() {
+                if !existingLists.contains(list) {
+                    if config.createMissingLists {
+                        try await store.ensureList(named: list)
+                    } else {
+                        continue
                     }
-                    report.tasksCancelled += 1
                 }
-                state.links[taskID] = nil
-            case let (nil, reminder?):
-                handledReminderIDs.insert(reminder.identifier)
-                if allTaskIDs.contains(taskID) {
-                    // The task moved to a note that is not synced (archived, sync: false). Leave the reminder alone.
+                fetchedLists.insert(list)
+                for record in try await store.reminders(inList: list) {
+                    remindersByID[record.identifier] = record
+                    if let marker = Self.markerTaskID(in: record.notes), remindersByMarker[marker] == nil {
+                        remindersByMarker[marker] = record
+                    }
+                }
+            }
+
+            // Index tasks by id (rebuilt after reconciliation so later steps see the current lines).
+            var taskLocations: [String: (path: String, task: TaskItem)] = [:]
+            func indexTasks() {
+                taskLocations = [:]
+                for (path, note) in notesByPath {
+                    for task in note.tasks {
+                        if let id = task.id { taskLocations[id] = (path, task) }
+                    }
+                }
+            }
+            indexTasks()
+
+            /// `Parent › Child` prefix for subtasks, nil for top-level tasks.
+            func parentPrefix(_ path: String, _ task: TaskItem) -> String? {
+                notesByPath[path]?.parentPrefix(for: task)
+            }
+
+            /// Applies a change to a note in memory and remembers it. Nothing is marked dirty when
+            /// the change did not apply (the task is gone) or changed nothing.
+            func updateNote(_ path: String, _ mutate: @escaping (inout Note) -> Bool) {
+                guard var note = notesByPath[path] else { return }
+                let before = note.body
+                guard mutate(&note), note.body != before else { return }
+                notesByPath[path] = note
+                dirtyPaths.insert(path)
+                record(path, mutate)
+            }
+
+            // 3. Reconcile existing links.
+            for (taskID, link) in state.links.sorted(by: { $0.key < $1.key }) {
+                let location = taskLocations[taskID]
+                let reminder = remindersByID[link.reminderID] ?? remindersByMarker[taskID]
+
+                switch (location, reminder) {
+                case let (location?, reminder?):
+                    handledReminderIDs.insert(reminder.identifier)
+                    let listName = listForPath[location.path] ?? link.listName
+                    let outcome = try await reconcile(task: location.task, at: location.path, listName: listName,
+                                                      parentPrefix: parentPrefix(location.path, location.task),
+                                                      reminder: reminder, link: link, report: &report, updateNote: updateNote)
+                    state.links[taskID] = outcome
+                case let (location?, nil):
+                    guard fetchedLists.contains(link.listName) else {
+                        // The list it lived in was not looked at (it is gone, or not readable now):
+                        // that is not evidence the reminder was deleted. Leave the task and the link.
+                        report.warnings.append("\(location.path): \"\(location.task.title)\" was last seen in the Reminders list \"\(link.listName)\", which is not available; left unchanged.")
+                        continue
+                    }
+                    // Reminder deleted in Apple Reminders: cancel the task instead of deleting the user's text.
+                    if !location.task.isDone {
+                        let task = location.task
+                        updateNote(location.path) { note in
+                            var t = task
+                            t.markCancelled()
+                            return note.replace(task: t)
+                        }
+                        report.tasksCancelled += 1
+                    }
                     state.links[taskID] = nil
-                } else {
-                    try await store.delete(identifier: reminder.identifier)
-                    report.remindersDeleted += 1
+                case let (nil, reminder?):
+                    handledReminderIDs.insert(reminder.identifier)
+                    if allTaskIDs.contains(taskID) {
+                        // The task moved to a note that is not synced (archived, sync: false). Leave the reminder alone.
+                        state.links[taskID] = nil
+                    } else if loadedPaths.contains(link.notePath) {
+                        // The note was read and the task line is gone: the user deleted it.
+                        try await store.delete(identifier: reminder.identifier)
+                        report.remindersDeleted += 1
+                        state.links[taskID] = nil
+                    } else {
+                        // The note itself is missing or unreadable (not downloaded yet, moved away):
+                        // keep the reminder and the link until the note is seen again.
+                        report.warnings.append("\(link.notePath) is missing or unreadable; its reminder \"\(reminder.title)\" was kept.")
+                    }
+                case (nil, nil):
                     state.links[taskID] = nil
                 }
-            case (nil, nil):
-                state.links[taskID] = nil
             }
-        }
 
-        indexTasks()
+            indexTasks()
 
-        // 4. Tasks without a link: match by marker, else create a reminder for open tasks.
-        for (taskID, location) in taskLocations.sorted(by: { $0.key < $1.key }) where state.links[taskID] == nil {
-            let listName = listForPath[location.path] ?? ""
-            if let reminder = remindersByMarker[taskID], !handledReminderIDs.contains(reminder.identifier) {
-                handledReminderIDs.insert(reminder.identifier)
-                let provisional = TaskLink(taskID: taskID, reminderID: reminder.identifier, notePath: location.path, listName: listName,
-                                           lastTaskFingerprint: "", lastReminderFingerprint: "", lastSyncedAt: now())
-                state.links[taskID] = try await reconcile(task: location.task, at: location.path, listName: listName,
-                                                          parentPrefix: parentPrefix(location.path, location.task),
-                                                          reminder: reminder, link: provisional, report: &report, updateNote: updateNote)
-                continue
-            }
-            guard !location.task.isDone else { continue }
-            let prefix = parentPrefix(location.path, location.task)
-            var draft = ReminderRecord(listName: listName, title: location.task.title)
-            apply(task: location.task, to: &draft, listName: listName, parentPrefix: prefix)
-            let created = try await store.create(draft)
-            handledReminderIDs.insert(created.identifier)
-            report.remindersCreated += 1
-            state.links[taskID] = TaskLink(taskID: taskID, reminderID: created.identifier, notePath: location.path, listName: listName,
-                                           lastTaskFingerprint: Self.fingerprint(location.task, parentPrefix: prefix),
-                                           lastReminderFingerprint: Self.fingerprint(created), lastSyncedAt: now())
-        }
-
-        // 5. Reminders without a link: import into the note that owns the list.
-        for reminder in remindersByID.values.sorted(by: { $0.identifier < $1.identifier }) where !handledReminderIDs.contains(reminder.identifier) {
-            guard var path = pathForList[reminder.listName] else { continue }
-            if let marker = Self.markerTaskID(in: reminder.notes) {
-                if allTaskIDs.contains(marker) {
-                    continue // belongs to a task in a note that is not synced right now
+            // 4. Tasks without a link: match by marker, else create a reminder for open tasks.
+            for (taskID, location) in taskLocations.sorted(by: { $0.key < $1.key }) where state.links[taskID] == nil {
+                let listName = listForPath[location.path] ?? ""
+                if let reminder = remindersByMarker[taskID], !handledReminderIDs.contains(reminder.identifier) {
+                    handledReminderIDs.insert(reminder.identifier)
+                    let provisional = TaskLink(taskID: taskID, reminderID: reminder.identifier, notePath: location.path, listName: listName,
+                                               lastTaskFingerprint: "", lastReminderFingerprint: "", lastSyncedAt: now())
+                    state.links[taskID] = try await reconcile(task: location.task, at: location.path, listName: listName,
+                                                              parentPrefix: parentPrefix(location.path, location.task),
+                                                              reminder: reminder, link: provisional, report: &report, updateNote: updateNote)
+                    continue
                 }
-                try await store.delete(identifier: reminder.identifier)
-                report.remindersDeleted += 1
-                continue
+                guard !location.task.isDone else { continue }
+                let prefix = parentPrefix(location.path, location.task)
+                var draft = ReminderRecord(listName: listName, title: location.task.title)
+                apply(task: location.task, to: &draft, listName: listName, parentPrefix: prefix)
+                let created = try await store.create(draft)
+                handledReminderIDs.insert(created.identifier)
+                report.remindersCreated += 1
+                state.links[taskID] = TaskLink(taskID: taskID, reminderID: created.identifier, notePath: location.path, listName: listName,
+                                               lastTaskFingerprint: Self.fingerprint(location.task, parentPrefix: prefix),
+                                               lastReminderFingerprint: Self.fingerprint(created), lastSyncedAt: now())
             }
-            if reminder.isCompleted && !config.importCompletedReminders { continue }
 
-            if config.syncDailyNotes, reminder.listName == config.dailyNotesListName {
-                // Reminders added to the daily list belong in today's note, created on demand.
-                if notesByPath[todayPath] == nil {
-                    notesByPath[todayPath] = try vault.dailyNote(for: DateOnly(now()))
-                    listForPath[todayPath] = reminder.listName
+            // 5. Reminders without a link: import into the note that owns the list.
+            for reminder in remindersByID.values.sorted(by: { $0.identifier < $1.identifier }) where !handledReminderIDs.contains(reminder.identifier) {
+                guard var path = pathForList[reminder.listName] else { continue }
+                if Self.markerTaskID(in: reminder.notes) != nil {
+                    // Marked by AMS PARA but not linked here and not in any note this device can see.
+                    // That happens on a fresh device before the notes arrive; never delete on that basis.
+                    continue
                 }
-                pathForList[reminder.listName] = todayPath
-                path = todayPath
+                if reminder.isCompleted && !config.importCompletedReminders { continue }
+
+                if config.syncDailyNotes, reminder.listName == config.dailyNotesListName {
+                    // Reminders added to the daily list belong in today's note, created on demand.
+                    if notesByPath[todayPath] == nil {
+                        notesByPath[todayPath] = try vault.dailyNote(for: DateOnly(now()))
+                        listForPath[todayPath] = reminder.listName
+                    }
+                    pathForList[reminder.listName] = todayPath
+                    path = todayPath
+                }
+
+                var id = TaskItem.makeID()
+                while allTaskIDs.contains(id) { id = TaskItem.makeID() }
+                allTaskIDs.insert(id)
+
+                var task = TaskItem(title: Self.taskTitle(fromReminderTitle: reminder.title, parentPrefix: nil), id: id)
+                apply(reminder: reminder, to: &task)
+                task = TaskParser.normalized(task)
+                var appended = task
+                let toAppend = task
+                updateNote(path) { note in
+                    appended = note.append(task: toAppend)
+                    return true
+                }
+                report.tasksCreated += 1
+
+                var updated = reminder
+                updated.notes = Self.notes(reminder.notes, withMarkerFor: id)
+                pendingReminderUpdates.append(updated)
+
+                state.links[id] = TaskLink(taskID: id, reminderID: reminder.identifier, notePath: path, listName: reminder.listName,
+                                           lastTaskFingerprint: Self.fingerprint(appended),
+                                           lastReminderFingerprint: Self.fingerprint(updated), lastSyncedAt: now())
             }
-
-            var id = TaskItem.makeID()
-            while allTaskIDs.contains(id) { id = TaskItem.makeID() }
-            allTaskIDs.insert(id)
-
-            var task = TaskItem(title: Self.singleLine(reminder.title), id: id)
-            apply(reminder: reminder, to: &task)
-            task = TaskParser.normalized(task)
-            var appended = task
-            updateNote(path) { note in
-                appended = note.append(task: task)
-            }
-            report.tasksCreated += 1
-
-            var updated = reminder
-            updated.notes = Self.notes(reminder.notes, withMarkerFor: id)
-            try await store.update(updated)
-
-            state.links[id] = TaskLink(taskID: id, reminderID: reminder.identifier, notePath: path, listName: reminder.listName,
-                                       lastTaskFingerprint: Self.fingerprint(appended),
-                                       lastReminderFingerprint: Self.fingerprint(updated), lastSyncedAt: now())
+        } catch {
+            // Keep what was achieved so far; the next run continues from here instead of redoing it.
+            try? persistNotes()
+            try? vault.save(syncState: state, deviceID: deviceID)
+            throw error
         }
 
-        // 6. Persist.
-        for path in dirtyPaths.sorted() {
-            if let note = notesByPath[path] { try vault.save(note) }
-        }
+        // 6. Persist notes and state first, then the marker writes that depend on them.
+        try persistNotes()
         state.lastRun = now()
         try vault.save(syncState: state, deviceID: deviceID)
+        for updated in pendingReminderUpdates {
+            do {
+                try await store.update(updated)
+            } catch {
+                // The link exists; the next run puts the marker on the reminder through reconcile.
+                report.warnings.append("Could not tag the reminder \"\(updated.title)\"; it will be retried.")
+            }
+        }
         report.finishedAt = now()
         return report
     }
@@ -255,7 +339,7 @@ public final class SyncEngine {
 
     private func reconcile(task: TaskItem, at path: String, listName: String, parentPrefix: String?,
                            reminder: ReminderRecord, link: TaskLink,
-                           report: inout SyncReport, updateNote: (String, (inout Note) -> Void) -> Void) async throws -> TaskLink {
+                           report: inout SyncReport, updateNote: (String, @escaping (inout Note) -> Bool) -> Void) async throws -> TaskLink {
         let taskFP = Self.fingerprint(task, parentPrefix: parentPrefix)
         let reminderFP = Self.fingerprint(reminder)
         let taskChanged = taskFP != link.lastTaskFingerprint
@@ -293,7 +377,8 @@ public final class SyncEngine {
             var t = task
             apply(reminder: reminder, to: &t, parentPrefix: parentPrefix)
             t = TaskParser.normalized(t)
-            updateNote(path) { note in note.replace(task: t) }
+            let replacement = t
+            updateNote(path) { note in note.replace(task: replacement) }
             report.tasksUpdated += 1
             var updated = reminder
             if Self.markerTaskID(in: updated.notes) != task.id || listChanged {
@@ -348,9 +433,16 @@ public final class SyncEngine {
         return parentPrefix + Note.subtaskSeparator + base
     }
 
-    /// Strips the `Parent › ` prefix again when a subtask's reminder comes back.
+    /// Strips the `Parent › ` prefix again when a subtask's reminder comes back, and removes
+    /// `^tXXXXXX` ids and `@done(...)` stamps typed into a reminder title, which would otherwise
+    /// be read back as the task's own id or completion.
     static func taskTitle(fromReminderTitle title: String, parentPrefix: String?) -> String {
-        let clean = singleLine(title)
+        var clean = singleLine(title)
+        for regex in [TaskParser.idRegex, TaskParser.doneRegex] {
+            let ns = clean as NSString
+            clean = regex.stringByReplacingMatches(in: clean, range: NSRange(location: 0, length: ns.length), withTemplate: "")
+        }
+        clean = TaskParser.collapseWhitespace(clean)
         guard let parentPrefix, !parentPrefix.isEmpty else { return clean }
         let prefix = parentPrefix + Note.subtaskSeparator
         return clean.hasPrefix(prefix) ? String(clean.dropFirst(prefix.count)).trimmingCharacters(in: .whitespaces) : clean

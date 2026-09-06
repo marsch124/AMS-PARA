@@ -72,7 +72,18 @@ struct ContentView: View {
             model.handle(url: url)
         }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active { model.afterUpdate { model.drainOutbox() } }
+            switch phase {
+            case .active:
+                model.afterUpdate {
+                    model.checkForExternalChanges()
+                    model.drainOutbox()
+                }
+            case .inactive, .background:
+                // Going to the background (or being quit on iOS): write what is being typed.
+                model.flushPendingEdits()
+            @unknown default:
+                break
+            }
         }
         .onAppear { model.afterUpdate { model.drainOutbox() } }
         .overlay(alignment: .bottom) {

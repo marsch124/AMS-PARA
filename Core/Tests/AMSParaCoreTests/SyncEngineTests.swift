@@ -249,15 +249,105 @@ final class SyncEngineTests: XCTestCase {
         XCTAssertEqual(vault.loadSyncState(deviceID: "second-device").links.count, 1)
     }
 
-    func testMarkedReminderWhoseTaskDisappearedIsDeleted() async throws {
+    func testMarkedReminderUnknownToAFreshDeviceIsKept() async throws {
+        // A second device may simply not have received the note yet: never delete on that basis.
         try writeInbox("- [ ] Buy milk\n")
         try await engine.run()
         try writeInbox("")
         let other = SyncEngine(vault: vault, store: store, deviceID: "second-device")
         let report = try await other.run()
-        XCTAssertEqual(report.remindersDeleted, 1)
-        let actual9 = try await store.reminders(inList: "Inbox").count
-        XCTAssertEqual(actual9, 0)
+        XCTAssertEqual(report.remindersDeleted, 0)
+        let kept = try await store.reminders(inList: "Inbox").count
+        XCTAssertEqual(kept, 1)
+    }
+
+    func testRenamingANoteMovesItsRemindersInsteadOfCancellingTasks() async throws {
+        var shed = try vault.createNote(kind: .project, title: "Shed")
+        shed.body = "- [ ] Buy screws\n"
+        try vault.save(shed)
+        try await engine.run()
+        let before = try await store.reminders(inList: "Shed")
+        XCTAssertEqual(before.count, 1)
+
+        let from = vault.url(for: "Projects/Shed.md")
+        let to = vault.url(for: "Projects/Garden shed.md")
+        try FileManager.default.moveItem(at: from, to: to)
+        var renamed = try vault.loadNote(relativePath: "Projects/Garden shed.md")
+        renamed.frontmatter.set("title", "Garden shed")
+        try vault.save(renamed)
+
+        let report = try await engine.run()
+        XCTAssertEqual(report.tasksCancelled, 0)
+        XCTAssertEqual(report.remindersCreated, 0)
+        let moved = try await store.reminders(inList: "Garden shed")
+        XCTAssertEqual(moved.map(\.title), ["Buy screws"])
+        let task = try vault.loadNote(relativePath: "Projects/Garden shed.md").tasks[0]
+        XCTAssertFalse(task.isDone)
+        XCTAssertEqual(task.status, .open)
+    }
+
+    func testACopiedTaskLineGetsItsOwnId() async throws {
+        try writeInbox("- [ ] Buy milk ^tabc123\n")
+        var project = try vault.createNote(kind: .project, title: "Shopping")
+        project.body = "- [ ] Buy milk ^tabc123\n"
+        try vault.save(project)
+        let report = try await engine.run()
+        XCTAssertEqual(report.remindersCreated, 2)
+        let inboxID = try inbox().tasks[0].id
+        let projectID = try vault.loadNote(relativePath: "Projects/Shopping.md").tasks[0].id
+        XCTAssertNotNil(inboxID)
+        XCTAssertNotNil(projectID)
+        XCTAssertNotEqual(inboxID, projectID)
+        let second = try await engine.run()
+        XCTAssertEqual(second.remindersCreated + second.remindersUpdated + second.tasksUpdated, 0)
+    }
+
+    func testIdTokenInAReminderTitleDoesNotBecomeTheTaskId() async throws {
+        try writeInbox("")
+        try await store.simulateUserCreate(list: "Inbox", title: "Pay ^tabc123 the bill @done(2026-01-01 10:00)")
+        try await engine.run()
+        let task = try inbox().tasks[0]
+        XCTAssertEqual(task.title, "Pay the bill")
+        XCTAssertNotEqual(task.id, "tabc123")
+        XCTAssertFalse(task.isDone)
+        XCTAssertNotNil(store.record(withMarkerFor: task.id ?? ""))
+    }
+
+    func testEditsMadeWhileSyncingAreKept() async throws {
+        try writeInbox("- [ ] Buy milk\n")
+        try await engine.run()
+        let reminder = try await store.reminders(inList: "Inbox")[0]
+        store.simulateUserEdit(identifier: reminder.identifier) { $0.isCompleted = true; $0.completedAt = self.fixedNow }
+        // While the engine waits on Reminders, the user adds a paragraph to the same note.
+        let inboxURL = vault.url(for: "Inbox.md")
+        store.beforeFetch = {
+            let text = try String(contentsOf: inboxURL, encoding: .utf8) + "\nA new paragraph\n"
+            try text.write(to: inboxURL, atomically: true, encoding: .utf8)
+            try FileManager.default.setAttributes([.modificationDate: Date().addingTimeInterval(10)], ofItemAtPath: inboxURL.path)
+        }
+        let report = try await engine.run()
+        let text = try inbox().text
+        XCTAssertTrue(text.contains("A new paragraph"), text)
+        XCTAssertTrue(text.contains("- [x] Buy milk"), text)
+        XCTAssertEqual(report.warnings.count, 1)
+    }
+
+    func testIdsSurviveAFailureWhileTalkingToReminders() async throws {
+        try writeInbox("- [ ] Buy milk\n- [ ] Buy bread\n")
+        store.failNextCreate = true
+        do {
+            try await engine.run()
+            XCTFail("expected the simulated failure")
+        } catch {}
+        let ids = try inbox().tasks.compactMap(\.id)
+        XCTAssertEqual(ids.count, 2, "ids are written before Reminders is touched")
+        let report = try await engine.run()
+        XCTAssertEqual(report.remindersCreated, 2)
+        XCTAssertEqual(report.idsAssigned, 0)
+        let again = try await engine.run()
+        XCTAssertEqual(again.remindersCreated, 0)
+        let total = try await store.reminders(inList: "Inbox").count
+        XCTAssertEqual(total, 2)
     }
 
     func testNotesWithSyncFalseAndArchivedAreIgnored() async throws {

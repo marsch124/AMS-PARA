@@ -95,4 +95,37 @@ final class CaptureTests: XCTestCase {
         XCTAssertEqual(note.body, "# Inbox\n\n## Notes\n- a thought\n")
         XCTAssertEqual(index, 3)
     }
+
+    func testCaptureToAPathOutsideTheVaultLandsInTheInbox() throws {
+        let vault = try makeTemporaryVault()
+        defer { removeVault(vault) }
+        let outside = vault.rootURL.deletingLastPathComponent().appendingPathComponent("outside-\(UUID().uuidString).md")
+        try "# Outside\n".write(to: outside, atomically: true, encoding: .utf8)
+        defer { try? FileManager.default.removeItem(at: outside) }
+        let item = CaptureItem(url: URL(string: "amspara://capture?text=hi&target=../\(outside.lastPathComponent)")!)!
+        let note = try vault.capture(item)
+        XCTAssertEqual(note.relativePath, "Inbox.md")
+        XCTAssertEqual(try String(contentsOf: outside, encoding: .utf8), "# Outside\n")
+        let config = CaptureItem(url: URL(string: "amspara://capture?text=hi&target=.ams-para/config.json")!)!
+        XCTAssertEqual(try vault.capture(config).relativePath, "Inbox.md")
+    }
+
+    func testOnlyWebAndMailLinksAreKept() {
+        XCTAssertNil(CaptureItem(url: URL(string: "amspara://capture?text=x&url=file:///etc/passwd")!)?.url)
+        XCTAssertNil(CaptureItem(url: URL(string: "amspara://capture?text=x&url=javascript:alert(1)")!)?.url)
+        XCTAssertEqual(CaptureItem(url: URL(string: "amspara://capture?text=x&url=https://example.com")!)?.url?.host, "example.com")
+    }
+
+    func testDrainKeepsItemsAppendedMeanwhile() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("outbox-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let outbox = CaptureOutbox(fileURL: dir.appendingPathComponent("capture-outbox.jsonl"))
+        try outbox.append(CaptureItem(text: "one"))
+        let drained = outbox.drain()
+        try outbox.append(CaptureItem(text: "two"))
+        XCTAssertEqual(drained.map(\.text), ["one"])
+        XCTAssertEqual(outbox.peek().map(\.text), ["two"])
+        outbox.requeue(drained)
+        XCTAssertEqual(Set(outbox.peek().map(\.text)), ["one", "two"])
+    }
 }

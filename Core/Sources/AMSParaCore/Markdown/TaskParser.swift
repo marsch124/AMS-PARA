@@ -99,7 +99,7 @@ public struct TaskItem: Equatable, Sendable {
         var parts: [String] = [title.trimmingCharacters(in: .whitespaces)]
         if priority > 0 { parts.append(String(repeating: "!", count: priority)) }
         if let dueDate { parts.append(">\(dueDate)" + (dueTime.map { "T\($0)" } ?? "")) }
-        if status == .done, let doneStamp { parts.append("@done(\(doneStamp))") }
+        if let doneStamp { parts.append("@done(\(doneStamp))") }
         if let id { parts.append("^\(id)") }
         return "\(indent)\(bullet) [\(status.rawValue)] \(parts.joined(separator: " "))"
     }

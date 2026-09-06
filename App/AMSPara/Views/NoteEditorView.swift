@@ -12,6 +12,7 @@ struct NoteEditorView: View {
     @State private var showTasks = true
     @State private var showLinks = false
     @State private var confirmTrash = false
+    @State private var vaultPath: String?
     @AppStorage("editorMode") private var mode: EditorMode = .edit
 
     enum EditorMode: String, CaseIterable, Identifiable {
@@ -99,15 +100,24 @@ struct NoteEditorView: View {
             }
             .padding(8)
         }
-        .onAppear { text = storedText }
+        .onAppear {
+            text = storedText
+            vaultPath = model.vaultPath
+            model.flushEditor = flushSave
+        }
         .onDisappear {
+            model.flushEditor = nil
             // Runs while SwiftUI is swapping views; save after the update, not inside it.
             pendingSave?.cancel()
             pendingSave = nil
             if isDirty {
                 let unsaved = text
+                let openedIn = vaultPath
                 isDirty = false
-                model.afterUpdate { model.saveText(unsaved, forNoteAt: path) }
+                model.afterUpdate {
+                    // Only into the vault the note was opened from.
+                    if model.vaultPath == openedIn { model.saveText(unsaved, forNoteAt: path) }
+                }
             }
         }
         .onChange(of: storedText) { _, newValue in

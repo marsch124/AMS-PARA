@@ -5,6 +5,9 @@ public enum VaultError: Error, LocalizedError, Equatable {
     case noteNotFound(String)
     case noteAlreadyExists(String)
     case invalidTitle
+    case outsideVault(String)
+    case modifiedOnDisk(String)
+    case unreadable(String)
 
     public var errorDescription: String? {
         switch self {
@@ -12,6 +15,9 @@ public enum VaultError: Error, LocalizedError, Equatable {
         case .noteNotFound(let p): return "Note not found: \(p)"
         case .noteAlreadyExists(let p): return "A note already exists at \(p)"
         case .invalidTitle: return "The title is empty or contains only invalid characters."
+        case .outsideVault(let p): return "\(p) is not inside the vault."
+        case .modifiedOnDisk(let p): return "\(p) was changed on disk by something else since it was opened."
+        case .unreadable(let p): return "\(p) could not be read as text."
         }
     }
 }
@@ -99,6 +105,17 @@ public final class Vault {
         rootURL.appendingPathComponent(relativePath)
     }
 
+    /// True when the path stays inside the vault: no `..`, no absolute path, and a `.md` file
+    /// in one of the note folders (or the Inbox). Used for paths that come from outside the app.
+    public func isNotePath(_ relativePath: String) -> Bool {
+        let parts = relativePath.split(separator: "/", omittingEmptySubsequences: false).map(String.init)
+        guard !relativePath.hasPrefix("/"), !parts.contains(".."), !parts.contains(""),
+              relativePath.lowercased().hasSuffix(".md") else { return false }
+        let standardized = url(for: relativePath).standardizedFileURL.path
+        guard standardized.hasPrefix(rootURL.standardizedFileURL.path + "/") else { return false }
+        return kind(forRelativePath: relativePath) != nil
+    }
+
     public func relativePath(for url: URL) -> String? {
         let root = rootURL.path.hasSuffix("/") ? rootURL.path : rootURL.path + "/"
         let path = url.standardizedFileURL.resolvingSymlinksInPath().path
@@ -122,6 +139,7 @@ public final class Vault {
         if fm.fileExists(atPath: url(for: config.inboxFile).path) {
             result.append(try loadNote(relativePath: config.inboxFile))
         }
+        skippedFiles = []
         for kind in [ParaKind.project, .area, .resource, .archive, .daily, .goal] {
             result.append(contentsOf: try notes(kind: kind))
         }
@@ -142,7 +160,12 @@ public final class Vault {
             guard fileURL.pathExtension.lowercased() == "md",
                   (try? fileURL.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) == true,
                   let rel = relativePath(for: fileURL) else { continue }
-            result.append(try loadNote(relativePath: rel))
+            // One unreadable file must not hide the whole vault; it is skipped and reported.
+            do {
+                result.append(try loadNote(relativePath: rel))
+            } catch {
+                skippedFiles.append(rel)
+            }
         }
         if kind == .daily {
             // Newest first; weekly notes sort by their Monday among the daily notes.
@@ -202,21 +225,62 @@ public final class Vault {
         return note
     }
 
+    /// Files `allNotes()` could not read on its last run, relative to the vault.
+    public private(set) var skippedFiles: [String] = []
+
     public func loadNote(relativePath: String) throws -> Note {
         let fileURL = url(for: relativePath)
         guard fm.fileExists(atPath: fileURL.path) else { throw VaultError.noteNotFound(relativePath) }
-        let text = try String(contentsOf: fileURL, encoding: .utf8)
+        let data = try Data(contentsOf: fileURL)
+        guard let text = Self.decodeText(data) else { throw VaultError.unreadable(relativePath) }
         let modified = try? fileURL.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate
         let kind = kind(forRelativePath: relativePath) ?? .resource
         return Note(relativePath: relativePath, kind: kind, text: text, modifiedAt: modified)
     }
 
+    /// UTF-8 first, then UTF-16 with a byte-order mark, then Windows Latin text.
+    static func decodeText(_ data: Data) -> String? {
+        if let s = String(data: data, encoding: .utf8) { return s }
+        if data.starts(with: [0xFF, 0xFE]) || data.starts(with: [0xFE, 0xFF]), let s = String(data: data, encoding: .utf16) { return s }
+        return String(data: data, encoding: .windowsCP1252)
+    }
+
+    /// The file's current modification date, or nil when it does not exist.
+    public func modificationDate(of relativePath: String) -> Date? {
+        try? url(for: relativePath).resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate
+    }
+
     // MARK: Writing
 
-    public func save(_ note: Note) throws {
+    /// Writes the note. When the file on disk is newer than the copy the note was loaded from
+    /// (another device, another editor), nothing is written and `modifiedOnDisk` is thrown, so
+    /// the caller can reload and merge instead of overwriting. Returns the note with the new
+    /// modification date, which callers should keep so their next save is accepted.
+    @discardableResult
+    public func save(_ note: Note, force: Bool = false) throws -> Note {
         let fileURL = url(for: note.relativePath)
+        if !force, let loaded = note.modifiedAt, let onDisk = modificationDate(of: note.relativePath),
+           onDisk.timeIntervalSince(loaded) > 1.0 {
+            throw VaultError.modifiedOnDisk(note.relativePath)
+        }
         try fm.createDirectory(at: fileURL.deletingLastPathComponent(), withIntermediateDirectories: true)
         try note.text.write(to: fileURL, atomically: true, encoding: .utf8)
+        var saved = note
+        saved.modifiedAt = modificationDate(of: note.relativePath) ?? Date()
+        return saved
+    }
+
+    /// Writes the note's text next to the original as "<name> (conflict yyyy-MM-dd HHmm).md",
+    /// for the case where both sides changed. Returns the new note.
+    @discardableResult
+    public func saveConflictCopy(of note: Note, at date: Date = Date()) throws -> Note {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HHmm"
+        let base = note.relativePath.hasSuffix(".md") ? String(note.relativePath.dropLast(3)) : note.relativePath
+        var copy = note
+        copy.relativePath = "\(base) (conflict \(formatter.string(from: date))).md"
+        copy.modifiedAt = nil
+        return try save(copy, force: true)
     }
 
     /// Creates a note from the kind's template (if present) or a minimal frontmatter block.
@@ -260,9 +324,20 @@ public final class Vault {
         archived.frontmatter.set("status", "archived")
         archived.frontmatter.set("archived", DateOnly.today().description)
         archived.frontmatter.set("sync", "false")
-        let target = "\(config.archiveFolder)/\(note.relativePath)"
+        var target = "\(config.archiveFolder)/\(note.relativePath)"
+        if fm.fileExists(atPath: url(for: target).path) {
+            // An older note with the same name is already archived; keep both.
+            let base = String(target.dropLast(3))
+            target = "\(base) (archived \(DateOnly.today())).md"
+            var n = 2
+            while fm.fileExists(atPath: url(for: target).path) {
+                target = "\(base) (archived \(DateOnly.today()) \(n)).md"
+                n += 1
+            }
+        }
         archived.relativePath = target
         archived.kind = .archive
+        archived.modifiedAt = nil
         try save(archived)
         try fm.removeItem(at: url(for: note.relativePath))
         return archived
