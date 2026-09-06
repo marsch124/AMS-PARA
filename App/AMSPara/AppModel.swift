@@ -2,6 +2,9 @@ import Foundation
 import SwiftUI
 import Combine
 import AMSParaCore
+#if os(macOS)
+import AppKit
+#endif
 
 enum SidebarSection: Hashable, Identifiable {
     case inbox
@@ -288,8 +291,7 @@ final class AppModel: ObservableObject {
         do {
             let note = try vault.createNote(kind: kind, title: title, extraFrontmatter: extraFrontmatter)
             reload()
-            section = .kind(kind)
-            selectedNotePath = note.relativePath
+            show(section: .kind(kind), notePath: note.relativePath)
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -373,28 +375,90 @@ final class AppModel: ObservableObject {
     /// Follows a `[[wikilink]]` or `related:` reference. Unknown titles become a new resource note.
     func open(reference: String) {
         if let target = index.note(matching: reference) {
-            section = sidebarSection(for: target)
-            selectedNotePath = target.relativePath
+            show(target)
         } else {
             createNote(kind: .resource, title: reference)
         }
     }
 
+    /// Navigates the way two clicks would: the section changes first, and the note is
+    /// selected once the list for that section is on screen. Changing both in one
+    /// pass from inside the detail column is what scrambled the window.
+    func show(_ note: Note) {
+        show(section: sidebarSection(for: note), notePath: note.relativePath)
+    }
+
+    func show(section target: SidebarSection, notePath: String?) {
+        afterUpdate {
+            if self.section != target { self.section = target }
+            self.afterUpdate {
+                if self.selectedNotePath != notePath { self.selectedNotePath = notePath }
+            }
+        }
+    }
+
+    /// A short, non-modal message in the bottom banner.
+    func flash(_ message: String) {
+        lastCaptureMessage = message
+    }
+
     /// Follows a `goal:` reference. Unlike a wikilink this never creates a note: a goal that
     /// does not exist is a typo or a goal still to be written, so say so and show the Goals list.
     func openGoal(reference: String) {
-        let wanted = reference.trimmingCharacters(in: .whitespaces).lowercased()
         let goals = notes.filter { $0.kind == .goal }
-        let match = goals.first { $0.title.lowercased() == wanted || $0.fileName.lowercased() == wanted }
-            ?? goals.first { $0.title.localizedCaseInsensitiveContains(wanted) }
-        section = .kind(.goal)
+        let match = Self.goal(matching: reference, in: goals)
+        #if DEBUG && os(macOS)
+        reportLayout("before goal link", after: 0)
+        #endif
         if let match {
-            selectedNotePath = match.relativePath
+            show(match)
         } else {
-            selectedNotePath = nil
-            errorMessage = "No goal is called \"\(reference)\". Check the goal: line in the note, or create the goal with New › Goal."
+            show(section: .kind(.goal), notePath: nil)
+            flash("No goal is called \"\(reference)\". Check the goal: line, or create it with New \u{203A} Goal.")
+        }
+        #if DEBUG && os(macOS)
+        reportLayout("after goal link", after: 1)
+        #endif
+    }
+
+    /// Finds the goal a `goal:` line points at: exact title or file name first, then
+    /// either one containing the other, ignoring case and punctuation.
+    static func goal(matching reference: String, in goals: [Note]) -> Note? {
+        func fold(_ s: String) -> String {
+            s.lowercased().filter { $0.isLetter || $0.isNumber || $0 == " " }
+                .split(separator: " ").joined(separator: " ")
+        }
+        let wanted = fold(reference)
+        guard !wanted.isEmpty else { return nil }
+        let names: [(Note, [String])] = goals.map { ($0, [fold($0.title), fold($0.displayTitle), fold($0.fileName)]) }
+        if let exact = names.first(where: { $0.1.contains(wanted) }) { return exact.0 }
+        return names.first { $0.1.contains { !$0.isEmpty && ($0.contains(wanted) || wanted.contains($0)) } }?.0
+    }
+
+    #if DEBUG && os(macOS)
+    /// Prints the window's view tree a moment later, so a layout that went wrong can be
+    /// read from the console: which scroll view moved, and whether the content overflows.
+    func reportLayout(_ label: String, after seconds: Double) {
+        Task { @MainActor in
+            if seconds > 0 { try? await Task.sleep(for: .seconds(seconds)) }
+            guard let window = NSApp.keyWindow ?? NSApp.windows.first(where: { $0.isVisible }),
+                  let content = window.contentView else { return }
+            var lines = ["AMSPARA-LAYOUT \(label): window \(window.frame.size) content \(content.bounds.size) safeArea \(content.safeAreaInsets)"]
+            func walk(_ view: NSView, depth: Int) {
+                if depth <= 2 || view is NSScrollView {
+                    var line = String(repeating: "  ", count: depth) + "\(type(of: view)) frame=\(view.frame)"
+                    if let scroll = view as? NSScrollView {
+                        line += " visibleOrigin=\(scroll.documentVisibleRect.origin) insets=\(scroll.contentInsets) doc=\(scroll.documentView?.frame.size ?? .zero)"
+                    }
+                    lines.append(line)
+                }
+                for sub in view.subviews { walk(sub, depth: depth + 1) }
+            }
+            walk(content, depth: 0)
+            print(lines.joined(separator: "\n"))
         }
     }
+    #endif
 
     func sidebarSection(for note: Note) -> SidebarSection {
         switch note.kind {

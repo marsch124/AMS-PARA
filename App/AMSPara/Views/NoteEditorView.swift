@@ -324,8 +324,7 @@ struct LinkedNotesList: View {
         VStack(alignment: .leading, spacing: 4) {
             ForEach(notes) { linked in
                 Button {
-                    model.section = model.sidebarSection(for: linked)
-                    model.selectedNotePath = linked.relativePath
+                    model.show(linked)
                 } label: {
                     HStack(spacing: 8) {
                         KindBadge(kind: linked.kind, size: 18)
@@ -466,8 +465,7 @@ struct GoalDashboardView: View {
             } else {
                 ForEach(serving) { note in
                     Button {
-                        model.section = model.sidebarSection(for: note)
-                        model.selectedNotePath = note.relativePath
+                        model.show(note)
                     } label: {
                         HStack(spacing: 8) {
                             KindBadge(kind: note.kind, size: 18)

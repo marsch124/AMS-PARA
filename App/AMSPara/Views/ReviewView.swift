@@ -23,8 +23,7 @@ struct ReviewView: View {
                         .foregroundStyle(.secondary)
                 } else {
                     Button {
-                        model.section = .inbox
-                        model.selectedNotePath = model.vault?.config.inboxFile
+                        model.show(section: .inbox, notePath: model.vault?.config.inboxFile)
                     } label: {
                         Label("\(report.inboxOpenTasks) open items to file into projects or areas", systemImage: "tray")
                     }
