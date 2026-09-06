@@ -63,23 +63,30 @@ struct NoteEditorView: View {
                     Divider()
                 }
             }
-            HStack(spacing: 0) {
-                if mode != .preview {
-                    TextEditor(text: $text)
-                        .font(.system(.body, design: .monospaced))
-                        .scrollContentBackground(.hidden)
-                        .padding(8)
-                        .onChange(of: text) { _, newValue in
-                            scheduleSave(newValue)
-                        }
+            // The editor takes whatever height is left and never asks for more. Without this
+            // guard, expanding a disclosure above it made the text editor report its full
+            // text height as a minimum, and the window's content grew past the window.
+            GeometryReader { geo in
+                HStack(spacing: 0) {
+                    if mode != .preview {
+                        TextEditor(text: $text)
+                            .font(.system(.body, design: .monospaced))
+                            .scrollContentBackground(.hidden)
+                            .padding(8)
+                            .onChange(of: text) { _, newValue in
+                                scheduleSave(newValue)
+                            }
+                    }
+                    if mode == .split {
+                        Divider()
+                    }
+                    if mode != .edit, let note {
+                        MarkdownPreview(note: note, beforeToggle: flushSave)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    }
                 }
-                if mode == .split {
-                    Divider()
-                }
-                if mode != .edit, let note {
-                    MarkdownPreview(note: note, beforeToggle: flushSave)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                }
+                .frame(width: geo.size.width, height: geo.size.height)
+                .clipped()
             }
             Divider()
             HStack {

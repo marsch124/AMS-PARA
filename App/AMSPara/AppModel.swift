@@ -58,7 +58,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 29
+    static let number = 30
 }
 
 @MainActor
@@ -481,8 +481,7 @@ final class AppModel: ObservableObject {
     private var clickMonitor: Any?
 
     /// Logs every click with the AppKit view it landed on, then checks whether the window's
-    /// content grew past the window. If it did, the window is nudged one point so SwiftUI
-    /// lays the split view out again at the right size.
+    /// content grew past the window and records the view tree if it did.
     private func installClickMonitor() {
         clickMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .leftMouseUp]) { [weak self] event in
             guard let self, let window = event.window, let content = window.contentView else { return event }
@@ -506,15 +505,6 @@ final class AppModel: ObservableObject {
         guard let grown else { return }
         log("OVERFLOW after \(cause): \(type(of: grown)) frame=\(grown.frame) in \(content.bounds.size)")
         log(layoutReport("overflow"))
-        var frame = window.frame
-        frame.size.height += 1
-        window.setFrame(frame, display: true)
-        frame.size.height -= 1
-        window.setFrame(frame, display: true)
-        Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(300))
-            self.log(self.layoutReport("after repair"))
-        }
     }
 
     /// Records the window's view tree, so a layout that went wrong can be read from the
