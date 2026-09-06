@@ -43,8 +43,8 @@ struct AMSParaApp: App {
             SettingsView()
                 .environmentObject(model)
         }
-        Window("AMS PARA Help", id: "help") {
-            HelpView()
+        WindowGroup("AMS PARA Help", id: "help", for: HelpView.Page.self) { page in
+            HelpView(page: page.wrappedValue ?? .howItWorks)
         }
         .defaultSize(width: 720, height: 640)
         #endif
@@ -57,9 +57,9 @@ struct HelpMenuButtons: View {
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
-        Button("How AMS PARA Works") { openWindow(id: "help") }
+        Button("How AMS PARA Works") { openWindow(id: "help", value: HelpView.Page.howItWorks) }
             .keyboardShortcut("?", modifiers: [.command])
-        Button("Version History") { openWindow(id: "help") }
+        Button("Version History") { openWindow(id: "help", value: HelpView.Page.versionHistory) }
     }
 }
 #endif

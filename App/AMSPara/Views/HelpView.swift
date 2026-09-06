@@ -4,7 +4,7 @@ import SwiftUI
 /// app bundle (`Docs/`). Rendered with a small renderer that knows headings, bullets,
 /// paragraphs and fenced code, which is all the documents use.
 struct HelpView: View {
-    enum Page: String, CaseIterable, Identifiable {
+    enum Page: String, CaseIterable, Identifiable, Codable, Hashable {
         case howItWorks = "How it works"
         case versionHistory = "Version history"
 
