@@ -2,7 +2,7 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
-## Build 39 · 6 September 2026
+## Builds 39 and 40 · 6 September 2026
 
 Hardening after a code audit. Nothing new to learn; the app is more careful with your files.
 

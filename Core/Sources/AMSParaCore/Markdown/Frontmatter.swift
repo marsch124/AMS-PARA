@@ -85,7 +85,10 @@ public struct Frontmatter: Equatable, Sendable {
     /// Splits a document into frontmatter (if it starts with a `---` fence) and body.
     /// A leading `---` that turns out to enclose prose (a horizontal rule) is left as body.
     public static func parse(_ text: String) -> (frontmatter: Frontmatter, body: String) {
-        let cleaned = text.hasPrefix("\u{FEFF}") ? String(text.dropFirst()) : text
+        // Swift treats "\r\n" as one character, so Windows line endings would never split on
+        // "\n"; they are normalised here, which also gives the whole note plain line feeds.
+        var cleaned = text.replacingOccurrences(of: "\r\n", with: "\n")
+        if cleaned.hasPrefix("\u{FEFF}") { cleaned = String(cleaned.dropFirst()) }
         let lines = cleaned.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
         guard lines.first?.trimmingCharacters(in: .whitespacesAndNewlines) == "---" else {
             return (Frontmatter(), cleaned)
