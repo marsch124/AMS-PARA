@@ -272,6 +272,17 @@ public final class Vault {
         try fm.removeItem(at: url(for: note.relativePath))
     }
 
+    /// Moves the note's file to the system Trash, so a mistake can be undone in Finder.
+    /// Falls back to deleting where the Trash is not available.
+    public func trash(_ note: Note) throws {
+        let fileURL = url(for: note.relativePath)
+        do {
+            try fm.trashItem(at: fileURL, resultingItemURL: nil)
+        } catch {
+            try fm.removeItem(at: fileURL)
+        }
+    }
+
     public static func sanitizeFileName(_ title: String) -> String {
         let forbidden = CharacterSet(charactersIn: "/\\:*?\"<>|\n\r\t").union(.controlCharacters)
         let cleaned = title.unicodeScalars.map { forbidden.contains($0) ? " " : Character($0) }

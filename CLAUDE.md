@@ -51,6 +51,12 @@ section/note changes and the window view tree; an OVERFLOW line appears
 if it ever happens again. Build 29's 1pt window nudge was removed (it made
 the window grow to the demanded height).
 
+## Deleting notes (build 31)
+
+Every note except Inbox can go to the system Trash: editor toolbar button
+(⌘⌫) or right-click in the note list, both with a confirmation. Goals can
+be archived too. `Vault.trash` uses `trashItem`, falling back to delete.
+
 ## Not built (by choice)
 
 Saved searches. Roadmap stopped there on his request.

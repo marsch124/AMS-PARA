@@ -58,7 +58,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 30
+    static let number = 31
 }
 
 @MainActor
@@ -346,6 +346,25 @@ final class AppModel: ObservableObject {
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    /// Moves a note to the Trash. The Inbox note stays; empty it instead.
+    func trash(_ note: Note) {
+        guard let vault, note.kind != .inbox else { return }
+        do {
+            try vault.trash(note)
+            log("trashed \(note.relativePath)")
+            if selectedNotePath == note.relativePath { selectedNotePath = nil }
+            reload()
+            flash("Moved \u{201C}\(note.displayTitle)\u{201D} to the Trash")
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    /// Notes that can be archived: the working PARA kinds and goals.
+    func canArchive(_ note: Note) -> Bool {
+        [.project, .area, .resource, .goal].contains(note.kind)
     }
 
     func toggle(_ ref: TaskRef) {

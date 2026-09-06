@@ -59,6 +59,15 @@ final class VaultTests: XCTestCase {
         XCTAssertEqual(vault.kind(forRelativePath: "Resources/Books/Deep Work.md"), .resource)
     }
 
+    func testTrashRemovesNoteFile() throws {
+        let note = try vault.createNote(kind: .goal, title: "Old goal")
+        let path = vault.rootURL.appendingPathComponent(note.relativePath).path
+        XCTAssertTrue(FileManager.default.fileExists(atPath: path))
+        try vault.trash(note)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: path))
+        XCTAssertFalse(try vault.allNotes().contains { $0.relativePath == note.relativePath })
+    }
+
     func testArchiveMovesNoteAndDisablesSync() throws {
         let note = try vault.createNote(kind: .project, title: "Old")
         let archived = try vault.archive(note)

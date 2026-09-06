@@ -11,6 +11,7 @@ struct NoteEditorView: View {
     @State private var pendingSave: Task<Void, Never>?
     @State private var showTasks = true
     @State private var showLinks = false
+    @State private var confirmTrash = false
     @AppStorage("editorMode") private var mode: EditorMode = .edit
 
     enum EditorMode: String, CaseIterable, Identifiable {
@@ -112,6 +113,17 @@ struct NoteEditorView: View {
         .onChange(of: storedText) { _, newValue in
             if !isDirty && newValue != text { text = newValue }
         }
+        .confirmationDialog("Move \u{201C}\(note?.displayTitle ?? "")\u{201D} to the Trash?", isPresented: $confirmTrash) {
+            Button("Move to Trash", role: .destructive) {
+                guard let note else { return }
+                pendingSave?.cancel()
+                pendingSave = nil
+                isDirty = false
+                model.trash(note)
+            }
+        } message: {
+            Text("You can put it back from the Trash in Finder.")
+        }
         .navigationTitle(note?.title ?? path)
         .toolbar {
             ToolbarItemGroup {
@@ -122,7 +134,7 @@ struct NoteEditorView: View {
                 }
                 .pickerStyle(.segmented)
                 .help("Edit the markdown, see it rendered, or both")
-                if let note, note.kind == .project || note.kind == .area || note.kind == .resource {
+                if let note, model.canArchive(note) {
                     Button {
                         flushSave()
                         model.archive(note)
@@ -130,6 +142,15 @@ struct NoteEditorView: View {
                         Label("Archive", systemImage: "archivebox")
                     }
                     .help("Move this note to the Archive folder and stop syncing its tasks")
+                }
+                if let note, note.kind != .inbox {
+                    Button {
+                        confirmTrash = true
+                    } label: {
+                        Label("Move to Trash", systemImage: "trash")
+                    }
+                    .help("Move this note's file to the Trash (⌘⌫)")
+                    .keyboardShortcut(.delete, modifiers: [.command])
                 }
             }
         }

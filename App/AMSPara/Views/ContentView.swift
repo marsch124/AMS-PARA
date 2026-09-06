@@ -181,6 +181,7 @@ struct NoteListView: View {
     @EnvironmentObject private var model: AppModel
     /// Kept in the view, not the model: the toolbar search field writes to it while redrawing.
     @State private var searchText = ""
+    @State private var noteToTrash: Note?
 
     var body: some View {
         Group {
@@ -196,9 +197,24 @@ struct NoteListView: View {
                 List(model.notes(in: model.section, matching: searchText), selection: model.noteSelection) { note in
                     NoteRow(note: note)
                         .tag(note.relativePath)
+                        .contextMenu {
+                            if model.canArchive(note) {
+                                Button("Archive") { model.archive(note) }
+                            }
+                            if note.kind != .inbox {
+                                Button("Move to Trash…", role: .destructive) { noteToTrash = note }
+                            }
+                        }
                 }
                 .searchable(text: $searchText, prompt: "Search notes")
                 .onChange(of: model.section) { _, _ in searchText = "" }
+                .confirmationDialog("Move \u{201C}\(noteToTrash?.displayTitle ?? "")\u{201D} to the Trash?",
+                                    isPresented: Binding(get: { noteToTrash != nil }, set: { if !$0 { noteToTrash = nil } }),
+                                    presenting: noteToTrash) { note in
+                    Button("Move to Trash", role: .destructive) { model.trash(note) }
+                } message: { _ in
+                    Text("You can put it back from the Trash in Finder.")
+                }
             }
         }
         .navigationTitle(model.section?.title ?? "Notes")
