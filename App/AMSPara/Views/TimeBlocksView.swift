@@ -25,7 +25,11 @@ struct TimeBlocksView: View {
             list
         }
         .task { await model.loadTimeBlocks() }
-        .onAppear { if calendarID == nil { calendarID = model.timeBlockCalendarID } }
+        .onAppear {
+            if calendarID == nil { calendarID = model.timeBlockCalendarID }
+            consumeDraft()
+        }
+        .onChange(of: model.timeBlockDraft) { _, _ in consumeDraft() }
         .confirmationDialog("Delete \u{201C}\(blockToDelete?.title ?? "")\u{201D} from Apple Calendar?",
                             isPresented: Binding(get: { blockToDelete != nil }, set: { if !$0 { blockToDelete = nil } }),
                             presenting: blockToDelete) { block in
@@ -158,6 +162,18 @@ struct TimeBlocksView: View {
     }
 
     // MARK: Actions
+
+    /// "Block time for this…" on a task lands here.
+    private func consumeDraft() {
+        guard let draft = model.timeBlockDraft else { return }
+        editingID = nil
+        title = draft.title
+        notes = draft.notes
+        day = Date()
+        start = Self.roundedNow()
+        titleFocused = true
+        model.afterUpdate { model.timeBlockDraft = nil }
+    }
 
     private func edit(_ block: TimeBlock) {
         editingID = block.id

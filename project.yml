@@ -20,7 +20,10 @@ targets:
     type: application
     supportedDestinations: [macOS, iOS]
     sources:
+      # Synchronized folder (Xcode 16+): new source files are picked up without
+      # regenerating the project, so the committed project rarely changes.
       - path: App/AMSPara
+        type: syncedFolder
       # The built-in manual (Help window on the Mac, Settings › Help on iOS).
       - path: Docs
         buildPhase: resources
@@ -30,10 +33,14 @@ targets:
       - target: AMSParaShare
         platformFilter: iOS
     info:
-      path: App/AMSPara/Info.plist
+      path: App/Config/AMSPara/Info.plist
       properties:
         CFBundleDisplayName: AMS PARA
         CFBundleName: AMS PARA
+        UTExportedTypeDeclarations:
+          - UTTypeIdentifier: com.schabbauer.amspara.task
+            UTTypeDescription: AMS PARA task
+            UTTypeConformsTo: [public.data]
         # Without this key macOS and iOS ignore the AppIcon set in the asset catalog.
         CFBundleIconName: AppIcon
         LSApplicationCategoryType: public.app-category.productivity
@@ -49,7 +56,7 @@ targets:
         UISupportsDocumentBrowser: true
         LSSupportsOpeningDocumentsInPlace: true
     entitlements:
-      path: App/AMSPara/AMSPara.entitlements
+      path: App/Config/AMSPara/AMSPara.entitlements
       properties:
         com.apple.security.app-sandbox: true
         com.apple.security.files.user-selected.read-write: true
@@ -72,11 +79,12 @@ targets:
     platform: iOS
     sources:
       - path: App/AMSParaShare
+        type: syncedFolder
     dependencies:
       - package: AMSParaCore
         product: AMSParaCore
     info:
-      path: App/AMSParaShare/Info.plist
+      path: App/Config/AMSParaShare/Info.plist
       properties:
         CFBundleDisplayName: AMS PARA
         NSExtension:
@@ -88,7 +96,7 @@ targets:
               NSExtensionActivationSupportsWebURLWithMaxCount: 1
               NSExtensionActivationSupportsWebPageWithMaxCount: 1
     entitlements:
-      path: App/AMSParaShare/AMSParaShare.entitlements
+      path: App/Config/AMSParaShare/AMSParaShare.entitlements
       properties:
         com.apple.security.application-groups: [group.com.schabbauer.amspara]
     settings:

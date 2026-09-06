@@ -113,4 +113,36 @@ final class SubtaskNoteTests: XCTestCase {
         note.appendSubtask(TaskItem(title: "Sibling's child"), to: sibling)
         XCTAssertEqual(note.lines.last, "    - [ ] Sibling's child")
     }
+
+    func testCompletingARepeatingTaskAddsTheNextOne() {
+        var note = Note(relativePath: "Projects/Home.md", kind: .project, text: "## Tasks\n\n- [ ] Water plants @repeat(weekly) >2026-09-07\n    - [ ] Kitchen\n- [ ] Other\n")
+        let task = note.tasks[0]
+        let next = note.complete(task: task, at: DoneStamp.date(from: "2026-09-07 09:00")!)
+        XCTAssertEqual(next?.dueDate, DateOnly("2026-09-14"))
+        let lines = note.lines
+        XCTAssertTrue(lines[2].hasPrefix("- [x] Water plants >2026-09-07 @repeat(weekly) @done("), lines[2])
+        XCTAssertEqual(lines[3], "- [ ] Water plants >2026-09-14 @repeat(weekly)")
+        XCTAssertEqual(lines[4], "    - [ ] Kitchen")
+    }
+
+    func testTaskBlockMovesWithItsSubtasks() {
+        var source = Note(relativePath: "Inbox.md", kind: .inbox, text: "## Tasks\n\n- [ ] Plan trip ^tabc123\n    - [ ] Book hotel\n- [ ] Other\n")
+        let block = source.removeTaskBlock(for: source.tasks[0])
+        XCTAssertEqual(block, ["- [ ] Plan trip ^tabc123", "    - [ ] Book hotel"])
+        XCTAssertEqual(source.tasks.map(\.title), ["Other"])
+        var target = Note(relativePath: "Projects/Trip.md", kind: .project, text: "# Trip\n\n## Tasks\n\n- [ ] Existing\n\n## Notes\n")
+        target.appendTaskBlock(block!)
+        XCTAssertEqual(target.tasks.map(\.title), ["Existing", "Plan trip", "Book hotel"])
+        XCTAssertEqual(target.tasks[2].parentLineIndex, target.tasks[1].lineIndex)
+    }
+
+    func testNextActionTagMovesBetweenTasks() {
+        var note = Note(relativePath: "Projects/Home.md", kind: .project, text: "- [ ] First #next\n- [ ] Second\n- [x] Done\n")
+        XCTAssertEqual(note.nextAction?.title, "First #next")
+        XCTAssertTrue(note.setNextAction(note.tasks[1]))
+        XCTAssertEqual(note.tasks.map(\.title), ["First", "Second #next", "Done"])
+        XCTAssertEqual(note.nextAction?.lineIndex, 1)
+        XCTAssertEqual(note.progress.done, 1)
+        XCTAssertEqual(note.progress.total, 3)
+    }
 }

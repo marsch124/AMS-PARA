@@ -115,4 +115,25 @@ final class TaskTimeAndSubtaskParserTests: XCTestCase {
         XCTAssertTrue(tasks[1].isSubtask)
         XCTAssertFalse(tasks[4].isSubtask)
     }
+
+    func testRepeatRulesParseAndRoundTrip() {
+        let task = TaskParser.parse(line: "- [ ] Water plants @repeat(weekly) >2026-09-07 ^tabc123")!
+        XCTAssertEqual(task.repeatRule, RepeatRule(unit: .week))
+        XCTAssertEqual(task.title, "Water plants")
+        XCTAssertEqual(task.serialized, "- [ ] Water plants >2026-09-07 @repeat(weekly) ^tabc123")
+        XCTAssertEqual(RepeatRule("every 2 weeks"), RepeatRule(count: 2, unit: .week))
+        XCTAssertEqual(RepeatRule("3m")?.description, "3m")
+        XCTAssertEqual(RepeatRule("monthly")?.label, "Every month")
+        XCTAssertNil(RepeatRule("sometimes"))
+    }
+
+    func testNextOccurrenceSkipsPastDates() {
+        let rule = RepeatRule(unit: .week)
+        let task = TaskItem(title: "Water plants", dueDate: DateOnly("2026-08-03")!, repeatRule: rule, id: "tabc123")
+        let next = task.nextOccurrence(completedOn: DateOnly("2026-09-05")!)!
+        XCTAssertEqual(next.dueDate, DateOnly("2026-09-07"))
+        XCTAssertNil(next.id)
+        XCTAssertEqual(next.status, .open)
+        XCTAssertNil(TaskItem(title: "Once").nextOccurrence(completedOn: .today()))
+    }
 }

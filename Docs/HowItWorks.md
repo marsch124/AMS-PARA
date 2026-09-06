@@ -60,6 +60,16 @@ Tasks are ordinary list lines inside the notes:
 
 The task box under the note header shows the same tasks as a checklist. Ticking there edits the line in the file.
 
+Right-click any task, anywhere in the app, for the task menu:
+
+- **Reschedule**: Today, Tomorrow, Next Monday, In a week, Pick a date, Remove date.
+- **Repeat**: every day, week, 2 weeks, month, 3 months or year. When you tick a repeating task, the next one appears below it with the next date. In the file this is `@repeat(weekly)`.
+- **Make this the next action** (in a project): the task gets a `#next` tag and a badge, and Today lists it under "Next actions". One per project.
+- **Block time for this…**: opens Time Blocks with the title filled in.
+- **Move to**: Inbox or any active project. Subtasks move along. The reminder follows on the next sync.
+
+You can also **drag** a task: onto a note in the middle column or onto Inbox to move it, onto a day in the Calendar's month grid or week list to set its date, or onto a day in the weekly note.
+
 ## Reminders sync
 
 The sync goes both ways. Press the sync button or ⇧⌘R, or let auto sync run at the interval set in Settings.
@@ -80,9 +90,10 @@ New › Goal creates a goal. A life goal has no date. A dated goal has a target 
 
 ## Today, Calendar, daily and weekly notes
 
-- **Today** shows the day's calendar events, overdue tasks, tasks due today, and undated tasks marked `!!` or more.
+- **Today** shows the day's calendar events, one next action per active project, overdue tasks, tasks due today, and undated tasks marked `!!` or more.
+- **Done** lists what you completed, day by day, for the last 30 days.
 - **Calendar** lets you pick a day, week or month. A daily note is created the first time you open a day. The week and month views show what is due and what was done.
-- A daily note shows the day's events and the tasks due that day above its own text. A weekly note shows the week.
+- A daily note shows the day's events and the tasks due that day above its own text. A weekly note shows all seven days as a plan: drop tasks onto a day, tick them off there.
 
 ## Weekly review
 

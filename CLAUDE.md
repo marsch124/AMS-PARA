@@ -139,6 +139,25 @@ Three reviews (sync engine, vault/markdown/capture, app layer) and the fixes:
 - Not done (by choice): caching task parsing for the month view (perf only),
   limiting first sync of old daily notes.
 
+## Task actions, Done, weekly plan (build 41)
+
+Core: `RepeatRule` + `TaskItem.repeatRule` (`@repeat(weekly|2w|…)`, serialized
+after the due date), `TaskItem.nextOccurrence`, `Note.complete(task:)` inserts
+the next occurrence below (also in `SyncEngine.reconcile` when Reminders
+completes it), `Note.taskBlock/removeTaskBlock/appendTaskBlock` move a task
+with its subtasks, `Note.setNextAction` (`#next` tag, one per note),
+`Note.nextAction`, `Note.progress`, `NoteIndex.nextActions()`.
+App: `TaskActions.swift` has `TaskTransfer` (UTType
+`com.schabbauer.amspara.task`, declared in Info.plist), `acceptsTaskDrop`,
+`TaskContextMenu` (reschedule/repeat/next/block time/move/open),
+`TaskDatePicker`. `TaskRow` is draggable with the menu; drops on note rows,
+sidebar Inbox, month cells, week headers, weekly-note day rows. `DoneView`
+(sidebar Done). `AppModel`: `setDueDate/setRepeat/makeNextAction/
+clearNextAction/moveTask/blockTime/task(for:)`, `timeBlockDraft`.
+Project: `type: syncedFolder` for App/AMSPara and App/AMSParaShare (Xcode 16
+synchronized groups) so new source files need no regeneration; Info.plist and
+entitlements live in `App/Config/<target>/`; CI commits `App/Config`.
+
 ## Not built (by choice)
 
 Saved searches. Roadmap stopped there on his request.

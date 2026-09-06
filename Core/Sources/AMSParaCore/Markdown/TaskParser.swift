@@ -23,6 +23,8 @@ public struct TaskItem: Equatable, Sendable {
     public var doneStamp: String?
     /// Tags found in the title, without `#`.
     public var tags: [String]
+    /// `@repeat(weekly)`: when the task is completed, a new open copy is created for the next date.
+    public var repeatRule: RepeatRule?
     /// Stable id without the caret, e.g. `t3fa2c1`. Assigned on first sync.
     public var id: String?
     public var indent: String
@@ -39,6 +41,7 @@ public struct TaskItem: Equatable, Sendable {
                 priority: Int = 0,
                 doneStamp: String? = nil,
                 tags: [String] = [],
+                repeatRule: RepeatRule? = nil,
                 id: String? = nil,
                 indent: String = "",
                 bullet: String = "-",
@@ -51,6 +54,7 @@ public struct TaskItem: Equatable, Sendable {
         self.priority = min(max(priority, 0), 3)
         self.doneStamp = doneStamp
         self.tags = tags
+        self.repeatRule = repeatRule
         self.id = id
         self.indent = indent
         self.bullet = bullet
@@ -94,11 +98,31 @@ public struct TaskItem: Equatable, Sendable {
         doneStamp = nil
     }
 
+    /// For a repeating task that was just completed: the next open copy, without an id, due on
+    /// the next date after the old due date (or after the completion day when it had none).
+    public func nextOccurrence(completedOn day: DateOnly, calendar: Calendar = .current) -> TaskItem? {
+        guard let rule = repeatRule else { return nil }
+        var next = rule.next(after: dueDate ?? day, calendar: calendar)
+        var guardCount = 0
+        while next <= day && guardCount < 400 {
+            next = rule.next(after: next, calendar: calendar)
+            guardCount += 1
+        }
+        var copy = self
+        copy.status = .open
+        copy.doneStamp = nil
+        copy.id = nil
+        copy.dueDate = next
+        copy.lineIndex = -1
+        return copy
+    }
+
     /// The canonical markdown line for this task.
     public var serialized: String {
         var parts: [String] = [title.trimmingCharacters(in: .whitespaces)]
         if priority > 0 { parts.append(String(repeating: "!", count: priority)) }
         if let dueDate { parts.append(">\(dueDate)" + (dueTime.map { "T\($0)" } ?? "")) }
+        if let repeatRule { parts.append("@repeat(\(repeatRule))") }
         if let doneStamp { parts.append("@done(\(doneStamp))") }
         if let id { parts.append("^\(id)") }
         return "\(indent)\(bullet) [\(status.rawValue)] \(parts.joined(separator: " "))"
@@ -112,12 +136,93 @@ public struct TaskItem: Equatable, Sendable {
     }
 }
 
+/// How often a task comes back: every N days, weeks, months or years.
+public struct RepeatRule: Equatable, Sendable, CustomStringConvertible {
+    public enum Unit: String, Sendable, CaseIterable {
+        case day = "d", week = "w", month = "m", year = "y"
+    }
+
+    public var count: Int
+    public var unit: Unit
+
+    public init(count: Int = 1, unit: Unit) {
+        self.count = max(1, count)
+        self.unit = unit
+    }
+
+    /// Accepts `daily`, `weekly`, `monthly`, `yearly`, `2w`, `3 months`, `every 2 weeks`.
+    public init?(_ text: String) {
+        var t = text.lowercased().trimmingCharacters(in: .whitespaces)
+        if t.hasPrefix("every ") { t = String(t.dropFirst(6)) }
+        switch t {
+        case "daily", "day", "days": self.init(unit: .day); return
+        case "weekly", "week", "weeks": self.init(unit: .week); return
+        case "monthly", "month", "months": self.init(unit: .month); return
+        case "yearly", "annually", "year", "years": self.init(unit: .year); return
+        default: break
+        }
+        let digits = t.prefix { $0.isNumber }
+        let rest = t.dropFirst(digits.count).trimmingCharacters(in: .whitespaces)
+        guard let n = Int(digits), n > 0 else { return nil }
+        let unit: Unit?
+        switch rest {
+        case "d", "day", "days": unit = .day
+        case "w", "wk", "week", "weeks": unit = .week
+        case "m", "mo", "month", "months": unit = .month
+        case "y", "yr", "year", "years": unit = .year
+        default: unit = nil
+        }
+        guard let unit else { return nil }
+        self.init(count: n, unit: unit)
+    }
+
+    public var description: String {
+        if count == 1 {
+            switch unit {
+            case .day: return "daily"
+            case .week: return "weekly"
+            case .month: return "monthly"
+            case .year: return "yearly"
+            }
+        }
+        return "\(count)\(unit.rawValue)"
+    }
+
+    /// "Every 2 weeks", for menus.
+    public var label: String {
+        switch (count, unit) {
+        case (1, .day): return "Every day"
+        case (1, .week): return "Every week"
+        case (1, .month): return "Every month"
+        case (1, .year): return "Every year"
+        case (let n, .day): return "Every \(n) days"
+        case (let n, .week): return "Every \(n) weeks"
+        case (let n, .month): return "Every \(n) months"
+        case (let n, .year): return "Every \(n) years"
+        }
+    }
+
+    public func next(after date: DateOnly, calendar: Calendar = .current) -> DateOnly {
+        let component: Calendar.Component
+        switch unit {
+        case .day: component = .day
+        case .week: component = .weekOfYear
+        case .month: component = .month
+        case .year: component = .year
+        }
+        guard let base = date.date(calendar: calendar),
+              let shifted = calendar.date(byAdding: component, value: count, to: base) else { return date }
+        return DateOnly(shifted, calendar: calendar)
+    }
+}
+
 public enum TaskParser {
     static let lineRegex = try! NSRegularExpression(pattern: #"^(\s*)([-*+])\s+\[([ xX>\-])\](?:\s+(.*))?$"#)
     static let idRegex = try! NSRegularExpression(pattern: #"(?<!\S)\^(t[0-9a-f]{4,12})(?!\S)"#)
     static let doneRegex = try! NSRegularExpression(pattern: #"(?<!\S)@done\(([^)]*)\)"#)
     static let dueRegex = try! NSRegularExpression(pattern: #"(?<!\S)>(\d{4}-\d{2}-\d{2})(?:T(\d{1,2}:\d{2}))?(?!\S)"#)
     static let priorityRegex = try! NSRegularExpression(pattern: #"(?<!\S)(!{1,3})(?!\S)"#)
+    static let repeatRegex = try! NSRegularExpression(pattern: #"(?<!\S)@repeat\(([^)]*)\)"#)
     static let tagRegex = try! NSRegularExpression(pattern: #"(?<!\S)#([\p{L}\p{N}_/\-]+)"#)
 
     /// Parses a single line. Returns nil when the line is not a task.
@@ -135,9 +240,11 @@ public enum TaskParser {
         var dueDate: DateOnly?
         var dueTime: TimeOfDay?
         var priority = 0
+        var repeatRule: RepeatRule?
 
         rest = extract(idRegex, from: rest) { id = $0 }
         rest = extract(doneRegex, from: rest) { doneStamp = $0.trimmingCharacters(in: .whitespaces) }
+        rest = extract(repeatRegex, from: rest) { repeatRule = RepeatRule($0) }
         let restNS = rest as NSString
         if let due = dueRegex.firstMatch(in: rest, range: NSRange(location: 0, length: restNS.length)) {
             dueDate = DateOnly(restNS.substring(with: due.range(at: 1)))
@@ -151,7 +258,7 @@ public enum TaskParser {
         let title = collapseWhitespace(rest)
         let tags = allCaptures(tagRegex, in: title)
         return TaskItem(status: status, title: title, dueDate: dueDate, dueTime: dueTime, priority: priority,
-                        doneStamp: doneStamp, tags: tags, id: id, indent: indent, bullet: bullet, lineIndex: lineIndex)
+                        doneStamp: doneStamp, tags: tags, repeatRule: repeatRule, id: id, indent: indent, bullet: bullet, lineIndex: lineIndex)
     }
 
     /// Parses every task line in a body, ignoring fenced code blocks. Indented tasks below another

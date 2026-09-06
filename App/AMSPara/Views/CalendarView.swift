@@ -161,6 +161,7 @@ struct WeekOverviewView: View {
                                 .font(.caption)
                                 .buttonStyle(.borderless)
                         }
+                        .acceptsTaskDrop { ref in model.setDueDate(ref, day.date) }
                     }
                 }
             }
@@ -213,6 +214,7 @@ struct MonthOverviewView: View {
                     ForEach(overview.days) { day in
                         MonthDayCell(day: day, isSelected: day.date == model.selectedDate)
                             .onTapGesture { model.openDailyNote(for: day.date) }
+                            .acceptsTaskDrop { ref in model.setDueDate(ref, day.date) }
                     }
                 }
                 .padding(8)

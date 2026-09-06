@@ -13,6 +13,7 @@ enum SidebarSection: Hashable, Identifiable {
     case review
     case map
     case timeBlocks
+    case done
     case search
     case kind(ParaKind)
 
@@ -26,6 +27,7 @@ enum SidebarSection: Hashable, Identifiable {
         case .review: return "Weekly review"
         case .map: return "Map"
         case .timeBlocks: return "Time Blocks"
+        case .done: return "Done"
         case .search: return "Search"
         case .kind(let kind): return kind.displayName
         }
@@ -39,6 +41,7 @@ enum SidebarSection: Hashable, Identifiable {
         case .review: return "checklist.checked"
         case .map: return "point.3.filled.connected.trianglepath.dotted"
         case .timeBlocks: return "calendar.badge.clock"
+        case .done: return "checkmark.circle"
         case .search: return "magnifyingglass"
         case .kind(.daily): return "calendar"
         case .kind(.goal): return "star"
@@ -50,7 +53,7 @@ enum SidebarSection: Hashable, Identifiable {
         }
     }
 
-    static let all: [SidebarSection] = [.inbox, .today, .calendar, .timeBlocks, .review, .map, .search, .kind(.goal), .kind(.project), .kind(.area), .kind(.resource), .kind(.archive)]
+    static let all: [SidebarSection] = [.inbox, .today, .calendar, .timeBlocks, .done, .review, .map, .search, .kind(.goal), .kind(.project), .kind(.area), .kind(.resource), .kind(.archive)]
 }
 
 /// The sheets the main window can present.
@@ -64,7 +67,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 40
+    static let number = 41
 }
 
 @MainActor
@@ -120,6 +123,13 @@ final class AppModel: ObservableObject {
     @Published private(set) var calendars: [CalendarInfo] = []
     /// The blocks AMS PARA wrote to Apple Calendar, a week back and two months ahead.
     @Published private(set) var timeBlocks: [TimeBlock] = []
+    /// Filled by "Block time for this…" on a task; the Time Blocks form picks it up.
+    @Published var timeBlockDraft: TimeBlockDraft?
+
+    struct TimeBlockDraft: Equatable {
+        var title: String
+        var notes: String
+    }
 
     private let defaults = UserDefaults.standard
     private let bookmarkKey = "vaultBookmark"
@@ -311,7 +321,7 @@ final class AppModel: ObservableObject {
         case .inbox?: base = notes.filter { $0.kind == .inbox }
         case .kind(let kind)?: base = notes.filter { $0.kind == kind }
         case .calendar?: base = index.dailyNotes
-        case .today?, .review?, .map?, .timeBlocks?, .search?, nil: base = notes
+        case .today?, .review?, .map?, .timeBlocks?, .done?, .search?, nil: base = notes
         }
         let query = searchText.trimmingCharacters(in: .whitespaces)
         guard !query.isEmpty else { return base }
@@ -324,6 +334,7 @@ final class AppModel: ObservableObject {
         case .today: return index.openTasks(dueOnOrBefore: .today()).count + (todayNote?.openTasks.count ?? 0)
         case .calendar, .map, .search: return 0
         case .timeBlocks: return timeBlocks.filter { $0.day == .today() }.count
+        case .done: return index.tasksCompleted(on: .today()).count
         case .review: return index.review(config: config).projectsNeedingAttention.count
         case .kind(let kind): return notes.filter { $0.kind == kind }.count
         }
@@ -559,10 +570,82 @@ final class AppModel: ObservableObject {
     func toggle(_ ref: TaskRef) {
         flushPendingEdits()
         guard var note = note(at: ref.notePath) else { return }
-        var task = ref.task
-        if task.isDone { task.markOpen() } else { task.markDone() }
-        note.replace(task: task)
+        if ref.task.isDone {
+            var task = ref.task
+            task.markOpen()
+            note.replace(task: task)
+        } else if let next = note.complete(task: ref.task) {
+            flash("Done. Next time: \(next.dueDate?.description ?? "")")
+        }
         save(note)
+    }
+
+    /// Finds a dragged task again in its note (by line, then by title).
+    func task(for transfer: TaskTransfer) -> TaskRef? {
+        guard let note = note(at: transfer.notePath) else { return nil }
+        let task = note.tasks.first { $0.lineIndex == transfer.lineIndex && $0.title == transfer.title }
+            ?? note.tasks.first { $0.title == transfer.title }
+        return task.map { TaskRef(notePath: note.relativePath, noteTitle: note.displayTitle, task: $0) }
+    }
+
+    func setDueDate(_ ref: TaskRef, _ date: DateOnly?) {
+        flushPendingEdits()
+        guard var note = note(at: ref.notePath) else { return }
+        var task = ref.task
+        task.dueDate = date
+        if date == nil { task.dueTime = nil }
+        guard note.replace(task: task) else { return }
+        save(note)
+    }
+
+    func setRepeat(_ ref: TaskRef, _ rule: RepeatRule?) {
+        flushPendingEdits()
+        guard var note = note(at: ref.notePath) else { return }
+        var task = ref.task
+        task.repeatRule = rule
+        guard note.replace(task: task) else { return }
+        save(note)
+    }
+
+    func makeNextAction(_ ref: TaskRef) {
+        flushPendingEdits()
+        guard var note = note(at: ref.notePath), note.setNextAction(ref.task) else { return }
+        save(note)
+    }
+
+    func clearNextAction(_ ref: TaskRef) {
+        flushPendingEdits()
+        guard var note = note(at: ref.notePath) else { return }
+        var task = ref.task
+        task.title = Note.removingTag(Note.nextActionTag, from: task.title)
+        guard note.replace(task: task) else { return }
+        save(note)
+    }
+
+    /// Moves a task (with its subtasks) to another note. Its id travels with it, so the
+    /// reminder follows on the next sync.
+    func moveTask(_ ref: TaskRef, to path: String) {
+        guard path != ref.notePath else { return }
+        flushPendingEdits()
+        guard var source = note(at: ref.notePath), var target = note(at: path) else { return }
+        guard let block = source.removeTaskBlock(for: ref.task) else { return }
+        target.appendTaskBlock(block)
+        guard save(source) else { return }
+        if save(target) {
+            log("moved task \"\(ref.task.title)\" \(ref.notePath) -> \(path)")
+            flash("Moved to \(target.displayTitle)")
+        }
+    }
+
+    /// Opens the Time Blocks section with a block prepared for this task.
+    func blockTime(for ref: TaskRef) {
+        let title = Note.removingTag(Note.nextActionTag, from: ref.task.title)
+        var lines = ["From \(ref.noteTitle)"]
+        if let encoded = ref.noteTitle.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed) {
+            lines.append("amspara://\(encoded)")
+        }
+        timeBlockDraft = TimeBlockDraft(title: title, notes: lines.joined(separator: "\n"))
+        show(section: .timeBlocks, notePath: nil)
     }
 
     func addTask(_ title: String, to path: String) {

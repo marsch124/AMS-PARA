@@ -2,6 +2,19 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 41 · 7 September 2026
+
+- **Next action per project.** Right-click a task in a project: "Make this the next action". It gets a "next" badge, shows on the project row, and Today lists one next action per active project.
+- **Drag tasks between notes.** Drag a task from any list onto a note in the middle column, or onto Inbox in the sidebar. Subtasks travel along, and the reminder follows on the next sync.
+- **Reschedule with one click.** Right-click a task: Today, Tomorrow, Next Monday, In a week, Pick a date, Remove date.
+- **Repeating tasks.** Right-click › Repeat: every day, week, 2 weeks, month, 3 months, year. When a repeating task is ticked, here or in Reminders, the next one appears below it with the next date. In the file it is `@repeat(weekly)`.
+- **Done.** A new sidebar section with everything completed, day by day, for the last 30 days, and a count for this week.
+- **Project progress.** Project rows show a small bar with done and total tasks, and "Due in 12 d" or "3 d overdue".
+- **Drag tasks onto the calendar.** Drop a task on a day in the month grid or the week list to set its date.
+- **Time block from a task.** Right-click a task › "Block time for this…" opens Time Blocks with the title filled in and a link back to the note.
+- **Weekly plan.** The weekly note shows all seven days. Drop tasks onto a day to plan it there, tick them off in place.
+- Under the hood: new files no longer need the project file rewritten, so pulls stop clashing with your Team setting after this one.
+
 ## Builds 39 and 40 · 6 September 2026
 
 Hardening after a code audit. Nothing new to learn; the app is more careful with your files.

@@ -279,6 +279,112 @@ public struct Note: Equatable, Identifiable, Sendable {
         lines = current
     }
 
+    /// The tag that marks a project's next action.
+    public static let nextActionTag = "next"
+
+    /// Inserts a task line right after another line, keeping the indent of the given task.
+    @discardableResult
+    public mutating func insert(task: TaskItem, afterLine lineIndex: Int) -> TaskItem {
+        var current = lines
+        var inserted = task
+        let at = min(max(lineIndex + 1, 0), current.count)
+        inserted.lineIndex = at
+        current.insert(inserted.serialized, at: at)
+        lines = current
+        return inserted
+    }
+
+    /// Marks a task done and, when it repeats, adds the next occurrence right below it.
+    /// Returns the new occurrence, if any.
+    @discardableResult
+    public mutating func complete(task: TaskItem, at date: Date = Date(), calendar: Calendar = .current) -> TaskItem? {
+        var done = task
+        done.markDone(at: date)
+        guard replace(task: done) else { return nil }
+        guard let next = done.nextOccurrence(completedOn: DateOnly(date, calendar: calendar), calendar: calendar) else { return nil }
+        let line = tasks.first { $0.id != nil && $0.id == done.id }?.lineIndex
+            ?? tasks.first { $0.title == done.title && $0.status == .done }?.lineIndex
+            ?? done.lineIndex
+        return insert(task: next, afterLine: line)
+    }
+
+    /// The task's line and its subtasks' lines, with the task itself at indent zero, for moving
+    /// it to another note. Returns nil when the task is not in the note.
+    public func taskBlock(for task: TaskItem) -> [String]? {
+        let all = tasks
+        guard let start = all.firstIndex(where: { $0.lineIndex == task.lineIndex && $0.title == task.title }) else { return nil }
+        let current = lines
+        var indexes = [task.lineIndex]
+        var j = start + 1
+        while j < all.count, all[j].indentLevel > all[start].indentLevel {
+            indexes.append(all[j].lineIndex)
+            j += 1
+        }
+        let baseIndent = all[start].indent
+        return indexes.map { i in
+            let line = current[i]
+            return line.hasPrefix(baseIndent) ? String(line.dropFirst(baseIndent.count)) : line
+        }
+    }
+
+    /// Removes a task with its subtasks. Returns the removed lines (see `taskBlock`).
+    @discardableResult
+    public mutating func removeTaskBlock(for task: TaskItem) -> [String]? {
+        guard let block = taskBlock(for: task) else { return nil }
+        var current = lines
+        let start = task.lineIndex
+        current.removeSubrange(start..<min(start + block.count, current.count))
+        lines = current
+        return block
+    }
+
+    /// Appends lines from `taskBlock` at the end of the Tasks section.
+    public mutating func appendTaskBlock(_ block: [String], sectionHeading: String = "Tasks") {
+        guard let first = block.first else { return }
+        let at = appendLine(first, under: sectionHeading)
+        var current = lines
+        current.insert(contentsOf: block.dropFirst(), at: min(at + 1, current.count))
+        lines = current
+    }
+
+    /// Makes this task the note's next action: it gets `#next`, every other task loses it.
+    /// Returns false when the task is not in the note.
+    @discardableResult
+    public mutating func setNextAction(_ task: TaskItem) -> Bool {
+        var current = lines
+        var found = false
+        for var t in tasks {
+            let isTarget = t.lineIndex == task.lineIndex && t.title == task.title
+            let has = t.tags.contains(Self.nextActionTag)
+            if isTarget { found = true }
+            if isTarget && !has {
+                t.title = t.title + " #" + Self.nextActionTag
+                current[t.lineIndex] = t.serialized
+            } else if !isTarget && has {
+                t.title = Self.removingTag(Self.nextActionTag, from: t.title)
+                current[t.lineIndex] = t.serialized
+            }
+        }
+        guard found else { return false }
+        lines = current
+        return true
+    }
+
+    public static func removingTag(_ tag: String, from title: String) -> String {
+        title.split(separator: " ").filter { $0 != "#" + tag }.joined(separator: " ")
+    }
+
+    /// The open top-level task tagged `#next`, else nil.
+    public var nextAction: TaskItem? {
+        tasks.first { !$0.isDone && !$0.isSubtask && $0.tags.contains(Self.nextActionTag) }
+    }
+
+    /// Done and total counts of top-level tasks, cancelled ones left out.
+    public var progress: (done: Int, total: Int) {
+        let top = tasks.filter { !$0.isSubtask && $0.status != .cancelled }
+        return (top.filter { $0.status == .done }.count, top.count)
+    }
+
     // MARK: Links
 
     static let wikilinkRegex = try! NSRegularExpression(pattern: #"\[\[([^\]\|#]+)(?:#[^\]\|]*)?(?:\|[^\]]*)?\]\]"#)

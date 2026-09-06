@@ -275,17 +275,12 @@ struct TaskChecklist: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             ForEach(note.tasks, id: \.lineIndex) { task in
-                TaskRow(ref: TaskRef(notePath: note.relativePath, noteTitle: note.title, task: task), showNote: false) {
+                TaskRow(ref: TaskRef(notePath: note.relativePath, noteTitle: note.title, task: task), showNote: false,
+                        onAddSubtask: { subtaskTitle = ""; subtaskParent = task }) {
                     beforeToggle()
                     model.toggle(TaskRef(notePath: note.relativePath, noteTitle: note.title, task: task))
                 }
                 .padding(.leading, CGFloat(task.indentLevel) * 14)
-                .contextMenu {
-                    Button("Add subtask…") {
-                        subtaskTitle = ""
-                        subtaskParent = task
-                    }
-                }
             }
         }
         .padding(.top, 4)
@@ -309,12 +304,16 @@ struct TaskRow: View {
     @EnvironmentObject private var model: AppModel
     let ref: TaskRef
     let showNote: Bool
+    var onAddSubtask: (() -> Void)? = nil
     let toggle: () -> Void
+    @State private var pickingDate = false
 
     /// Tasks take the colour of the note they live in.
     private var tint: Color {
         model.note(at: ref.notePath)?.tint ?? .accentColor
     }
+
+    private var isNext: Bool { ref.task.tags.contains(Note.nextActionTag) }
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
@@ -324,9 +323,19 @@ struct TaskRow: View {
             }
             .buttonStyle(.plain)
             VStack(alignment: .leading, spacing: 2) {
-                Text(ref.task.title)
-                    .strikethrough(ref.task.isDone)
-                    .foregroundStyle(ref.task.isDone ? .secondary : .primary)
+                HStack(spacing: 6) {
+                    Text(isNext ? Note.removingTag(Note.nextActionTag, from: ref.task.title) : ref.task.title)
+                        .strikethrough(ref.task.isDone)
+                        .foregroundStyle(ref.task.isDone ? .secondary : .primary)
+                    if isNext && !ref.task.isDone {
+                        Text("next")
+                            .font(.caption2.weight(.semibold))
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 1)
+                            .background(tint.opacity(0.2), in: Capsule())
+                            .foregroundStyle(tint)
+                    }
+                }
                 HStack(spacing: 8) {
                     if ref.task.priority > 0 {
                         Text(String(repeating: "!", count: ref.task.priority))
@@ -337,6 +346,9 @@ struct TaskRow: View {
                               systemImage: ref.task.dueTime == nil ? "calendar" : "clock")
                             .foregroundStyle(due < .today() && !ref.task.isDone ? Color.red : Color.secondary)
                     }
+                    if let rule = ref.task.repeatRule {
+                        Label(rule.label, systemImage: "repeat")
+                    }
                     if showNote {
                         Label(ref.noteTitle, systemImage: "doc.text")
                             .foregroundStyle(tint)
@@ -346,6 +358,14 @@ struct TaskRow: View {
                 .foregroundStyle(.secondary)
             }
             Spacer()
+        }
+        .contentShape(Rectangle())
+        .draggable(TaskTransfer(ref))
+        .contextMenu {
+            TaskContextMenu(ref: ref, showNote: showNote, pickingDate: $pickingDate, onAddSubtask: onAddSubtask)
+        }
+        .popover(isPresented: $pickingDate) {
+            TaskDatePicker(ref: ref, isPresented: $pickingDate)
         }
     }
 }
@@ -440,19 +460,33 @@ struct WeekAgendaView: View {
                 Button { model.openWeeklyNote(for: week.adding(weeks: 1)) } label: { Image(systemName: "chevron.right") }
             }
             .buttonStyle(.borderless)
-            ForEach(overview.days.filter { !$0.due.isEmpty }) { day in
-                Text(day.date.date().map(Self.dayFormatter.string(from:)) ?? day.date.description)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .padding(.top, 2)
-                ForEach(day.due) { ref in
-                    TaskRow(ref: ref, showNote: true) { model.toggle(ref) }
+            Text("Drag a task onto a day to plan it there. Tick it here when it is done.")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+            ForEach(overview.days) { day in
+                HStack {
+                    Text(day.date.date().map(Self.dayFormatter.string(from:)) ?? day.date.description)
+                        .font(.caption.weight(day.date == .today() ? .bold : .semibold))
+                    Spacer()
+                    if !day.due.isEmpty {
+                        Text("\(day.due.count)")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    if !day.completed.isEmpty {
+                        Text("✓ \(day.completed.count)")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
                 }
-            }
-            if overview.dueCount == 0 {
-                Text("Nothing is due this week yet.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                .foregroundStyle(day.date == .today() ? ParaKind.daily.tint : .secondary)
+                .padding(.vertical, 3)
+                .padding(.horizontal, 4)
+                .acceptsTaskDrop { ref in model.setDueDate(ref, day.date) }
+                ForEach(day.due + day.undated) { ref in
+                    TaskRow(ref: ref, showNote: true) { model.toggle(ref) }
+                        .padding(.leading, 8)
+                }
             }
         }
         .padding(.horizontal, 12)

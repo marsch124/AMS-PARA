@@ -148,9 +148,11 @@ struct SidebarView: View {
         List(selection: model.sectionSelection) {
             Section("Actions") {
                 row(.inbox)
+                    .acceptsTaskDrop { ref in model.moveTask(ref, to: model.vault?.config.inboxFile ?? "Inbox.md") }
                 row(.today)
                 row(.calendar)
                 row(.timeBlocks)
+                row(.done)
                 row(.review)
                 row(.map)
                 row(.search)
@@ -208,12 +210,15 @@ struct NoteListView: View {
                 MapView()
             } else if model.section == .timeBlocks {
                 TimeBlocksView()
+            } else if model.section == .done {
+                DoneView()
             } else if model.section == .search {
                 SearchView()
             } else {
                 List(model.notes(in: model.section, matching: searchText), selection: model.noteSelection) { note in
                     NoteRow(note: note)
                         .tag(note.relativePath)
+                        .acceptsTaskDrop { ref in model.moveTask(ref, to: note.relativePath) }
                         .contextMenu {
                             if model.canArchive(note) {
                                 Button("Archive") { model.archive(note) }
@@ -273,13 +278,21 @@ struct NoteRow: View {
                     }
                 }
                 HStack(spacing: 8) {
-                    let open = note.openTasks.count
-                    if open > 0 {
-                        Label("\(open)", systemImage: "checklist")
+                    let progress = note.progress
+                    if note.kind == .project, progress.total > 0 {
+                        ProgressView(value: Double(progress.done), total: Double(progress.total))
+                            .tint(note.tint)
+                            .frame(width: 56)
+                        Text("\(progress.done) of \(progress.total)")
+                            .foregroundStyle(note.tint)
+                    } else if note.openTasks.count > 0 {
+                        Label("\(note.openTasks.count)", systemImage: "checklist")
                             .foregroundStyle(note.tint)
                     }
                     if let due = note.dueDate {
-                        Label(due.description, systemImage: "calendar")
+                        let days = due.days(since: .today())
+                        Label(days == 0 ? "Due today" : (days > 0 ? "Due in \(days) d" : "\(-days) d overdue"), systemImage: "calendar")
+                            .foregroundStyle(days < 0 ? Color.red : Color.secondary)
                     }
                     if let horizon = note.horizon {
                         Label(horizon.label, systemImage: "scope")
@@ -371,6 +384,7 @@ extension SidebarSection {
         case .today: return Color("CalendarTint")
         case .calendar: return Color("CalendarTint")
         case .timeBlocks: return Color("CalendarTint")
+        case .done: return Color("ReviewTint")
         case .review: return Color("ReviewTint")
         case .map: return Color("GoalTint")
         case .search: return Color("ResourceTint")

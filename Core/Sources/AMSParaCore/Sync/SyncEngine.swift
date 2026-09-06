@@ -378,7 +378,16 @@ public final class SyncEngine {
             apply(reminder: reminder, to: &t, parentPrefix: parentPrefix)
             t = TaskParser.normalized(t)
             let replacement = t
-            updateNote(path) { note in note.replace(task: replacement) }
+            let completedNow = replacement.isDone && !task.isDone
+            let completedOn = DateOnly(reminder.completedAt ?? now())
+            updateNote(path) { note in
+                guard note.replace(task: replacement) else { return false }
+                if completedNow, let next = replacement.nextOccurrence(completedOn: completedOn) {
+                    let line = note.tasks.first { $0.id != nil && $0.id == replacement.id }?.lineIndex ?? replacement.lineIndex
+                    note.insert(task: next, afterLine: line)
+                }
+                return true
+            }
             report.tasksUpdated += 1
             var updated = reminder
             if Self.markerTaskID(in: updated.notes) != task.id || listChanged {

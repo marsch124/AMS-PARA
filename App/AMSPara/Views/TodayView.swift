@@ -34,6 +34,11 @@ struct TodayView: View {
                     rows(fromTodayNote)
                 }
             }
+            let shown = Set((overdue + dueToday).map(\.id))
+            let nextActions = index.nextActions().filter { !shown.contains($0.id) }
+            if !nextActions.isEmpty {
+                Section("Next actions") { rows(nextActions) }
+            }
             if !overdue.isEmpty {
                 Section("Overdue") { rows(overdue) }
             }

@@ -332,6 +332,22 @@ final class SyncEngineTests: XCTestCase {
         XCTAssertEqual(report.warnings.count, 1)
     }
 
+    func testCompletingARepeatingReminderAddsTheNextTask() async throws {
+        try writeInbox("- [ ] Water plants @repeat(weekly) >2026-09-07\n")
+        try await engine.run()
+        let reminder = try await store.reminders(inList: "Inbox")[0]
+        store.simulateUserEdit(identifier: reminder.identifier) { $0.isCompleted = true; $0.completedAt = self.fixedNow }
+        let report = try await engine.run()
+        XCTAssertEqual(report.tasksUpdated, 1)
+        let tasks = try inbox().tasks
+        XCTAssertEqual(tasks.count, 2)
+        XCTAssertTrue(tasks[0].isDone)
+        XCTAssertEqual(tasks[1].dueDate, DateOnly("2026-09-14"))
+        XCTAssertFalse(tasks[1].isDone)
+        let again = try await engine.run()
+        XCTAssertEqual(again.remindersCreated, 1, "the next occurrence gets its own reminder")
+    }
+
     func testIdsSurviveAFailureWhileTalkingToReminders() async throws {
         try writeInbox("- [ ] Buy milk\n- [ ] Buy bread\n")
         store.failNextCreate = true

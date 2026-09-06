@@ -80,7 +80,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add AMSPara.xcodeproj App/AMSPara/Info.plist App/AMSPara/AMSPara.entitlements App/AMSParaShare/Info.plist App/AMSParaShare/AMSParaShare.entitlements
+          git add AMSPara.xcodeproj App/Config
           if git diff --cached --quiet; then
             echo "Xcode project is up to date."
             exit 0
