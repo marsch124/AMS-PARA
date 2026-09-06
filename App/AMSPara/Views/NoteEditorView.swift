@@ -187,7 +187,7 @@ struct NoteHeader: View {
             }
             if let goal = note.goal {
                 Button {
-                    model.open(reference: goal)
+                    model.openGoal(reference: goal)
                 } label: {
                     Label(goal, systemImage: "star")
                         .foregroundStyle(ParaKind.goal.tint)

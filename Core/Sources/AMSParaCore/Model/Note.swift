@@ -60,7 +60,11 @@ public struct Note: Equatable, Identifiable, Sendable {
     public var related: [String] { frontmatter.list("related") }
     public var area: String? { frontmatter.string("area") }
     /// The goal this note serves (projects, areas, or a dated goal pointing at a life goal).
-    public var goal: String? { frontmatter.string("goal") }
+    /// Written as `goal: Title`; a value typed inside `[...]` is joined back into one title.
+    public var goal: String? {
+        let parts = frontmatter.list("goal").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+        return parts.isEmpty ? nil : parts.joined(separator: ", ")
+    }
 
     // MARK: Goal notes
 

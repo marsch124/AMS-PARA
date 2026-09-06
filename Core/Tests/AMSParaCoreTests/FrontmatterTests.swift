@@ -53,3 +53,22 @@ final class FrontmatterTests: XCTestCase {
         XCTAssertNil(fm.bool("missing"))
     }
 }
+
+final class FrontmatterEmptyValueTests: XCTestCase {
+    func testEmptyValuesRoundTripWithoutBrackets() {
+        let (fm, _) = Frontmatter.parse("---\ntitle: X\narea:\ngoal:\ntags: []\n---\n")
+        XCTAssertEqual(fm.serialized(), "---\ntitle: X\narea:\ngoal:\ntags:\n---\n")
+        XCTAssertNil(fm.string("area"))
+        XCTAssertEqual(fm.list("tags"), [])
+    }
+
+    func testGoalTypedInsideBracketsWithCommaStaysOneTitle() {
+        let note = Note(relativePath: "Projects/P.md", kind: .project,
+                        text: "---\ntitle: P\ngoal: [Train for, and finish, the 70.3 (2031)]\n---\n")
+        XCTAssertEqual(note.goal, "Train for, and finish, the 70.3 (2031)")
+        let plain = Note(relativePath: "Projects/Q.md", kind: .project, text: "---\ntitle: Q\ngoal: Walk the Kungsleden\n---\n")
+        XCTAssertEqual(plain.goal, "Walk the Kungsleden")
+        let empty = Note(relativePath: "Projects/R.md", kind: .project, text: "---\ntitle: R\ngoal:\n---\n")
+        XCTAssertNil(empty.goal)
+    }
+}

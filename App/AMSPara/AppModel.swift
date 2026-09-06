@@ -61,7 +61,9 @@ final class AppModel: ObservableObject {
     }
     /// Rebuilt whenever `notes` changes, so views never build it during a redraw.
     @Published private(set) var index = NoteIndex(notes: [])
-    @Published var section: SidebarSection? = .inbox
+    @Published var section: SidebarSection? = .inbox {
+        didSet { if section != oldValue { searchText = "" } }
+    }
     @Published var selectedNotePath: String?
     @Published var searchText = ""
     /// The full-text search query (Search section), separate from the list filter.
@@ -343,6 +345,22 @@ final class AppModel: ObservableObject {
             selectedNotePath = target.relativePath
         } else {
             createNote(kind: .resource, title: reference)
+        }
+    }
+
+    /// Follows a `goal:` reference. Unlike a wikilink this never creates a note: a goal that
+    /// does not exist is a typo or a goal still to be written, so say so and show the Goals list.
+    func openGoal(reference: String) {
+        let wanted = reference.trimmingCharacters(in: .whitespaces).lowercased()
+        let goals = notes.filter { $0.kind == .goal }
+        let match = goals.first { $0.title.lowercased() == wanted || $0.fileName.lowercased() == wanted }
+            ?? goals.first { $0.title.localizedCaseInsensitiveContains(wanted) }
+        section = .kind(.goal)
+        if let match {
+            selectedNotePath = match.relativePath
+        } else {
+            selectedNotePath = nil
+            errorMessage = "No goal is called \"\(reference)\". Check the goal: line in the note, or create the goal with New › Goal."
         }
     }
 

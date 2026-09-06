@@ -153,7 +153,8 @@ public struct Frontmatter: Equatable, Sendable {
             case .string(let s):
                 out += "\(key): \(Self.quoteIfNeeded(s))\n"
             case .list(let items):
-                out += "\(key): [\(items.map(Self.quoteIfNeeded).joined(separator: ", "))]\n"
+                // An empty value is written as `key:` so templates invite plain text, not typing inside `[]`.
+                out += items.isEmpty ? "\(key):\n" : "\(key): [\(items.map(Self.quoteIfNeeded).joined(separator: ", "))]\n"
             case nil:
                 break
             }
