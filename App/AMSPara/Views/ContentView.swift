@@ -5,7 +5,19 @@ import AMSParaCore
 struct ContentView: View {
     @EnvironmentObject private var model: AppModel
     @Environment(\.scenePhase) private var scenePhase
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    #endif
     @State private var showingImporter = false
+
+    /// iPhone (and a narrow iPad window): tabs instead of three columns.
+    private var isCompact: Bool {
+        #if os(iOS)
+        return sizeClass == .compact
+        #else
+        return false
+        #endif
+    }
 
     var body: some View {
         Group {
@@ -18,6 +30,10 @@ struct ContentView: View {
                             model.openVault(at: url)
                         }
                     }
+            } else if isCompact {
+                #if os(iOS)
+                PhoneRootView()
+                #endif
             } else {
                 NavigationSplitView {
                     SidebarView()

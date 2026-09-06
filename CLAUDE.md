@@ -158,6 +158,16 @@ Project: `type: syncedFolder` for App/AMSPara and App/AMSParaShare (Xcode 16
 synchronized groups) so new source files need no regeneration; Info.plist and
 entitlements live in `App/Config/<target>/`; CI commits `App/Config`.
 
+## iPhone layout (build 42)
+
+`PhoneRootView` (iOS only, used by ContentView when `horizontalSizeClass ==
+.compact`): TabView with Today, Inbox, Browse (`PhoneBrowseView`: every
+section + Settings) and a Capture tab that opens the quick-capture sheet.
+`PhoneStack` wraps each tab in a NavigationStack with `PhoneRoute` (note,
+section, settings); it pushes `NoteEditorView` when `selectedNotePath` changes
+on the active tab and clears the selection when popped. Sections reuse
+`NoteListView` by setting `model.section` on appear.
+
 ## Not built (by choice)
 
 Saved searches. Roadmap stopped there on his request.

@@ -135,6 +135,10 @@ Time Blocks are the one thing the app writes to Calendar. They are blocks of tim
 - **Archive** moves a project, area, resource or goal to the Archive folder, marks it archived and stops syncing its tasks. Use it for finished work.
 - **Move to Trash** (⌘⌫ or right-click) puts the file in the Mac's Trash, so you can get it back from Finder. The Inbox note cannot be trashed.
 
+## On the iPhone
+
+The phone shows four tabs. **Today** and **Inbox** are the same lists as on the Mac. **Browse** holds everything else: Goals, Projects, Areas, Resources, Archive, Calendar, Time Blocks, Done, Review, Map, Search, and Settings with Help. **Capture** opens the capture panel. Tap a note to open it and swipe from the left edge to go back. Long-press a task for the task menu. The share sheet in other apps has an AMS PARA entry that sends text or a link to the Inbox.
+
 ## Mac and iPhone together
 
 Keep the vault in iCloud Drive and pick the same folder on both devices. iCloud carries the files across. Each device syncs with Reminders on its own.
