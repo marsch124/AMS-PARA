@@ -153,6 +153,13 @@ struct SidebarView: View {
             }
         }
         .navigationTitle("AMS PARA")
+        .safeAreaInset(edge: .bottom) {
+            Text("Build \(BuildStamp.number)")
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 4)
+        }
         #if os(macOS)
         .navigationSplitViewColumnWidth(min: 180, ideal: 200)
         #endif

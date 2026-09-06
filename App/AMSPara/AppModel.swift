@@ -56,6 +56,11 @@ enum AppSheet: String, Identifiable {
     var id: String { rawValue }
 }
 
+/// Bumped on every push so the running build can be told apart from an older one.
+enum BuildStamp {
+    static let number = 28
+}
+
 @MainActor
 final class AppModel: ObservableObject {
     @Published private(set) var vault: Vault?
@@ -64,8 +69,12 @@ final class AppModel: ObservableObject {
     }
     /// Rebuilt whenever `notes` changes, so views never build it during a redraw.
     @Published private(set) var index = NoteIndex(notes: [])
-    @Published var section: SidebarSection? = .inbox
-    @Published var selectedNotePath: String?
+    @Published var section: SidebarSection? = .inbox {
+        didSet { if section != oldValue { log("section -> \(section.map(\.title) ?? "nil")") } }
+    }
+    @Published var selectedNotePath: String? {
+        didSet { if selectedNotePath != oldValue { log("note -> \(selectedNotePath ?? "nil")") } }
+    }
     /// The full-text search query (Search section), separate from the list filter.
     @Published var queryText = ""
     @Published private(set) var isSyncing = false
@@ -96,17 +105,45 @@ final class AppModel: ObservableObject {
 
     private var publishWatch: AnyCancellable?
 
+    /// A short in-memory log of what the app did, for Help \u{203A} Copy Diagnostics.
+    /// Not published: the publish watcher below appends to it.
+    private(set) var diagnostics: [String] = []
+
     init() {
+        log("launch build \(BuildStamp.number)")
         restoreVault()
-        #if DEBUG
         // Reports our own frames whenever a change is published while SwiftUI is mid-update,
         // which is what "Publishing changes from within view updates" complains about.
-        publishWatch = objectWillChange.sink { _ in
+        publishWatch = objectWillChange.sink { [weak self] _ in
             let frames = Thread.callStackSymbols
             guard frames.contains(where: { $0.contains("AG::") || $0.contains("AttributeGraph") || $0.contains("ViewGraph") }) else { return }
             let ours = frames.filter { $0.contains("AMSPara") }.prefix(8)
-            print("AMSPARA-PUBLISH during view update:\n" + ours.joined(separator: "\n"))
+            self?.log("PUBLISH during view update:\n" + ours.joined(separator: "\n"))
         }
+    }
+
+    func log(_ line: String) {
+        let stamp = Date().formatted(date: .omitted, time: .standard)
+        diagnostics.append("\(stamp) \(line)")
+        if diagnostics.count > 500 { diagnostics.removeFirst(100) }
+        print("AMSPARA " + line)
+    }
+
+    var diagnosticsReport: String {
+        var lines = ["AMS PARA build \(BuildStamp.number)",
+                     "section: \(section.map(\.title) ?? "nil")  note: \(selectedNotePath ?? "nil")",
+                     "notes: \(notes.count)  goals: \(notes.filter { $0.kind == .goal }.map(\.title))",
+                     ""]
+        lines += diagnostics
+        return lines.joined(separator: "\n")
+    }
+
+    func copyDiagnostics() {
+        #if os(macOS)
+        reportLayout("on copy", after: 0)
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(diagnosticsReport, forType: .string)
+        flash("Diagnostics copied. Paste them into the chat.")
         #endif
     }
 
@@ -405,9 +442,11 @@ final class AppModel: ObservableObject {
     /// Follows a `goal:` reference. Unlike a wikilink this never creates a note: a goal that
     /// does not exist is a typo or a goal still to be written, so say so and show the Goals list.
     func openGoal(reference: String) {
+        log("goal link clicked: \(reference)")
         let goals = notes.filter { $0.kind == .goal }
         let match = Self.goal(matching: reference, in: goals)
-        #if DEBUG && os(macOS)
+        log("goal match: \(match?.relativePath ?? "none")")
+        #if os(macOS)
         reportLayout("before goal link", after: 0)
         #endif
         if let match {
@@ -416,7 +455,7 @@ final class AppModel: ObservableObject {
             show(section: .kind(.goal), notePath: nil)
             flash("No goal is called \"\(reference)\". Check the goal: line, or create it with New \u{203A} Goal.")
         }
-        #if DEBUG && os(macOS)
+        #if os(macOS)
         reportLayout("after goal link", after: 1)
         #endif
     }
@@ -435,28 +474,33 @@ final class AppModel: ObservableObject {
         return names.first { $0.1.contains { !$0.isEmpty && ($0.contains(wanted) || wanted.contains($0)) } }?.0
     }
 
-    #if DEBUG && os(macOS)
-    /// Prints the window's view tree a moment later, so a layout that went wrong can be
-    /// read from the console: which scroll view moved, and whether the content overflows.
+    #if os(macOS)
+    /// Records the window's view tree, so a layout that went wrong can be read from the
+    /// diagnostics: which scroll view moved, and whether the content overflows.
     func reportLayout(_ label: String, after seconds: Double) {
+        if seconds <= 0 { log(layoutReport(label)); return }
         Task { @MainActor in
-            if seconds > 0 { try? await Task.sleep(for: .seconds(seconds)) }
-            guard let window = NSApp.keyWindow ?? NSApp.windows.first(where: { $0.isVisible }),
-                  let content = window.contentView else { return }
-            var lines = ["AMSPARA-LAYOUT \(label): window \(window.frame.size) content \(content.bounds.size) safeArea \(content.safeAreaInsets)"]
-            func walk(_ view: NSView, depth: Int) {
-                if depth <= 2 || view is NSScrollView {
-                    var line = String(repeating: "  ", count: depth) + "\(type(of: view)) frame=\(view.frame)"
-                    if let scroll = view as? NSScrollView {
-                        line += " visibleOrigin=\(scroll.documentVisibleRect.origin) insets=\(scroll.contentInsets) doc=\(scroll.documentView?.frame.size ?? .zero)"
-                    }
-                    lines.append(line)
-                }
-                for sub in view.subviews { walk(sub, depth: depth + 1) }
-            }
-            walk(content, depth: 0)
-            print(lines.joined(separator: "\n"))
+            try? await Task.sleep(for: .seconds(seconds))
+            log(layoutReport(label))
         }
+    }
+
+    private func layoutReport(_ label: String) -> String {
+        guard let window = NSApp.keyWindow ?? NSApp.windows.first(where: { $0.isVisible }),
+              let content = window.contentView else { return "LAYOUT \(label): no window" }
+        var lines = ["LAYOUT \(label): window \(window.frame.size) content \(content.bounds.size) safeArea \(content.safeAreaInsets)"]
+        func walk(_ view: NSView, depth: Int) {
+            if depth <= 2 || view is NSScrollView {
+                var line = String(repeating: "  ", count: depth) + "\(type(of: view)) frame=\(view.frame)"
+                if let scroll = view as? NSScrollView {
+                    line += " visibleOrigin=\(scroll.documentVisibleRect.origin) insets=\(scroll.contentInsets) doc=\(scroll.documentView?.frame.size ?? .zero)"
+                }
+                lines.append(line)
+            }
+            for sub in view.subviews { walk(sub, depth: depth + 1) }
+        }
+        walk(content, depth: 0)
+        return lines.joined(separator: "\n")
     }
     #endif
 

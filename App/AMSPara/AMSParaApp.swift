@@ -25,6 +25,10 @@ struct AMSParaApp: App {
                     .keyboardShortcut("r", modifiers: [.command, .shift])
                     .disabled(model.vault == nil || model.isSyncing)
             }
+            CommandGroup(after: .help) {
+                Button("Copy Diagnostics") { model.copyDiagnostics() }
+                    .keyboardShortcut("d", modifiers: [.command, .option])
+            }
         }
         #if os(macOS)
         MenuBarExtra("AMS PARA quick capture", systemImage: "tray.and.arrow.down", isInserted: $showMenuBarItem) {
