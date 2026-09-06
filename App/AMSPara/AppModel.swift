@@ -61,11 +61,8 @@ final class AppModel: ObservableObject {
     }
     /// Rebuilt whenever `notes` changes, so views never build it during a redraw.
     @Published private(set) var index = NoteIndex(notes: [])
-    @Published var section: SidebarSection? = .inbox {
-        didSet { if section != oldValue { searchText = "" } }
-    }
+    @Published var section: SidebarSection? = .inbox
     @Published var selectedNotePath: String?
-    @Published var searchText = ""
     /// The full-text search query (Search section), separate from the list filter.
     @Published var queryText = ""
     @Published private(set) var isSyncing = false
@@ -133,7 +130,19 @@ final class AppModel: ObservableObject {
         return notes.first { $0.relativePath == path }
     }
 
-    func notes(in section: SidebarSection?) -> [Note] {
+    /// Lists bind their selection through these so SwiftUI's own selection resets, which
+    /// happen while it is redrawing, publish after the redraw instead of in the middle of it.
+    var sectionSelection: Binding<SidebarSection?> {
+        Binding(get: { self.section },
+                set: { value in self.afterUpdate { if self.section != value { self.section = value } } })
+    }
+
+    var noteSelection: Binding<String?> {
+        Binding(get: { self.selectedNotePath },
+                set: { value in self.afterUpdate { if self.selectedNotePath != value { self.selectedNotePath = value } } })
+    }
+
+    func notes(in section: SidebarSection?, matching searchText: String = "") -> [Note] {
         let base: [Note]
         switch section {
         case .inbox?: base = notes.filter { $0.kind == .inbox }

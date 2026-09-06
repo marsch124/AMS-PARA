@@ -7,7 +7,7 @@ struct ReviewView: View {
 
     var body: some View {
         let report = model.index.review(config: model.config)
-        List(selection: $model.selectedNotePath) {
+        List(selection: model.noteSelection) {
             Section("This week") {
                 LabeledContent("Completed in the last 7 days", value: "\(report.completedLast7Days)")
                 LabeledContent("Overdue tasks", value: "\(report.overdueTasks.count)")

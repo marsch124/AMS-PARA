@@ -54,7 +54,7 @@ struct DayCalendarView: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
             Divider()
-            List(model.notes(in: .calendar), selection: $model.selectedNotePath) { note in
+            List(model.notes(in: .calendar), selection: model.noteSelection) { note in
                 DailyNoteRow(note: note)
                     .tag(note.relativePath)
             }
@@ -120,7 +120,7 @@ struct WeekOverviewView: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
             Divider()
-            List(selection: $model.selectedNotePath) {
+            List(selection: model.noteSelection) {
                 Section {
                     Button {
                         model.openWeeklyNote(for: overview.week)

@@ -71,7 +71,7 @@ struct SearchView: View {
             } else if hits.isEmpty {
                 ContentUnavailableView.search(text: model.queryText)
             } else {
-                List(selection: $model.selectedNotePath) {
+                List(selection: model.noteSelection) {
                     if query.wantsTasks {
                         let refs = hits.flatMap { hit in hit.tasks.map { TaskRef(notePath: hit.note.relativePath, noteTitle: hit.note.displayTitle, task: $0) } }
                         Section("\(refs.count) task\(refs.count == 1 ? "" : "s")") {

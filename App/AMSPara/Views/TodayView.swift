@@ -17,7 +17,7 @@ struct TodayView: View {
             .filter { $0.dueDate == nil }
             .map { TaskRef(notePath: todayNotePath ?? "", noteTitle: "Today's note", task: $0) }
 
-        List(selection: $model.selectedNotePath) {
+        List(selection: model.noteSelection) {
             Section {
                 Button {
                     model.openDailyNote(for: today)

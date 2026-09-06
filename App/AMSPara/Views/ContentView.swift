@@ -137,7 +137,7 @@ struct SidebarView: View {
     @EnvironmentObject private var model: AppModel
 
     var body: some View {
-        List(selection: $model.section) {
+        List(selection: model.sectionSelection) {
             Section("Actions") {
                 row(.inbox)
                 row(.today)
@@ -175,6 +175,8 @@ struct SidebarView: View {
 
 struct NoteListView: View {
     @EnvironmentObject private var model: AppModel
+    /// Kept in the view, not the model: the toolbar search field writes to it while redrawing.
+    @State private var searchText = ""
 
     var body: some View {
         Group {
@@ -187,11 +189,12 @@ struct NoteListView: View {
             } else if model.section == .search {
                 SearchView()
             } else {
-                List(model.notes(in: model.section), selection: $model.selectedNotePath) { note in
+                List(model.notes(in: model.section, matching: searchText), selection: model.noteSelection) { note in
                     NoteRow(note: note)
                         .tag(note.relativePath)
                 }
-                .searchable(text: $model.searchText, prompt: "Search notes")
+                .searchable(text: $searchText, prompt: "Search notes")
+                .onChange(of: model.section) { _, _ in searchText = "" }
             }
         }
         .navigationTitle(model.section?.title ?? "Notes")
