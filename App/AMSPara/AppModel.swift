@@ -58,7 +58,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 28
+    static let number = 29
 }
 
 @MainActor
@@ -112,6 +112,9 @@ final class AppModel: ObservableObject {
     init() {
         log("launch build \(BuildStamp.number)")
         restoreVault()
+        #if os(macOS)
+        installClickMonitor()
+        #endif
         // Reports our own frames whenever a change is published while SwiftUI is mid-update,
         // which is what "Publishing changes from within view updates" complains about.
         publishWatch = objectWillChange.sink { [weak self] _ in
@@ -475,6 +478,45 @@ final class AppModel: ObservableObject {
     }
 
     #if os(macOS)
+    private var clickMonitor: Any?
+
+    /// Logs every click with the AppKit view it landed on, then checks whether the window's
+    /// content grew past the window. If it did, the window is nudged one point so SwiftUI
+    /// lays the split view out again at the right size.
+    private func installClickMonitor() {
+        clickMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .leftMouseUp]) { [weak self] event in
+            guard let self, let window = event.window, let content = window.contentView else { return event }
+            let point = content.convert(event.locationInWindow, from: nil)
+            let hit = content.hitTest(point)
+            let kind = event.type == .leftMouseDown ? "mouseDown" : "mouseUp"
+            let responder = window.firstResponder.map { String(describing: type(of: $0)) } ?? "nil"
+            self.log("\(kind) at \(point) on \(hit.map { String(describing: type(of: $0)) } ?? "nil") firstResponder=\(responder)")
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(350))
+                self.repairOverflow(after: kind)
+            }
+            return event
+        }
+    }
+
+    private func repairOverflow(after cause: String) {
+        guard let window = NSApp.keyWindow ?? NSApp.windows.first(where: { $0.isVisible }),
+              let content = window.contentView, let host = content.subviews.first else { return }
+        let grown = host.subviews.first { $0.frame.height > content.bounds.height + 1 || $0.frame.minY < -1 }
+        guard let grown else { return }
+        log("OVERFLOW after \(cause): \(type(of: grown)) frame=\(grown.frame) in \(content.bounds.size)")
+        log(layoutReport("overflow"))
+        var frame = window.frame
+        frame.size.height += 1
+        window.setFrame(frame, display: true)
+        frame.size.height -= 1
+        window.setFrame(frame, display: true)
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(300))
+            self.log(self.layoutReport("after repair"))
+        }
+    }
+
     /// Records the window's view tree, so a layout that went wrong can be read from the
     /// diagnostics: which scroll view moved, and whether the content overflows.
     func reportLayout(_ label: String, after seconds: Double) {

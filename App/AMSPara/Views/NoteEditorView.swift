@@ -195,14 +195,10 @@ struct NoteHeader: View {
                     .foregroundStyle(ParaKind.area.tint)
             }
             if let goal = note.goal {
-                Button {
-                    model.openGoal(reference: goal)
-                } label: {
-                    Label(goal, systemImage: "star")
-                        .foregroundStyle(ParaKind.goal.tint)
-                }
-                .buttonStyle(.plain)
-                .help("Open the goal this note serves")
+                Label(goal, systemImage: "star")
+                    .foregroundStyle(ParaKind.goal.tint)
+                    .contentShape(Rectangle())
+                    .onTapGesture { model.openGoal(reference: goal) }
             }
             if let horizon = note.horizon {
                 Label(horizon.label, systemImage: "scope")

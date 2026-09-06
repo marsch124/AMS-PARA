@@ -37,7 +37,7 @@ Terminal commands. Tell him "you can pull" only after CI is green.
 - All model writes that SwiftUI triggers mid-update go through `afterUpdate` / deferred Bindings (`sectionSelection`, `noteSelection`, `sheetSelection`, `errorPresented`).
 - Navigation from links uses `AppModel.show(...)`: section first, note on the next turn.
 
-## Open bug (as of build 28)
+## Open bug (as of build 29)
 
 Clicking the goal link in a project's header (NoteHeader, `openGoal`) leaves
 every column scrolled/offset: sidebar Actions rows, note list rows and editor
@@ -46,7 +46,12 @@ run the console showed no output from `openGoal`, so either the action never
 fires or he ran an old build. Build 28 adds **Help › Copy Diagnostics**
 (⌥⌘D) which puts a log (section/note changes, goal-link clicks, window view
 tree with scroll offsets) on the clipboard for him to paste into the chat.
-Next step: read that log, then fix.
+Build 28 diagnostics: the goal link's action never ran (no log line), yet
+the NavigationSplitView host grew to 1296pt inside an 821pt window
+(frame y=-211). So a mouse-down on the header link changes layout before
+mouse-up. Build 29 logs every click (hit view, first responder), detects
+the overflow, nudges the window height by 1pt to re-layout, and turns the
+header link into a Label with onTapGesture. Next step: read his log.
 
 ## Not built (by choice)
 
