@@ -11,6 +11,7 @@ enum SidebarSection: Hashable, Identifiable {
     case today
     case calendar
     case review
+    case map
     case search
     case kind(ParaKind)
 
@@ -22,6 +23,7 @@ enum SidebarSection: Hashable, Identifiable {
         case .today: return "Today"
         case .calendar: return "Calendar"
         case .review: return "Weekly review"
+        case .map: return "Map"
         case .search: return "Search"
         case .kind(let kind): return kind.displayName
         }
@@ -33,6 +35,7 @@ enum SidebarSection: Hashable, Identifiable {
         case .today: return "sun.max"
         case .calendar: return "calendar"
         case .review: return "checklist.checked"
+        case .map: return "point.3.filled.connected.trianglepath.dotted"
         case .search: return "magnifyingglass"
         case .kind(.daily): return "calendar"
         case .kind(.goal): return "star"
@@ -44,7 +47,7 @@ enum SidebarSection: Hashable, Identifiable {
         }
     }
 
-    static let all: [SidebarSection] = [.inbox, .today, .calendar, .review, .search, .kind(.goal), .kind(.project), .kind(.area), .kind(.resource), .kind(.archive)]
+    static let all: [SidebarSection] = [.inbox, .today, .calendar, .review, .map, .search, .kind(.goal), .kind(.project), .kind(.area), .kind(.resource), .kind(.archive)]
 }
 
 /// The sheets the main window can present.
@@ -58,7 +61,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 31
+    static let number = 32
 }
 
 @MainActor
@@ -214,7 +217,7 @@ final class AppModel: ObservableObject {
         case .inbox?: base = notes.filter { $0.kind == .inbox }
         case .kind(let kind)?: base = notes.filter { $0.kind == kind }
         case .calendar?: base = index.dailyNotes
-        case .today?, .review?, .search?, nil: base = notes
+        case .today?, .review?, .map?, .search?, nil: base = notes
         }
         let query = searchText.trimmingCharacters(in: .whitespaces)
         guard !query.isEmpty else { return base }
@@ -225,7 +228,7 @@ final class AppModel: ObservableObject {
         switch section {
         case .inbox: return note(at: vault?.config.inboxFile)?.openTasks.count ?? 0
         case .today: return index.openTasks(dueOnOrBefore: .today()).count + (todayNote?.openTasks.count ?? 0)
-        case .calendar, .search: return 0
+        case .calendar, .map, .search: return 0
         case .review: return index.review(config: config).projectsNeedingAttention.count
         case .kind(let kind): return notes.filter { $0.kind == kind }.count
         }
@@ -482,18 +485,9 @@ final class AppModel: ObservableObject {
         #endif
     }
 
-    /// Finds the goal a `goal:` line points at: exact title or file name first, then
-    /// either one containing the other, ignoring case and punctuation.
+    /// Finds the goal a `goal:` line points at; the matching lives in `NoteIndex.goal(matching:)`.
     static func goal(matching reference: String, in goals: [Note]) -> Note? {
-        func fold(_ s: String) -> String {
-            s.lowercased().filter { $0.isLetter || $0.isNumber || $0 == " " }
-                .split(separator: " ").joined(separator: " ")
-        }
-        let wanted = fold(reference)
-        guard !wanted.isEmpty else { return nil }
-        let names: [(Note, [String])] = goals.map { ($0, [fold($0.title), fold($0.displayTitle), fold($0.fileName)]) }
-        if let exact = names.first(where: { $0.1.contains(wanted) }) { return exact.0 }
-        return names.first { $0.1.contains { !$0.isEmpty && ($0.contains(wanted) || wanted.contains($0)) } }?.0
+        NoteIndex(notes: goals).goal(matching: reference)
     }
 
     #if os(macOS)

@@ -57,6 +57,19 @@ Every note except Inbox can go to the system Trash: editor toolbar button
 (⌘⌫) or right-click in the note list, both with a confirmation. Goals can
 be archived too. `Vault.trash` uses `trashItem`, falling back to delete.
 
+## Map (build 32)
+
+Sidebar **Map**: a top-down diagram of what serves what. `NoteIndex.linkMap()`
+(Core, `Vault/LinkMap.swift`) builds a tree: root goals → subgoals, areas,
+projects (a project sits under its area when it has one, with a dashed second
+link to its goal) → open top-level tasks and resources as chips. Notes with no
+goal, loose resources, and archived or done notes go into dashed group boxes;
+archived notes keep dashed links to the goal/area they still name. `MapView`
+lays it out itself (`MapLayout`: parents centred over subtrees, fixed-size
+boxes in a two-way ScrollView, lines in a Canvas). Clicking a box highlights
+its neighbourhood (`upstream`/`downstream`) and opens the note. Goal matching
+for `goal:` lines now lives in `NoteIndex.goal(matching:)`.
+
 ## Not built (by choice)
 
 Saved searches. Roadmap stopped there on his request.

@@ -140,6 +140,7 @@ struct SidebarView: View {
                 row(.today)
                 row(.calendar)
                 row(.review)
+                row(.map)
                 row(.search)
             }
             Section("Goals") {
@@ -191,6 +192,8 @@ struct NoteListView: View {
                 CalendarView()
             } else if model.section == .review {
                 ReviewView()
+            } else if model.section == .map {
+                MapView()
             } else if model.section == .search {
                 SearchView()
             } else {
@@ -228,7 +231,8 @@ struct NoteListView: View {
             }
         }
         #if os(macOS)
-        .navigationSplitViewColumnWidth(min: 220, ideal: 280)
+        // The map wants room for its diagram; every other section is a list.
+        .navigationSplitViewColumnWidth(min: model.section == .map ? 420 : 220, ideal: model.section == .map ? 720 : 280)
         #endif
     }
 }
@@ -350,6 +354,7 @@ extension SidebarSection {
         case .today: return Color("CalendarTint")
         case .calendar: return Color("CalendarTint")
         case .review: return Color("ReviewTint")
+        case .map: return Color("GoalTint")
         case .search: return Color("ResourceTint")
         case .kind(let kind): return kind.tint
         }
