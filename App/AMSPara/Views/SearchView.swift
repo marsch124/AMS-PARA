@@ -5,7 +5,7 @@ import AMSParaCore
 struct SearchView: View {
     @EnvironmentObject private var model: AppModel
     @FocusState private var focused: Bool
-    @State private var query = ""
+    @State private var fieldText = ""
 
     private static let dueOptions: [(String, String)] = [
         ("Overdue", "due:overdue"), ("Today", "due:today"), ("This week", "due:week"), ("This month", "due:month"), ("No date", "due:none"),
@@ -15,15 +15,15 @@ struct SearchView: View {
         let query = model.searchQuery
         let hits = model.searchHits
         VStack(spacing: 0) {
-            TextField("Search notes and tasks… e.g. website tag:web due:week is:open", text: $query)
+            TextField("Search notes and tasks… e.g. website tag:web due:week is:open", text: $fieldText)
                 .textFieldStyle(.roundedBorder)
                 .focused($focused)
                 .padding(10)
-                .onChange(of: query) { _, value in
+                .onChange(of: fieldText) { _, value in
                     if model.queryText != value { model.queryText = value }
                 }
                 .onChange(of: model.queryText) { _, value in
-                    if query != value { query = value }
+                    if fieldText != value { fieldText = value }
                 }
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
@@ -99,7 +99,7 @@ struct SearchView: View {
             }
         }
         .onAppear {
-            query = model.queryText
+            fieldText = model.queryText
             focused = true
         }
     }
