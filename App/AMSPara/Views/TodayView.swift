@@ -18,6 +18,11 @@ struct TodayView: View {
             .map { TaskRef(notePath: todayNotePath ?? "", noteTitle: "Today's note", task: $0) }
 
         List(selection: model.noteSelection) {
+            if model.showsCalendarEvents {
+                Section("Calendar") {
+                    CalendarEventRows(date: today)
+                }
+            }
             Section {
                 Button {
                     model.openDailyNote(for: today)
@@ -43,6 +48,7 @@ struct TodayView: View {
                 Section("Important, no date") { rows(important) }
             }
         }
+        .task(id: today) { await model.loadEvents(for: today) }
     }
 
     private func rows(_ refs: [TaskRef]) -> some View {

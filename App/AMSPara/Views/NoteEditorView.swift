@@ -387,6 +387,9 @@ struct DayAgendaView: View {
                 }
             }
             .buttonStyle(.borderless)
+            if model.showsCalendarEvents {
+                CalendarEventRows(date: date)
+            }
             if refs.isEmpty {
                 Text("Nothing from other notes is due on this day.")
                     .font(.caption)
@@ -399,6 +402,7 @@ struct DayAgendaView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
+        .task(id: date) { await model.loadEvents(for: date) }
     }
 }
 

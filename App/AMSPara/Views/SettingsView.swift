@@ -66,6 +66,21 @@ struct SettingsView: View {
             }
             .disabled(model.vault == nil)
 
+            Section("Apple Calendar") {
+                Toggle("Show the day's events in Today and in daily notes", isOn: Binding(
+                    get: { model.showsCalendarEvents },
+                    set: { model.showsCalendarEvents = $0 }
+                ))
+                if model.calendarAccessGranted == false {
+                    Text("Calendar access is off. Allow it in System Settings › Privacy & Security › Calendars.")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
+                Text("Events are read from Apple Calendar only. Nothing is written to your calendars.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             Section("Quick capture") {
                 #if os(macOS)
                 Toggle("Show capture panel in the menu bar", isOn: $showMenuBarItem)

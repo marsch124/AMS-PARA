@@ -61,7 +61,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 32
+    static let number = 33
 }
 
 @MainActor
@@ -98,11 +98,17 @@ final class AppModel: ObservableObject {
     }
 
     let remindersStore = EventKitRemindersStore()
+    let calendarStore = EventKitCalendarStore()
+    /// Apple Calendar events per day, loaded when a day is shown.
+    @Published private(set) var eventsByDay: [DateOnly: [CalendarEvent]] = [:]
+    /// nil until Calendar access has been asked for; false when it was refused.
+    @Published private(set) var calendarAccessGranted: Bool?
 
     private let defaults = UserDefaults.standard
     private let bookmarkKey = "vaultBookmark"
     private let deviceIDKey = "deviceID"
     private let autoSyncKey = "autoSyncMinutes"
+    private let showCalendarKey = "showCalendarEvents"
     private var securityScopedURL: URL?
     private var autoSyncTask: Task<Void, Never>?
 
@@ -115,6 +121,9 @@ final class AppModel: ObservableObject {
     init() {
         log("launch build \(BuildStamp.number)")
         restoreVault()
+        calendarStore.onChange = { [weak self] in
+            Task { await self?.refreshEvents() }
+        }
         #if os(macOS)
         installClickMonitor()
         #endif
@@ -171,6 +180,16 @@ final class AppModel: ObservableObject {
             objectWillChange.send()
             defaults.set(newValue, forKey: autoSyncKey)
             scheduleAutoSync()
+        }
+    }
+
+    /// Whether Today and daily notes show the day's Apple Calendar events (on by default).
+    var showsCalendarEvents: Bool {
+        get { defaults.object(forKey: showCalendarKey) as? Bool ?? true }
+        set {
+            objectWillChange.send()
+            defaults.set(newValue, forKey: showCalendarKey)
+            if newValue { Task { await self.refreshEvents() } }
         }
     }
 
@@ -668,6 +687,30 @@ final class AppModel: ObservableObject {
         for health in index.review(config: config).projects {
             markReviewed(health.note)
         }
+    }
+
+    // MARK: Apple Calendar
+
+    func events(on day: DateOnly) -> [CalendarEvent] {
+        eventsByDay[day] ?? []
+    }
+
+    /// Loads a day's events, asking for Calendar access the first time. Read only.
+    func loadEvents(for day: DateOnly) async {
+        guard showsCalendarEvents else { return }
+        if calendarAccessGranted == nil {
+            let granted = await calendarStore.requestAccess()
+            calendarAccessGranted = granted
+            log("calendar access \(granted ? "granted" : "refused")")
+        }
+        guard calendarAccessGranted == true else { return }
+        let events = calendarStore.events(on: day)
+        if eventsByDay[day] != events { eventsByDay[day] = events }
+    }
+
+    /// Reloads every day shown so far, e.g. after Calendar reported a change.
+    func refreshEvents() async {
+        for day in Array(eventsByDay.keys) { await loadEvents(for: day) }
     }
 
     // MARK: Sync

@@ -36,6 +36,8 @@ targets:
         CFBundleURLTypes:
           - CFBundleURLName: com.schabbauer.amspara
             CFBundleURLSchemes: [amspara]
+        NSCalendarsFullAccessUsageDescription: AMS PARA shows calendar events for the day next to your tasks in Today and in daily notes.
+        NSCalendarsUsageDescription: AMS PARA shows calendar events for the day next to your tasks in Today and in daily notes.
         NSRemindersFullAccessUsageDescription: AMS PARA mirrors the tasks in your PARA notes to Apple Reminders and back.
         NSRemindersUsageDescription: AMS PARA mirrors the tasks in your PARA notes to Apple Reminders and back.
         NSHumanReadableCopyright: ""

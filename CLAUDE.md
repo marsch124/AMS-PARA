@@ -70,6 +70,14 @@ boxes in a two-way ScrollView, lines in a Canvas). Clicking a box highlights
 its neighbourhood (`upstream`/`downstream`) and opens the note. Goal matching
 for `goal:` lines now lives in `NoteIndex.goal(matching:)`.
 
+## Apple Calendar (build 33)
+
+Read only. `EventKitCalendarStore` (own `EKEventStore`, full-access request on
+first use) feeds `AppModel.eventsByDay`; Today and the daily note agenda show
+the day's events above the tasks. Settings › Apple Calendar can turn it off.
+Info.plist carries `NSCalendarsFullAccessUsageDescription` via `project.yml`.
+Nothing is written to Calendar; tasks are not turned into events.
+
 ## Not built (by choice)
 
 Saved searches. Roadmap stopped there on his request.

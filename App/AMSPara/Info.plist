@@ -37,6 +37,10 @@
 	<string>public.app-category.productivity</string>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>AMS PARA shows calendar events for the day next to your tasks in Today and in daily notes.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>AMS PARA shows calendar events for the day next to your tasks in Today and in daily notes.</string>
 	<key>NSHumanReadableCopyright</key>
 	<string></string>
 	<key>NSRemindersFullAccessUsageDescription</key>
