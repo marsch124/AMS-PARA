@@ -109,6 +109,13 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
+            #if !os(macOS)
+            Section("Help") {
+                NavigationLink("How it works") { HelpDocument(fileName: "HowItWorks").navigationTitle("How it works") }
+                NavigationLink("Version history") { HelpDocument(fileName: "VersionHistory").navigationTitle("Version history") }
+            }
+            #endif
+
             Section("Quick capture") {
                 #if os(macOS)
                 Toggle("Show capture panel in the menu bar", isOn: $showMenuBarItem)

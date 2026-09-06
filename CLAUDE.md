@@ -27,6 +27,8 @@ Terminal commands. Tell him "you can pull" only after CI is green.
 - GitHub repo name stays `AMS-PARA` (access is scoped to it); local folder is "AMS PARA".
 - No Swift toolchain in the remote container: verify via CI (`mcp__github__actions_list`, `get_job_logs`).
 - Bump `BuildStamp.number` in `App/AMSPara/AppModel.swift` on every push; it shows at the bottom of the sidebar so we know which build he runs.
+- Add a section for that build to `Docs/VersionHistory.md` (user-facing wording) on every push. `Docs/HowItWorks.md` is the manual; update it when behaviour changes. Both are bundled (project.yml `Docs` resources) and shown by `HelpView`.
+- Build N = CI run N. Adding a source file needs a `project.yml` change so CI regenerates the committed project.
 
 ## Conventions
 

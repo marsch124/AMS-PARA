@@ -7,6 +7,13 @@ It follows the NotePlan conventions: every note is a `.md` file in a folder you 
 NotePlan's own folder), frontmatter carries the metadata, and tasks are ordinary `- [ ]` lines inside the notes.
 You can keep editing the same files in NotePlan, Obsidian or any text editor.
 
+## Manual
+
+- [How it works](Docs/HowItWorks.md)
+- [Version history](Docs/VersionHistory.md)
+
+Both are bundled into the app: Help menu on the Mac, Settings › Help on the iPhone.
+
 ## What is in this repository
 
 | Part | Where | What it does |

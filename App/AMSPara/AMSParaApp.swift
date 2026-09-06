@@ -25,7 +25,10 @@ struct AMSParaApp: App {
                     .keyboardShortcut("r", modifiers: [.command, .shift])
                     .disabled(model.vault == nil || model.isSyncing)
             }
-            CommandGroup(after: .help) {
+            CommandGroup(replacing: .help) {
+                #if os(macOS)
+                HelpMenuButtons()
+                #endif
                 Button("Copy Diagnostics") { model.copyDiagnostics() }
                     .keyboardShortcut("d", modifiers: [.command, .option])
             }
@@ -40,6 +43,23 @@ struct AMSParaApp: App {
             SettingsView()
                 .environmentObject(model)
         }
+        Window("AMS PARA Help", id: "help") {
+            HelpView()
+        }
+        .defaultSize(width: 720, height: 640)
         #endif
     }
 }
+
+#if os(macOS)
+/// Help menu items that open the help window on the chosen page.
+struct HelpMenuButtons: View {
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        Button("How AMS PARA Works") { openWindow(id: "help") }
+            .keyboardShortcut("?", modifiers: [.command])
+        Button("Version History") { openWindow(id: "help") }
+    }
+}
+#endif

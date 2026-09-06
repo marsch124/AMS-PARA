@@ -21,6 +21,9 @@ targets:
     supportedDestinations: [macOS, iOS]
     sources:
       - path: App/AMSPara
+      # The built-in manual (Help window / Settings › Help).
+      - path: Docs
+        buildPhase: resources
     dependencies:
       - package: AMSParaCore
         product: AMSParaCore
