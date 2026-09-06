@@ -51,5 +51,18 @@
 	<dict/>
 	<key>UISupportsDocumentBrowser</key>
 	<true/>
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>AMS PARA task</string>
+			<key>UTTypeIdentifier</key>
+			<string>com.schabbauer.amspara.task</string>
+		</dict>
+	</array>
 </dict>
 </plist>
