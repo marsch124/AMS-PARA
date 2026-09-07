@@ -19,9 +19,18 @@ on:
 jobs:
   upload:
     name: Build and send to TestFlight
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
+
+      - name: Use the newest Xcode on the runner
+        run: |
+          # Apple refuses uploads built with an older SDK, so always take the
+          # highest Xcode the image has.
+          newest=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+          echo "Using $newest"
+          sudo xcode-select -s "$newest"
+          xcodebuild -version
 
       - name: Check the secrets are there
         env:

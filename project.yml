@@ -53,6 +53,17 @@ targets:
         NSRemindersUsageDescription: AMS PARA mirrors the tasks in your PARA notes to Apple Reminders and back.
         NSHumanReadableCopyright: ""
         UILaunchScreen: {}
+        # Apple rejects an upload without these: iPad multitasking needs all four.
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
         UISupportsDocumentBrowser: true
         LSSupportsOpeningDocumentsInPlace: true
     entitlements:

@@ -229,6 +229,12 @@ Secrets: `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8`, `ASC_TEAM_ID` (all four
 required: `project.yml` sets no `DEVELOPMENT_TEAM`, so the workflow passes it on the
 xcodebuild command line — otherwise "Signing requires a development team").
 `TESTFLIGHT.md` at the repo root is his step-by-step (browser only, no Mac).
+The job runs on `macos-26` and `xcode-select`s the highest Xcode on the image:
+Apple rejects an upload built with an older SDK. The key must have the **Admin**
+role — App Manager gives "Cloud signing permission error" at export. Both App IDs
+need the App Group `group.com.schabbauer.amspara` enabled in the developer portal,
+and `project.yml` declares `UISupportedInterfaceOrientations` (all four), without
+which Apple rejects the binary.
 
 ## Not built (by choice)
 

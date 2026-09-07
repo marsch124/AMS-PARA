@@ -2,6 +2,11 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 50 · 7 September 2026
+
+- The app now declares which screen rotations it supports, which Apple requires before an upload is accepted. On the iPhone and iPad it can be used in any orientation.
+- The TestFlight build job uses the newest build machine and the newest Xcode, because Apple only accepts builds made with the current system.
+
 ## Build 49 · 7 September 2026
 
 - Fixes in the TestFlight build job: it now signs with the Apple team from the new `ASC_TEAM_ID` setting, and makes its log folder before writing to it. Nothing in the app itself changed.
