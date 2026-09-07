@@ -9,9 +9,10 @@ Goals + PARA (Projects, Areas, Resources, Archive), tasks synced two-way with
 Apple Reminders, daily/weekly notes, quick capture, full-text search.
 
 Owner: Martin Schabbauer (project manager, part-time retired, Sweden, not a
-developer). Communicate in short, friendly, concrete steps. He runs the app
-from Xcode only: quit app (⌘Q) → **Integrate › Pull…** → **▶**. He cannot run
-Terminal commands. Tell him "you can pull" only after CI is green.
+developer). Communicate in short, friendly, concrete steps. He cannot run
+Terminal commands. Since build 56 both apps come from TestFlight: when CI is
+green, tell him to press **Run workflow** on the TestFlight page, then Update in
+TestFlight on the phone and on the Mac. Xcode is no longer part of his routine.
 
 ## Layout
 

@@ -2,6 +2,10 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 57 · 7 September 2026
+
+- Notes only. Both apps now come from TestFlight and Xcode is out of the loop; this build records that.
+
 ## Build 56 · 7 September 2026
 
 - **The Mac app comes from TestFlight too.** One press of the build button now sends both the iPhone app and the Mac app. The Mac app installs into your Applications folder like any other app, appears in Spotlight and the Dock, and tells you itself when a new version is ready. No more quitting, pulling and pressing play in Xcode.
