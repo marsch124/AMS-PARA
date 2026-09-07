@@ -10,6 +10,7 @@ struct NoteEditorView: View {
     @State private var isDirty = false
     @State private var pendingSave: Task<Void, Never>?
     @State private var showTasks = true
+    @AppStorage("hideFinishedTasks") private var hideFinishedTasks = false
     @State private var showLinks = false
     @State private var confirmTrash = false
     @State private var vaultPath: String?
@@ -181,8 +182,25 @@ struct NoteEditorView: View {
                 DisclosureGroup(isExpanded: $showTasks) {
                     TaskChecklist(note: note, beforeToggle: flushSave)
                 } label: {
-                    SectionLabel(title: note.openTasks.isEmpty ? "Tasks" : "Tasks, \(note.openTasks.count) open",
-                                 count: nil, systemImage: "checklist", tint: note.tint)
+                    HStack {
+                        SectionLabel(title: note.openTasks.isEmpty ? "Tasks" : "Tasks, \(note.openTasks.count) open",
+                                     count: nil, systemImage: "checklist", tint: note.tint)
+                        Spacer()
+                        let finished = note.tasks.count - note.openTasks.count
+                        if finished > 0 {
+                            Button {
+                                hideFinishedTasks.toggle()
+                            } label: {
+                                Label(hideFinishedTasks ? "\(finished) finished hidden" : "Hide finished",
+                                      systemImage: hideFinishedTasks ? "eye.slash" : "eye")
+                                    .font(.caption)
+                                    .labelStyle(.titleAndIcon)
+                            }
+                            .buttonStyle(.borderless)
+                            .foregroundStyle(.secondary)
+                            .help("Show or hide tasks that are done or cancelled")
+                        }
+                    }
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
@@ -342,9 +360,29 @@ struct TaskChecklist: View {
     @State private var subtaskParent: TaskItem?
     @State private var subtaskTitle = ""
 
+    @AppStorage("hideFinishedTasks") private var hideFinishedTasks = false
+
+    /// The tasks to draw. Finished ones can be hidden, but never one that still has open
+    /// work under it: a done parent with an open subtask stays, or the subtask would vanish.
+    var visibleTasks: [TaskItem] {
+        guard hideFinishedTasks else { return note.tasks }
+        let tasks = note.tasks
+        var keep = [Bool](repeating: true, count: tasks.count)
+        for (i, task) in tasks.enumerated() where task.isDone {
+            var hasOpenDescendant = false
+            var j = i + 1
+            while j < tasks.count, tasks[j].indentLevel > task.indentLevel {
+                if !tasks[j].isDone { hasOpenDescendant = true; break }
+                j += 1
+            }
+            keep[i] = hasOpenDescendant
+        }
+        return zip(tasks, keep).compactMap { $1 ? $0 : nil }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
-            ForEach(note.tasks, id: \.lineIndex) { task in
+            ForEach(visibleTasks, id: \.lineIndex) { task in
                 TaskRow(ref: TaskRef(notePath: note.relativePath, noteTitle: note.title, task: task), showNote: false,
                         onAddSubtask: { subtaskTitle = ""; subtaskParent = task }) {
                     beforeToggle()

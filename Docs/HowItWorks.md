@@ -60,7 +60,7 @@ Tasks are ordinary list lines inside the notes:
 
 While you type, the editor shows what the markdown means: headings grow, task boxes are coloured, a finished task is struck through, dates and tags stand out, and the symbols themselves fade. Nothing in the file changes; it stays plain markdown for NotePlan and every other editor.
 
-The task box under the note header shows the same tasks as a checklist. Ticking there edits the line in the file.
+The task box under the note header shows the same tasks as a checklist. Ticking there edits the line in the file. Its header row has a **Hide finished** switch (also in Settings › Tasks) that leaves out what is done or cancelled; a finished task with open subtasks always stays visible, and nothing is removed from the file.
 
 Right-click any task, anywhere in the app, for the task menu:
 

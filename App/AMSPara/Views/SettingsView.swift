@@ -6,6 +6,7 @@ struct SettingsView: View {
     @State private var showingImporter = false
     @State private var backupToRestore: VaultBackup?
     @AppStorage("showMenuBarItem") private var showMenuBarItem = true
+    @AppStorage("hideFinishedTasks") private var hideFinishedTasks = false
 
     var body: some View {
         Form {
@@ -22,6 +23,13 @@ struct SettingsView: View {
                         Button("Close vault", role: .destructive) { model.closeVault() }
                     }
                 }
+            }
+
+            Section("Tasks") {
+                Toggle("Hide finished tasks in notes", isOn: $hideFinishedTasks)
+                Text("Done and cancelled tasks stay in the file and in the editor; this only hides them from the checklist. A finished task with open subtasks is always shown.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             Section("Reminders sync") {

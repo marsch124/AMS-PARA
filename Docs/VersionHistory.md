@@ -2,6 +2,10 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 54 · 7 September 2026
+
+- **Hide finished tasks.** The task list under a note header can leave out what is done or cancelled. The switch is on the header row of the Tasks box ("Hide finished"), and in Settings › Tasks. A finished task that still has open subtasks is always shown, so nothing open can disappear. The file is untouched: the tasks are still there in the text and in Reminders.
+
 ## Build 53 · 7 September 2026
 
 - **The note screen scrolls on the iPhone.** A note with a long task list ran off both ends of the screen at once: the first tasks were hidden behind the title bar, the last behind the tabs at the bottom, and nothing would move. The whole screen is one scrolling page now, so every task is reachable.
