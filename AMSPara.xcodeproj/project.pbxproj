@@ -195,9 +195,11 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					B619AD78484BB59F2063A082 = {
+						DevelopmentTeam = D24ENP83QQ;
 						ProvisioningStyle = Automatic;
 					};
 					D53AF6469CFC8BDD6B690EFD = {
+						DevelopmentTeam = D24ENP83QQ;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -277,6 +279,7 @@
 				CODE_SIGN_ENTITLEMENTS = App/Config/AMSParaShare/AMSParaShare.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = D24ENP83QQ;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = App/Config/AMSParaShare/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -418,6 +421,7 @@
 				CODE_SIGN_ENTITLEMENTS = App/Config/AMSParaShare/AMSParaShare.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = D24ENP83QQ;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = App/Config/AMSParaShare/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -442,6 +446,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = D24ENP83QQ;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = App/Config/AMSPara/Info.plist;
@@ -469,6 +474,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = D24ENP83QQ;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = App/Config/AMSPara/Info.plist;
