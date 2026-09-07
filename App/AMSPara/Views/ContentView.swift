@@ -104,7 +104,18 @@ struct ContentView: View {
                 break
             }
         }
-        .onAppear { model.afterUpdate { model.drainOutbox() } }
+        .onAppear {
+            model.afterUpdate { model.drainOutbox() }
+            #if DEBUG
+            // Lets a test open a note without hands: the phone layouts can only be checked
+            // on a screen, and every route to one is a tap. Debug builds only.
+            if let title = ProcessInfo.processInfo.environment["AMSPARA_OPEN_NOTE"],
+               let url = URL(string: "amspara://" + (title.addingPercentEncoding(
+                   withAllowedCharacters: .urlHostAllowed) ?? title)) {
+                model.afterUpdate { model.handle(url: url) }
+            }
+            #endif
+        }
         .overlay(alignment: .bottom) {
             if let message = model.lastCaptureMessage {
                 Text(message)

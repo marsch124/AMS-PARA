@@ -168,6 +168,39 @@ section, settings); it pushes `NoteEditorView` when `selectedNotePath` changes
 on the active tab and clears the selection when popped. Sections reuse
 `NoteListView` by setting `model.section` on appear.
 
+## iPhone note screen scrolls (build 53)
+
+`NoteEditorView` was one fixed `VStack`: header, agendas, task checklist, links, editor,
+add-a-task row. Nothing in it scrolled, which is fine on a Mac window and impossible on a
+phone — a note with 25 tasks ran off both ends at once, the first tasks behind the
+navigation bar and the last behind the tab bar, with no way to reach either.
+
+The body is now `deskBody` (unchanged: the `GeometryReader` that keeps builds 30/34 honest)
+or `phoneBody`, chosen by `horizontalSizeClass == .compact`. `phoneBody` is one `ScrollView`
+over the same `sections`, with `editorPane` given a fixed 320pt — inside a scroll view there
+is no leftover height to take — and `addTaskBar` pinned as a `.safeAreaInset(edge: .bottom)`
+so it never has to be scrolled to. The shared pieces (`sections`, `editorPane`, `addTaskBar`)
+are what both layouts are built from, so a change lands on both.
+
+**Testing the phone layouts on this Mac.** Xcode 26.6 is installed, so the simulator is
+usable without CI:
+
+- `xcodebuild -scheme AMSPara -destination 'platform=iOS Simulator,name=iPhone 17 Pro' -derivedDataPath /tmp/amspara-dd build`
+- the vault is a security-scoped bookmark, so there is no path to set — generate one with
+  `URL.bookmarkData()` on the Mac and write it into the app's
+  `Library/Preferences/com.schabbauer.AMSPara.plist` as `vaultBookmark`. It resolves in the
+  simulator, which shares the Mac's filesystem.
+- every route to a note is a tap, so `ContentView.onAppear` reads `AMSPARA_OPEN_NOTE`
+  (DEBUG only) and opens that note through the existing `amspara://` handler:
+  `SIMCTL_CHILD_AMSPARA_OPEN_NOTE=Inbox xcrun simctl launch booted com.schabbauer.AMSPara`
+- `@AppStorage` values (`editorMode`) can be preset in the same plist to reach a mode.
+- Screenshots with `xcrun simctl io booted screenshot`. Taps need the Simulator MCP, which
+  wants `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer` on his Mac;
+  osascript keystrokes are TCC-blocked, so without that there is no way to tap.
+
+**macOS builds locally only with signing off:** add
+`CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""`.
+
 ## Hidden task markers (build 43)
 
 `TaskIDMasking` (Core) hides `^tXXXXXX` in the editor: `hidden(in:)` strips them

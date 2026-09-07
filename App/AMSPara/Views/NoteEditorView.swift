@@ -16,6 +16,12 @@ struct NoteEditorView: View {
     /// The note's real text (markers included) that the shown text was made from.
     @State private var baseText = ""
     @AppStorage("editorMode") private var mode: EditorMode = .edit
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    private var isPhone: Bool { sizeClass == .compact }
+    #else
+    private var isPhone: Bool { false }
+    #endif
 
     enum EditorMode: String, CaseIterable, Identifiable {
         case edit, split, preview
@@ -29,77 +35,8 @@ struct NoteEditorView: View {
     private var displayText: String { TaskIDMasking.hidden(in: storedText) }
 
     var body: some View {
-        VStack(spacing: 0) {
-            if let note {
-                NoteHeader(note: note)
-                Divider()
-                if let date = note.dailyDate {
-                    DayAgendaView(date: date)
-                    Divider()
-                }
-                if let week = note.weekRef {
-                    WeekAgendaView(week: week)
-                    Divider()
-                }
-                if note.kind == .goal {
-                    GoalDashboardView(goal: note)
-                    Divider()
-                }
-                if !note.tasks.isEmpty {
-                    DisclosureGroup(isExpanded: $showTasks) {
-                        TaskChecklist(note: note, beforeToggle: flushSave)
-                    } label: {
-                        SectionLabel(title: note.openTasks.isEmpty ? "Tasks" : "Tasks, \(note.openTasks.count) open",
-                                     count: nil, systemImage: "checklist", tint: note.tint)
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    Divider()
-                }
-                let linked = linkedNotes(for: note)
-                if !linked.isEmpty {
-                    DisclosureGroup(isExpanded: $showLinks) {
-                        LinkedNotesList(notes: linked)
-                    } label: {
-                        SectionLabel(title: "Linked notes", count: linked.count, systemImage: "link")
-                            .font(.subheadline.weight(.medium))
-                    }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    Divider()
-                }
-            }
-            // The editor takes whatever height is left and never asks for more. Without this
-            // guard, expanding a disclosure above it made the text editor report its full
-            // text height as a minimum, and the window's content grew past the window.
-            GeometryReader { geo in
-                HStack(spacing: 0) {
-                    if mode != .preview {
-                        MarkdownSyntaxEditor(text: $text, tint: note?.tint ?? .accentColor)
-                            .onChange(of: text) { _, newValue in
-                                scheduleSave(newValue)
-                            }
-                    }
-                    if mode == .split {
-                        Divider()
-                    }
-                    if mode != .edit, let note {
-                        MarkdownPreview(note: note, beforeToggle: flushSave)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    }
-                }
-                .frame(width: geo.size.width, height: geo.size.height)
-                .clipped()
-            }
-            Divider()
-            HStack {
-                TextField("Add a task… (>2026-09-10 or >2026-09-10T14:30 for a date, !! for priority, #tag)", text: $newTask)
-                    .textFieldStyle(.roundedBorder)
-                    .onSubmit(addTask)
-                Button("Add", action: addTask)
-                    .disabled(newTask.trimmingCharacters(in: .whitespaces).isEmpty)
-            }
-            .padding(8)
+        Group {
+            if isPhone { phoneBody } else { deskBody }
         }
         .onAppear {
             baseText = storedText
@@ -172,6 +109,128 @@ struct NoteEditorView: View {
                 }
             }
         }
+    }
+
+    /// Mac and iPad, unchanged: a fixed column whose editor absorbs the leftover height.
+    /// Builds 30 and 34 are both about this — anything here that reports its full
+    /// intrinsic height makes the window grow past itself — so it is left alone.
+    private var deskBody: some View {
+        VStack(spacing: 0) {
+            sections
+            // The editor takes whatever height is left and never asks for more. Without this
+            // guard, expanding a disclosure above it made the text editor report its full
+            // text height as a minimum, and the window's content grew past the window.
+            GeometryReader { geo in
+                editorPane
+                    .frame(width: geo.size.width, height: geo.size.height)
+                    .clipped()
+            }
+            Divider()
+            addTaskBar
+        }
+    }
+
+    /// The phone.
+    ///
+    /// The same column would not fit and could not be moved: nothing in it scrolled, so a
+    /// note with two dozen tasks ran off both ends of the screen at once — the first tasks
+    /// hidden under the navigation bar, the last under the tab bar, and no way to reach
+    /// either. On a screen this size the whole page has to be one scrolling thing.
+    ///
+    /// The editor is given a height rather than the leftover space, because inside a scroll
+    /// view there is no leftover space to take. The add-a-task bar is pinned as a safe-area
+    /// inset instead of being the last row: it is the reason the screen is open, and it
+    /// should not have to be scrolled to.
+    private var phoneBody: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                sections
+                editorPane
+                    .frame(height: 320)
+            }
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            VStack(spacing: 0) {
+                Divider()
+                addTaskBar
+            }
+            .background(.bar)
+        }
+    }
+
+    /// Everything above the editor: the note's own header, whatever agenda it carries, its
+    /// tasks and its links.
+    @ViewBuilder
+    private var sections: some View {
+        if let note {
+            NoteHeader(note: note)
+            Divider()
+            if let date = note.dailyDate {
+                DayAgendaView(date: date)
+                Divider()
+            }
+            if let week = note.weekRef {
+                WeekAgendaView(week: week)
+                Divider()
+            }
+            if note.kind == .goal {
+                GoalDashboardView(goal: note)
+                Divider()
+            }
+            if !note.tasks.isEmpty {
+                DisclosureGroup(isExpanded: $showTasks) {
+                    TaskChecklist(note: note, beforeToggle: flushSave)
+                } label: {
+                    SectionLabel(title: note.openTasks.isEmpty ? "Tasks" : "Tasks, \(note.openTasks.count) open",
+                                 count: nil, systemImage: "checklist", tint: note.tint)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                Divider()
+            }
+            let linked = linkedNotes(for: note)
+            if !linked.isEmpty {
+                DisclosureGroup(isExpanded: $showLinks) {
+                    LinkedNotesList(notes: linked)
+                } label: {
+                    SectionLabel(title: "Linked notes", count: linked.count, systemImage: "link")
+                        .font(.subheadline.weight(.medium))
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                Divider()
+            }
+        }
+    }
+
+    /// The markdown itself: the raw text, the rendered version, or both side by side.
+    private var editorPane: some View {
+        HStack(spacing: 0) {
+            if mode != .preview {
+                MarkdownSyntaxEditor(text: $text, tint: note?.tint ?? .accentColor)
+                    .onChange(of: text) { _, newValue in
+                        scheduleSave(newValue)
+                    }
+            }
+            if mode == .split {
+                Divider()
+            }
+            if mode != .edit, let note {
+                MarkdownPreview(note: note, beforeToggle: flushSave)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+    }
+
+    private var addTaskBar: some View {
+        HStack {
+            TextField("Add a task… (>2026-09-10 or >2026-09-10T14:30 for a date, !! for priority, #tag)", text: $newTask)
+                .textFieldStyle(.roundedBorder)
+                .onSubmit(addTask)
+            Button("Add", action: addTask)
+                .disabled(newTask.trimmingCharacters(in: .whitespaces).isEmpty)
+        }
+        .padding(8)
     }
 
     private func linkedNotes(for note: Note) -> [Note] {

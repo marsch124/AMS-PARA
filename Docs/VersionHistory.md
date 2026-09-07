@@ -2,6 +2,12 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 53 · 7 September 2026
+
+- **The note screen scrolls on the iPhone.** A note with a long task list ran off both ends of the screen at once: the first tasks were hidden behind the title bar, the last behind the tabs at the bottom, and nothing would move. The whole screen is one scrolling page now, so every task is reachable.
+- **"Add a task" stays put.** It sits just above the tabs instead of being the last thing on the page, so you no longer have to scroll to the bottom to add something.
+- The Mac and iPad keep the layout they had.
+
 ## Build 52 · 7 September 2026
 
 - **One build number everywhere.** TestFlight used to count its own uploads, so the phone said "Build 50" while TestFlight said "1.0.5". Now TestFlight uses the app's own number, the one at the bottom of the sidebar and on the Browse tab. Both say the same thing.
