@@ -2,6 +2,11 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 43 · 7 September 2026
+
+- **The `^t` markers are hidden in the editor.** Every synced task carries a marker like `^t3cd432` that links it to its reminder. It is still in the file, so NotePlan and the sync keep working, but the editor no longer shows it, so you cannot delete it by accident while editing.
+- **A lost marker repairs itself.** If a task did lose its marker, the next sync recognises the task by its note and title and gives the same marker back, instead of deleting the reminder and making a new one. Anything you had added to that reminder stays.
+
 ## Build 42 · 7 September 2026
 
 - **iPhone layout.** On a phone the app shows tabs: Today, Inbox, Browse and Capture. Browse holds Goals, Projects, Areas, Resources, Archive, Calendar, Time Blocks, Done, Review, Map, Search and Settings. Tap a note to open it, swipe back to return. iPad and Mac keep the three columns.

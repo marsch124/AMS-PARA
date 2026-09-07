@@ -348,6 +348,25 @@ final class SyncEngineTests: XCTestCase {
         XCTAssertEqual(again.remindersCreated, 1, "the next occurrence gets its own reminder")
     }
 
+    func testATaskThatLostItsMarkerKeepsItsReminder() async throws {
+        try writeInbox("- [ ] Buy milk\n")
+        try await engine.run()
+        let before = try await store.reminders(inList: "Inbox")
+        XCTAssertEqual(before.count, 1)
+        let id = try inbox().tasks[0].id!
+
+        // The user edits the line in another editor and drops the marker.
+        try writeInbox("- [ ] Buy milk\n")
+        XCTAssertNil(try inbox().tasks[0].id)
+
+        let report = try await engine.run()
+        XCTAssertEqual(report.remindersDeleted, 0)
+        XCTAssertEqual(report.remindersCreated, 0)
+        XCTAssertEqual(try inbox().tasks[0].id, id, "the same marker comes back")
+        let after = try await store.reminders(inList: "Inbox")
+        XCTAssertEqual(after.map(\.identifier), before.map(\.identifier))
+    }
+
     func testIdsSurviveAFailureWhileTalkingToReminders() async throws {
         try writeInbox("- [ ] Buy milk\n- [ ] Buy bread\n")
         store.failNextCreate = true

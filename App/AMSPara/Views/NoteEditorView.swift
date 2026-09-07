@@ -13,6 +13,8 @@ struct NoteEditorView: View {
     @State private var showLinks = false
     @State private var confirmTrash = false
     @State private var vaultPath: String?
+    /// The note's real text (markers included) that the shown text was made from.
+    @State private var baseText = ""
     @AppStorage("editorMode") private var mode: EditorMode = .edit
 
     enum EditorMode: String, CaseIterable, Identifiable {
@@ -23,6 +25,8 @@ struct NoteEditorView: View {
 
     private var note: Note? { model.note(at: path) }
     private var storedText: String { note?.text ?? "" }
+    /// What the editor shows: the note's text with the `^t` sync markers hidden.
+    private var displayText: String { TaskIDMasking.hidden(in: storedText) }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -101,7 +105,8 @@ struct NoteEditorView: View {
             .padding(8)
         }
         .onAppear {
-            text = storedText
+            baseText = storedText
+            text = displayText
             vaultPath = model.vaultPath
             model.flushEditor = flushSave
         }
@@ -111,7 +116,7 @@ struct NoteEditorView: View {
             pendingSave?.cancel()
             pendingSave = nil
             if isDirty {
-                let unsaved = text
+                let unsaved = TaskIDMasking.restored(text, from: baseText)
                 let openedIn = vaultPath
                 isDirty = false
                 model.afterUpdate {
@@ -121,7 +126,13 @@ struct NoteEditorView: View {
             }
         }
         .onChange(of: storedText) { _, newValue in
-            if !isDirty && newValue != text { text = newValue }
+            // The file changed (a sync assigned markers, another device edited it). While
+            // nothing is being typed, follow it; the shown text often does not change at all
+            // because only hidden markers moved.
+            guard !isDirty else { return }
+            baseText = newValue
+            let shown = TaskIDMasking.hidden(in: newValue)
+            if shown != text { text = shown }
         }
         .confirmationDialog("Move \u{201C}\(note?.displayTitle ?? "")\u{201D} to the Trash?", isPresented: $confirmTrash) {
             Button("Move to Trash", role: .destructive) {
@@ -178,7 +189,7 @@ struct NoteEditorView: View {
     }
 
     private func scheduleSave(_ newValue: String) {
-        guard newValue != storedText else {
+        guard newValue != displayText else {
             isDirty = false
             return
         }
@@ -187,18 +198,21 @@ struct NoteEditorView: View {
         pendingSave = Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(600))
             guard !Task.isCancelled else { return }
-            model.saveText(newValue, forNoteAt: path)
-            isDirty = false
+            write(newValue)
         }
     }
 
     private func flushSave() {
         pendingSave?.cancel()
         pendingSave = nil
-        if isDirty {
-            model.saveText(text, forNoteAt: path)
-            isDirty = false
-        }
+        if isDirty { write(text) }
+    }
+
+    /// Puts the hidden markers back and saves.
+    private func write(_ shown: String) {
+        model.saveText(TaskIDMasking.restored(shown, from: baseText), forNoteAt: path)
+        isDirty = false
+        baseText = model.note(at: path)?.text ?? baseText
     }
 
     private func addTask() {

@@ -75,6 +75,15 @@ public final class SyncEngine {
             }
         }
 
+        // A task whose `^t` marker was edited away is recognised by its note and title, so it
+        // gets the same marker back and keeps its reminder instead of it being replaced.
+        var recoverableIDs: [String: String] = [:]
+        for (taskID, link) in state.links where !allTaskIDs.contains(taskID) {
+            let title = String(link.lastTaskFingerprint.split(separator: "|", omittingEmptySubsequences: false).first ?? "")
+            guard !title.isEmpty else { continue }
+            recoverableIDs["\(link.notePath)\n\(title)"] = taskID
+        }
+
         func record(_ path: String, _ mutate: @escaping (inout Note) -> Bool) {
             mutations[path, default: []].append(mutate)
         }
@@ -85,8 +94,15 @@ public final class SyncEngine {
                 if let previousID {
                     report.warnings.append("\(note.relativePath): \"\(task.title)\" had the id of a task in \(idOwners[previousID] ?? "another note") and got a new one.")
                 }
-                var id = TaskItem.makeID()
-                while allTaskIDs.contains(id) { id = TaskItem.makeID() }
+                var id: String
+                let key = "\(note.relativePath)\n\(Self.reminderTitle(for: task.title, parentPrefix: note.parentPrefix(for: task)))"
+                if previousID == nil, let recovered = recoverableIDs.removeValue(forKey: key), !allTaskIDs.contains(recovered) {
+                    id = recovered
+                    report.warnings.append("\(note.relativePath): restored the Reminders link of \"\(task.title)\".")
+                } else {
+                    id = TaskItem.makeID()
+                    while allTaskIDs.contains(id) { id = TaskItem.makeID() }
+                }
                 allTaskIDs.insert(id)
                 task.id = id
                 let assigned = task

@@ -168,6 +168,17 @@ section, settings); it pushes `NoteEditorView` when `selectedNotePath` changes
 on the active tab and clears the selection when popped. Sections reuse
 `NoteListView` by setting `model.section` on appear.
 
+## Hidden task markers (build 43)
+
+`TaskIDMasking` (Core) hides `^tXXXXXX` in the editor: `hidden(in:)` strips them
+for display, `restored(_:from:)` puts them back by matching unchanged task lines
+first and pairing what is left between those anchors in order (so a renamed task
+keeps its marker, a new one gets none). `NoteEditorView` keeps `baseText` (the
+real text the shown text came from) and saves through `write(_:)`.
+`SyncEngine.run` builds `recoverableIDs` from links whose id no longer exists,
+keyed by "notePath\ntitle" from `lastTaskFingerprint`, and gives the old id back
+to a matching task without one, so the reminder is not deleted and recreated.
+
 ## Not built (by choice)
 
 Saved searches. Roadmap stopped there on his request.

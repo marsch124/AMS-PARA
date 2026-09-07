@@ -56,7 +56,7 @@ Tasks are ordinary list lines inside the notes:
 - `!`, `!!`, `!!!` set the priority
 - `#tag` adds a tag
 - an indented `- [ ]` under a task is a subtask
-- `^t3cd432` at the end is the id the app uses to match the task with its reminder. Leave it alone.
+- `^t3cd432` at the end is the marker the app uses to match the task with its reminder. The editor hides it, so you will only see it in another editor. If it ever goes missing, the next sync puts it back.
 
 The task box under the note header shows the same tasks as a checklist. Ticking there edits the line in the file.
 
