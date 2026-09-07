@@ -286,6 +286,16 @@ team-prefixed groups, the share extension is iOS only, and `outboxURL` already f
 Application Support. The macOS platform must be added to the app record in App Store Connect
 (Distribution › Add Platform) before the first Mac upload.
 
+## Calendar schedule column (build 61)
+
+`DayScheduleView.swift`: `CalendarDetailView` is the third column while `section == .calendar`
+(wired in `DetailView`), with a Schedule/Note switch (`calendarDetailShowsNote`) that flips to
+Note when a note is selected. `DayScheduleView` draws the day: `ScheduleItem` unifies events,
+time blocks and timed tasks; `lanes(for:)` puts overlapping items side by side as `PlacedItem`
+(a struct, because key paths cannot address tuple members); hours are drop targets that create
+a one-hour block from a task. One `.sheet` only (build 44's lesson), keyed by `ScheduleSheet`,
+for both new and existing blocks; it saves through `AppModel.saveTimeBlock`/`deleteTimeBlock`.
+
 ## Not built (by choice)
 
 Saved searches. Roadmap stopped there on his request.

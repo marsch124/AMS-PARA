@@ -397,7 +397,10 @@ struct DetailView: View {
     @EnvironmentObject private var model: AppModel
 
     var body: some View {
-        if let path = model.selectedNotePath, model.note(at: path) != nil {
+        if model.section == .calendar {
+            // The Calendar section gets the day's schedule here, with the note one click away.
+            CalendarDetailView()
+        } else if let path = model.selectedNotePath, model.note(at: path) != nil {
             NoteEditorView(path: path)
                 .id(path)
         } else if model.section == .timeBlocks {

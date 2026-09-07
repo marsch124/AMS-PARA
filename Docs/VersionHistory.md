@@ -2,6 +2,14 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 61 · 7 September 2026
+
+- **The Calendar section now uses the whole window.** The right-hand column shows the selected day as a schedule: hours down the side, your Apple Calendar events in place and in their own colours, and your time blocks drawn on top of them. A red line marks now.
+- **Time blocks live there.** Press "Block time", or double-click an hour, to reserve one. Click a block to change its title, time, length, calendar or notes, or to delete it. All of it writes to Apple Calendar as before, so it shows on every device.
+- **Drag a task onto an hour** and that hour is blocked for it, with a link back to the note it came from.
+- All-day events and tasks due today without a time sit in a strip above the clock, so nothing is hidden.
+- A **Schedule / Note** switch at the top of the column: the daily note is one click away, and it opens by itself when you pick a note.
+
 ## Builds 58 to 60 · 7 September 2026
 
 The Calendar section's day view, rebuilt.
