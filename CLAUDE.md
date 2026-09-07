@@ -215,6 +215,19 @@ written back when the text really differs, so typing is never interrupted, and
 the TextEditor in `NoteEditorView`; all the save, flush and masking logic is
 unchanged.
 
+## TestFlight (build 48)
+
+`.github/workflows/testflight.yml`, manual dispatch only: xcodegen, PlistBuddy
+sets CFBundleVersion/ShortVersion from `github.run_number` and adds
+`ITSAppUsesNonExemptEncryption` (done in the workflow, not project.yml, so the
+committed Xcode project and his signing Team are never touched), writes the
+App Store Connect key to `~/private_keys/AuthKey_<ID>.p8`, archives for
+`generic/platform=iOS` with `-allowProvisioningUpdates` + the three
+`-authenticationKey…` flags (cloud signing, no Mac and no certificates needed),
+then `-exportArchive` with `method: app-store-connect` and `destination: upload`.
+Secrets: `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8`, optional `ASC_TEAM_ID`.
+`TESTFLIGHT.md` at the repo root is his step-by-step (browser only, no Mac).
+
 ## Not built (by choice)
 
 Saved searches. Roadmap stopped there on his request.

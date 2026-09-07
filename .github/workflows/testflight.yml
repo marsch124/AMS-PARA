@@ -1,0 +1,144 @@
+name: TestFlight
+
+# Builds the iPhone app and sends it to TestFlight, so a new version appears on the
+# phone without touching the Mac. Started by hand from the Actions tab.
+#
+# Needs three repository secrets, made once in App Store Connect:
+#   ASC_KEY_ID     the key's ID, ten characters
+#   ASC_ISSUER_ID  the issuer ID shown above the key list
+#   ASC_KEY_P8     the whole contents of the AuthKey_XXXXXXXXXX.p8 file
+# Optional:
+#   ASC_TEAM_ID    only needed when the Apple ID belongs to more than one team
+on:
+  workflow_dispatch:
+    inputs:
+      notes:
+        description: What is new in this build
+        required: false
+        default: ""
+
+jobs:
+  upload:
+    name: Build and send to TestFlight
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the secrets are there
+        env:
+          KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ISSUER: ${{ secrets.ASC_ISSUER_ID }}
+          KEY: ${{ secrets.ASC_KEY_P8 }}
+        run: |
+          missing=""
+          [ -z "$KEY_ID" ] && missing="$missing ASC_KEY_ID"
+          [ -z "$ISSUER" ] && missing="$missing ASC_ISSUER_ID"
+          [ -z "$KEY" ] && missing="$missing ASC_KEY_P8"
+          if [ -n "$missing" ]; then
+            echo "Missing repository secrets:$missing"
+            echo "Add them under Settings › Secrets and variables › Actions."
+            exit 1
+          fi
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate the project
+        run: xcodegen generate
+
+      - name: Number this build
+        run: |
+          BUILD=${{ github.run_number }}
+          for plist in App/Config/AMSPara/Info.plist App/Config/AMSParaShare/Info.plist; do
+            /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD" "$plist"
+            /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.$BUILD" "$plist"
+          done
+          # Says the app uses no encryption beyond what Apple exempts, so TestFlight
+          # does not ask the same question on every upload.
+          /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" App/Config/AMSPara/Info.plist \
+            || /usr/libexec/PlistBuddy -c "Set :ITSAppUsesNonExemptEncryption false" App/Config/AMSPara/Info.plist
+
+      - name: Write the App Store Connect key
+        env:
+          KEY: ${{ secrets.ASC_KEY_P8 }}
+          KEY_ID: ${{ secrets.ASC_KEY_ID }}
+        run: |
+          mkdir -p "$HOME/private_keys"
+          printf '%s\n' "$KEY" > "$HOME/private_keys/AuthKey_$KEY_ID.p8"
+          chmod 600 "$HOME/private_keys/AuthKey_$KEY_ID.p8"
+
+      - name: Archive the app
+        env:
+          KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ISSUER: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          set -o pipefail
+          xcodebuild archive \
+            -project AMSPara.xcodeproj \
+            -scheme AMSPara \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$PWD/build/AMSPara.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$HOME/private_keys/AuthKey_$KEY_ID.p8" \
+            -authenticationKeyID "$KEY_ID" \
+            -authenticationKeyIssuerID "$ISSUER" \
+            2>&1 | tee build/archive.log | grep -E "error:|warning:|\*\* ARCHIVE" || true
+          grep -q "\*\* ARCHIVE SUCCEEDED \*\*" build/archive.log
+
+      - name: Send it to TestFlight
+        env:
+          KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ISSUER: ${{ secrets.ASC_ISSUER_ID }}
+          TEAM_ID: ${{ secrets.ASC_TEAM_ID }}
+        run: |
+          set -o pipefail
+          cat > build/ExportOptions.plist <<'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>uploadSymbols</key><true/>
+            <key>manageAppVersionAndBuildNumber</key><false/>
+          </dict>
+          </plist>
+          PLIST
+          if [ -n "$TEAM_ID" ]; then
+            /usr/libexec/PlistBuddy -c "Add :teamID string $TEAM_ID" build/ExportOptions.plist
+          fi
+          xcodebuild -exportArchive \
+            -archivePath "$PWD/build/AMSPara.xcarchive" \
+            -exportPath "$PWD/build/export" \
+            -exportOptionsPlist build/ExportOptions.plist \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$HOME/private_keys/AuthKey_$KEY_ID.p8" \
+            -authenticationKeyID "$KEY_ID" \
+            -authenticationKeyIssuerID "$ISSUER" \
+            2>&1 | tee build/export.log | grep -E "error:|Upload|EXPORT" || true
+          grep -q "\*\* EXPORT SUCCEEDED \*\*" build/export.log
+
+      - name: Say what happened
+        if: success()
+        run: |
+          echo "### Sent to TestFlight" >> $GITHUB_STEP_SUMMARY
+          echo "Version 1.0.${{ github.run_number }}, build ${{ github.run_number }}." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Apple processes it for a few minutes, then it appears in TestFlight on the phone." >> $GITHUB_STEP_SUMMARY
+          if [ -n "${{ github.event.inputs.notes }}" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "What is new: ${{ github.event.inputs.notes }}" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Keep the logs when something fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: testflight-logs
+          path: build/*.log
+          if-no-files-found: ignore
+
+      - name: Remove the key
+        if: always()
+        run: rm -rf "$HOME/private_keys"

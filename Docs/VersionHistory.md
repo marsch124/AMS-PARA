@@ -2,6 +2,10 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 48 · 7 September 2026
+
+- **The iPhone app can now come from TestFlight.** A new build server job builds the phone app and sends it to Apple, so new versions reach the phone by themselves: no cable, no Xcode, no seven-day expiry. The one-time setup is in TESTFLIGHT.md and happens entirely in a browser.
+
 ## Build 47 · 7 September 2026
 
 - **The editor draws markdown while you type.** Headings grow and turn bold, task boxes are coloured, a finished task is struck through, dates and priorities and tags stand out, and the syntax characters fade into the background. The text in the file does not change at all: it is still the same markdown, only easier to read.

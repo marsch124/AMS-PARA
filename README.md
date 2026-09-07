@@ -7,6 +7,11 @@ It follows the NotePlan conventions: every note is a `.md` file in a folder you 
 NotePlan's own folder), frontmatter carries the metadata, and tasks are ordinary `- [ ]` lines inside the notes.
 You can keep editing the same files in NotePlan, Obsidian or any text editor.
 
+## Getting it on the iPhone
+
+[TESTFLIGHT.md](TESTFLIGHT.md) sets up automatic delivery to the phone through
+TestFlight, all from a browser.
+
 ## Manual
 
 - [How it works](Docs/HowItWorks.md)
