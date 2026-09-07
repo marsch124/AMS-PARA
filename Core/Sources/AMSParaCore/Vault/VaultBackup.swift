@@ -95,11 +95,17 @@ public extension Vault {
         try makeBackup(reason: "before restore", now: now)
 
         var written = 0
+        let sourceComponents = source.standardizedFileURL.pathComponents
         guard let walker = fm.enumerator(at: source, includingPropertiesForKeys: [.isRegularFileKey]) else { return 0 }
         for case let fileURL as URL in walker {
             guard (try? fileURL.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) == true else { continue }
-            let relative = fileURL.path.replacingOccurrences(of: source.path + "/", with: "")
-            guard relative != "signature.txt" else { continue }
+            // From path components, so a symlinked or oddly spelled path cannot turn into a
+            // relative path that escapes the vault.
+            let components = fileURL.standardizedFileURL.pathComponents
+            guard components.count > sourceComponents.count,
+                  Array(components.prefix(sourceComponents.count)) == sourceComponents else { continue }
+            let relative = components.dropFirst(sourceComponents.count).joined(separator: "/")
+            guard relative != "signature.txt", !relative.isEmpty else { continue }
             let destination = url(for: relative)
             try fm.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
             try? fm.removeItem(at: destination)
@@ -146,8 +152,10 @@ public extension Vault {
     /// vault is not copied twice.
     private func contentSignature() throws -> String {
         try backedUpPaths().map { path in
-            let stamp = modificationDate(of: path)?.timeIntervalSince1970 ?? 0
-            return "\(path)@\(Int(stamp))"
+            let values = try? url(for: path).resourceValues(forKeys: [.contentModificationDateKey, .fileSizeKey])
+            let stamp = values?.contentModificationDate?.timeIntervalSince1970 ?? 0
+            let size = values?.fileSize ?? 0
+            return "\(path)@\(stamp)@\(size)"
         }.joined(separator: "\n")
     }
 }

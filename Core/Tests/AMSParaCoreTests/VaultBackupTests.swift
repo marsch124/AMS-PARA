@@ -43,8 +43,10 @@ final class VaultBackupTests: XCTestCase {
         for i in 0..<5 {
             var note = try vault.loadNote(relativePath: "Inbox.md")
             note.body = "- [ ] Step \(i)\n"
+            note.modifiedAt = nil
             try vault.save(note)
-            _ = try vault.makeBackup(reason: "daily", keeping: 3, now: Date().addingTimeInterval(Double(i) * 120))
+            let made = try vault.makeBackup(reason: "daily", keeping: 3, now: Date().addingTimeInterval(Double(i) * 120))
+            XCTAssertNotNil(made, "the vault changed in round \(i), so a copy is due")
         }
         XCTAssertEqual(vault.backups().count, 3)
     }
@@ -54,10 +56,13 @@ final class VaultBackupTests: XCTestCase {
         note.body = "first version"
         note = try vault.save(note)
         let backup = try XCTUnwrap(try vault.makeBackup(reason: "manual"))
+        let inBackup = vault.backupsURL.appendingPathComponent(backup.folderName).appendingPathComponent("Projects/Race.md")
+        XCTAssertTrue(try String(contentsOf: inBackup, encoding: .utf8).contains("first version"), "the backup holds the old text")
 
         note.body = "second version"
         note.modifiedAt = nil
         try vault.save(note)
+        XCTAssertTrue(try vault.loadNote(relativePath: "Projects/Race.md").body.contains("second version"))
         let later = try vault.createNote(kind: .project, title: "Later")
 
         let written = try vault.restore(backup, now: Date().addingTimeInterval(300))
