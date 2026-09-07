@@ -258,9 +258,10 @@ App Store Connect key to `~/private_keys/AuthKey_<ID>.p8`, archives for
 `generic/platform=iOS` with `-allowProvisioningUpdates` + the three
 `-authenticationKey…` flags (cloud signing, no Mac and no certificates needed),
 then `-exportArchive` with `method: app-store-connect` and `destination: upload`.
-Secrets: `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8`, `ASC_TEAM_ID` (all four
-required: `project.yml` sets no `DEVELOPMENT_TEAM`, so the workflow passes it on the
-xcodebuild command line — otherwise "Signing requires a development team").
+Secrets: `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8`, `ASC_TEAM_ID` (the workflow
+passes the team on the xcodebuild command line; without a team, signing fails).
+Since build 55 `project.yml` also sets `DEVELOPMENT_TEAM: D24ENP83QQ` (his own team),
+so Xcode no longer rewrites `project.pbxproj` locally and his pulls stay clean.
 `TESTFLIGHT.md` at the repo root is his step-by-step (browser only, no Mac).
 The uploaded version is `1.0.<BuildStamp.number>` with CFBundleVersion
 `<BuildStamp.number>.<run number>`, read out of `AppModel.swift` by the workflow, so
