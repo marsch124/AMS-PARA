@@ -67,21 +67,25 @@ struct DayCalendarView: View {
         model.afterUpdate { model.openDailyNote(for: next) }
     }
 
-    /// The day in words, its week number, and what it holds.
-    @ViewBuilder
-    private func header(day: DateOnly, overview: DayOverview) -> some View {
+    /// "v. 37 · 3 due · 2 events". A plain function, not a view builder: it is only text.
+    private func summary(day: DateOnly, overview: DayOverview) -> String {
         let events = model.events(on: day).count
-        var parts: [String] = ["v. \(WeekRef(containing: day).week)"]
+        var parts = ["v. \(WeekRef(containing: day).week)"]
         if !overview.due.isEmpty { parts.append("\(overview.due.count) due") }
         if events > 0 { parts.append(events == 1 ? "1 event" : "\(events) events") }
         if !overview.completed.isEmpty { parts.append("\(overview.completed.count) done") }
         if overview.due.isEmpty && events == 0 && overview.completed.isEmpty { parts.append("nothing planned") }
+        return parts.joined(separator: " · ")
+    }
 
+    /// The day in words, its week number, and what it holds.
+    @ViewBuilder
+    private func header(day: DateOnly, overview: DayOverview) -> some View {
         HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(dayTitle(day))
                     .font(.title3.weight(.semibold))
-                Text(parts.joined(separator: " · "))
+                Text(summary(day: day, overview: overview))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
