@@ -81,6 +81,13 @@ public final class InMemoryRemindersStore: RemindersStore {
 
     public func listNames() async throws -> [String] { lists }
 
+    /// Fills the store with a copy of another store's contents, keeping the identifiers.
+    /// Used to rehearse a sync without touching Apple Reminders.
+    public func seed(lists: [String], records: [ReminderRecord]) {
+        self.lists = lists
+        for record in records { self.records[record.identifier] = record }
+    }
+
     public func ensureList(named name: String) async throws {
         if !lists.contains(name) { lists.append(name) }
     }

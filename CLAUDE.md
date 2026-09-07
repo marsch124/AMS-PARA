@@ -179,6 +179,20 @@ real text the shown text came from) and saves through `write(_:)`.
 keyed by "notePath\ntitle" from `lastTaskFingerprint`, and gives the old id back
 to a matching task without one, so the reminder is not deleted and recreated.
 
+## Backups and sync preview (build 44)
+
+`VaultBackup` (Core, `Vault/VaultBackup.swift`): plain dated folders under
+`.ams-para/Backups/<yyyy-MM-dd HHmm>~<reason>`, `makeBackup` skips when the
+content signature (paths + mtimes of .md/.json/.txt outside Backups) matches the
+last one, keeps 10, `restore` backs up first and never deletes newer notes,
+`copyContents(to:)` clones the vault for the preview. `AppModel`: `backUp`,
+`backUpNow`, `backUpDaily` (launch + openVault, keyed by `lastBackupDay`),
+`restore`, `showBackupsInFinder`, `backsUpBeforeSync` (default on, runs inside
+`syncNow`). `previewSync()` copies the vault to a temp folder and seeds an
+`InMemoryRemindersStore` from EventKit (`seed(lists:records:)`), runs the real
+engine there and shows `SyncReportView` through `AppSheet.syncReport`
+(`reportToShow`/`reportIsPreview`) — never a second `.sheet` modifier.
+
 ## Not built (by choice)
 
 Saved searches. Roadmap stopped there on his request.

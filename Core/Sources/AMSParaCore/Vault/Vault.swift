@@ -46,6 +46,11 @@ public final class Vault {
     public var stateFolderURL: URL { rootURL.appendingPathComponent(Self.stateFolderName, isDirectory: true) }
     public var configURL: URL { stateFolderURL.appendingPathComponent("config.json") }
 
+    /// Re-reads config.json, e.g. after a backup was restored over it.
+    public func reloadConfig() {
+        config = (try? loadConfig()) ?? config
+    }
+
     public func loadConfig() throws -> VaultConfig {
         let data = try Data(contentsOf: configURL)
         return try JSONDecoder().decode(VaultConfig.self, from: data)

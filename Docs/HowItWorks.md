@@ -130,6 +130,20 @@ The app reads events from the calendars you choose in Settings › Apple Calenda
 
 Time Blocks are the one thing the app writes to Calendar. They are blocks of time you reserve, separate from tasks. Add one in the Time Blocks section: it becomes an ordinary event in the calendar chosen under "Time blocks go to", and shows on all your devices. Click a block to edit it, right-click to open it in Calendar or delete it. Nothing else in your calendars is ever changed.
 
+## Backups
+
+The app saves a copy of the whole vault before every sync and once a day, keeping the last ten. They live inside the vault, in a hidden folder called `.ams-para/Backups`, as ordinary folders of markdown files.
+
+- **Settings › Backups › Back up now** saves one immediately. Nothing is saved twice if nothing changed.
+- **Show in Finder** opens the folder, where you can drag a single note back by hand.
+- **Restore a copy** writes a whole backup back into the vault. What you have at that moment is saved as a backup first, and notes you created after the backup are left where they are.
+
+Time Machine covers the rest: these backups sit inside the vault folder, so they do not protect against losing that folder itself.
+
+## Seeing what a sync will do
+
+The sync button is a menu. **Show me what would change…** rehearses the entire sync on a copy of your vault and a copy of your reminders and shows the result. Nothing is touched. From that sheet you can press **Sync now** to do it for real. **Last sync report…** shows the same for the sync you ran.
+
 ## Archive and Trash
 
 - **Archive** moves a project, area, resource or goal to the Archive folder, marks it archived and stops syncing its tasks. Use it for finished work.
@@ -150,6 +164,7 @@ The app checks every few seconds whether files changed outside it and reloads th
 - ⌘N new note, ⇧⌘N quick capture, ⇧⌘F search everywhere, ⇧⌘R sync with Reminders
 - ⌘⌫ move the open note to the Trash
 - ⌥⌘D copy diagnostics, a log you can paste when reporting a problem
+- The sync button's menu holds the sync preview and the last report
 
 ## When something looks wrong
 

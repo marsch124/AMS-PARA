@@ -61,13 +61,14 @@ enum AppSheet: String, Identifiable {
     case newNote
     case quickCapture
     case settings
+    case syncReport
 
     var id: String { rawValue }
 }
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 43
+    static let number = 44
 }
 
 @MainActor
@@ -125,6 +126,11 @@ final class AppModel: ObservableObject {
     @Published private(set) var timeBlocks: [TimeBlock] = []
     /// Filled by "Block time for this…" on a task; the Time Blocks form picks it up.
     @Published var timeBlockDraft: TimeBlockDraft?
+    /// Saved copies of the vault, newest first.
+    @Published private(set) var backups: [VaultBackup] = []
+    /// The report shown in the sync sheet, and whether it was a rehearsal.
+    @Published private(set) var reportToShow: SyncReport?
+    @Published private(set) var reportIsPreview = false
 
     struct TimeBlockDraft: Equatable {
         var title: String
@@ -138,6 +144,8 @@ final class AppModel: ObservableObject {
     private let showCalendarKey = "showCalendarEvents"
     private let visibleCalendarsKey = "visibleCalendarIDs"
     private let timeBlockCalendarKey = "timeBlockCalendarID"
+    private let backupBeforeSyncKey = "backUpBeforeSync"
+    private let lastBackupDayKey = "lastBackupDay"
     private var securityScopedURL: URL?
     private var autoSyncTask: Task<Void, Never>?
 
@@ -164,6 +172,7 @@ final class AppModel: ObservableObject {
         }
         #endif
         watchForExternalChanges()
+        backUpDaily()
         calendarStore.onChange = { [weak self] in
             Task { await self?.refreshEvents() }
         }
@@ -268,6 +277,15 @@ final class AppModel: ObservableObject {
         }
     }
 
+    /// Whether a copy of the vault is saved before each sync (on by default).
+    var backsUpBeforeSync: Bool {
+        get { defaults.object(forKey: backupBeforeSyncKey) as? Bool ?? true }
+        set {
+            objectWillChange.send()
+            defaults.set(newValue, forKey: backupBeforeSyncKey)
+        }
+    }
+
     /// Whether Today and daily notes show the day's Apple Calendar events (on by default).
     var showsCalendarEvents: Bool {
         get { defaults.object(forKey: showCalendarKey) as? Bool ?? true }
@@ -365,6 +383,7 @@ final class AppModel: ObservableObject {
         selectedNotePath = nil
         vault = opened
         reload()
+        backUpDaily()
         scheduleAutoSync()
     }
 
@@ -1117,11 +1136,118 @@ final class AppModel: ObservableObject {
         }
     }
 
+    // MARK: Backups
+
+    func refreshBackups() {
+        backups = vault?.backups() ?? []
+    }
+
+    /// Saves a copy unless the vault is unchanged since the last one. Returns what was saved.
+    @discardableResult
+    func backUp(reason: String) -> VaultBackup? {
+        guard let vault else { return nil }
+        flushPendingEdits()
+        do {
+            let made = try vault.makeBackup(reason: reason)
+            if let made { log("backup saved: \(made.folderName)") }
+            refreshBackups()
+            return made
+        } catch {
+            log("backup failed: \(error.localizedDescription)")
+            errorMessage = "The backup could not be saved: \(error.localizedDescription)"
+            return nil
+        }
+    }
+
+    func backUpNow() {
+        if let made = backUp(reason: "manual") {
+            flash("Backup saved: \(made.noteCount) note\(made.noteCount == 1 ? "" : "s")")
+        } else {
+            flash("Nothing changed since the last backup")
+        }
+    }
+
+    /// One copy a day, made at launch and when a vault is opened.
+    private func backUpDaily() {
+        guard vault != nil else { return }
+        let today = DateOnly.today().description
+        guard defaults.string(forKey: lastBackupDayKey) != today else {
+            refreshBackups()
+            return
+        }
+        backUp(reason: "daily")
+        defaults.set(today, forKey: lastBackupDayKey)
+    }
+
+    func restore(_ backup: VaultBackup) {
+        guard let vault else { return }
+        flushPendingEdits()
+        do {
+            let written = try vault.restore(backup)
+            log("restored \(backup.folderName): \(written) files")
+            selectedNotePath = nil
+            reload()
+            refreshBackups()
+            flash("Restored \(written) file\(written == 1 ? "" : "s") from \(backup.folderName)")
+        } catch {
+            errorMessage = "The backup could not be restored: \(error.localizedDescription)"
+        }
+    }
+
+    func showBackupsInFinder() {
+        #if os(macOS)
+        guard let vault else { return }
+        try? FileManager.default.createDirectory(at: vault.backupsURL, withIntermediateDirectories: true)
+        NSWorkspace.shared.activateFileViewerSelecting([vault.backupsURL])
+        #endif
+    }
+
     // MARK: Sync
+
+    /// Rehearses a sync on a copy of the vault and a copy of Reminders, so the report shows
+    /// exactly what a real sync would do without changing anything.
+    func previewSync() async {
+        guard let vault, !isSyncing else { return }
+        flushPendingEdits()
+        isSyncing = true
+        defer { isSyncing = false }
+        let temporary = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ams-para-preview-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temporary) }
+        do {
+            guard try await remindersStore.requestAccess() else {
+                errorMessage = "AMS PARA needs full access to Reminders. You can grant it in System Settings › Privacy & Security › Reminders."
+                return
+            }
+            try vault.copyContents(to: temporary)
+            let rehearsal = try Vault(rootURL: temporary)
+            let store = InMemoryRemindersStore()
+            let lists = try await remindersStore.listNames()
+            var records: [ReminderRecord] = []
+            for list in lists { records += try await remindersStore.reminders(inList: list) }
+            store.seed(lists: lists, records: records)
+            let engine = SyncEngine(vault: rehearsal, store: store, deviceID: deviceID, config: vault.config)
+            let report = try await engine.run()
+            reportToShow = report
+            reportIsPreview = true
+            activeSheet = .syncReport
+            log("sync preview: \(report.summary)")
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func showLastReport() {
+        guard let lastReport else { return }
+        reportToShow = lastReport
+        reportIsPreview = false
+        activeSheet = .syncReport
+    }
 
     func syncNow() async {
         guard let vault, !isSyncing else { return }
         flushPendingEdits()
+        if backsUpBeforeSync { backUp(reason: "sync") }
         isSyncing = true
         defer { isSyncing = false }
         do {

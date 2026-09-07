@@ -4,6 +4,7 @@ import AMSParaCore
 struct SettingsView: View {
     @EnvironmentObject private var model: AppModel
     @State private var showingImporter = false
+    @State private var backupToRestore: VaultBackup?
     @AppStorage("showMenuBarItem") private var showMenuBarItem = true
 
     var body: some View {
@@ -62,6 +63,44 @@ struct SettingsView: View {
                 }
                 LabeledContent("Daily notes list") {
                     Text(model.config.dailyNotesListName).foregroundStyle(.secondary)
+                }
+            }
+            .disabled(model.vault == nil)
+
+            Section("Backups") {
+                Toggle("Save a copy of the vault before each sync", isOn: Binding(
+                    get: { model.backsUpBeforeSync },
+                    set: { model.backsUpBeforeSync = $0 }
+                ))
+                HStack {
+                    Button("Back up now") { model.backUpNow() }
+                    #if os(macOS)
+                    Button("Show in Finder") { model.showBackupsInFinder() }
+                    #endif
+                    Spacer()
+                }
+                if model.backups.isEmpty {
+                    Text("No backups yet. One is saved automatically each day and before each sync, and the last ten are kept.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    DisclosureGroup("Restore a copy (\(model.backups.count))") {
+                        ForEach(model.backups) { backup in
+                            HStack {
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(backup.date.formatted(date: .abbreviated, time: .shortened))
+                                    Text("\(backup.noteCount) notes · \(backup.reason)")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                Button("Restore…") { backupToRestore = backup }
+                            }
+                        }
+                    }
+                    Text("Restoring puts those notes back and saves what you have now as another backup first. Notes you made since then are left alone.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
             }
             .disabled(model.vault == nil)
@@ -164,5 +203,13 @@ struct SettingsView: View {
                 model.openVault(at: url)
             }
         }
+        .confirmationDialog("Restore the backup from \(backupToRestore.map { $0.date.formatted(date: .abbreviated, time: .shortened) } ?? "")?",
+                            isPresented: Binding(get: { backupToRestore != nil }, set: { if !$0 { backupToRestore = nil } }),
+                            presenting: backupToRestore) { backup in
+            Button("Restore", role: .destructive) { model.restore(backup) }
+        } message: { backup in
+            Text("\(backup.noteCount) notes are written back into the vault, replacing the current versions. What you have now is saved as a backup first.")
+        }
+        .onAppear { model.refreshBackups() }
     }
 }

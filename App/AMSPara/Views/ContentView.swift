@@ -72,6 +72,9 @@ struct ContentView: View {
             case .quickCapture:
                 QuickCaptureView()
                     .environmentObject(model)
+            case .syncReport:
+                SyncReportView()
+                    .environmentObject(model)
             case .settings:
                 NavigationStack {
                     SettingsView()
@@ -359,8 +362,14 @@ struct SyncButton: View {
     @EnvironmentObject private var model: AppModel
 
     var body: some View {
-        Button {
-            Task { await model.syncNow() }
+        Menu {
+            Button("Sync now") { Task { await model.syncNow() } }
+                .keyboardShortcut("r", modifiers: [.command, .shift])
+            Button("Show me what would change…") { Task { await model.previewSync() } }
+            if model.lastReport != nil {
+                Divider()
+                Button("Last sync report…") { model.showLastReport() }
+            }
         } label: {
             if model.isSyncing {
                 ProgressView()
@@ -368,6 +377,8 @@ struct SyncButton: View {
             } else {
                 Label("Sync with Reminders", systemImage: "arrow.triangle.2.circlepath")
             }
+        } primaryAction: {
+            Task { await model.syncNow() }
         }
         .disabled(model.isSyncing)
         .help(model.lastReport.map { "Last sync: \($0.summary)" } ?? "Sync tasks with Apple Reminders (⇧⌘R)")

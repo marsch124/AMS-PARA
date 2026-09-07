@@ -2,6 +2,12 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 44 · 7 September 2026
+
+- **Backups.** The app saves a copy of the whole vault before every sync and once a day, keeping the last ten. They are plain folders in the vault under `.ams-para/Backups`, so you can also open one in Finder and drag a single note back. Settings › Backups has "Back up now", "Show in Finder" and "Restore a copy", and a switch for the backup before each sync. Restoring saves what you have now as a backup first, and leaves notes made since then alone.
+- **See what a sync would do.** The sync button is now a menu: "Sync now", "Show me what would change…" and "Last sync report…". The preview rehearses the whole sync on a copy of your vault and a copy of your reminders, so the numbers are exactly what a real sync would do, and nothing is changed. From the preview you can go straight to "Sync now".
+- **A readable sync report** instead of one line: what was created, updated, deleted, anything that changed in both places, and anything worth knowing.
+
 ## Build 43 · 7 September 2026
 
 - **The `^t` markers are hidden in the editor.** Every synced task carries a marker like `^t3cd432` that links it to its reminder. It is still in the file, so NotePlan and the sync keep working, but the editor no longer shows it, so you cannot delete it by accident while editing.
