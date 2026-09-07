@@ -2,6 +2,17 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 58 · 7 September 2026
+
+The Calendar section's day view, rebuilt.
+
+- **A month grid of our own** instead of the small system date picker: it fills the column, the cells are big enough to read and to drop a task onto.
+- **Dots under the days** so you can see the shape of a month at a glance: green for tasks due (red if something is overdue), blue for calendar events, grey for a day that already has a note.
+- **Week numbers** down the left.
+- **The day itself below the grid** — its calendar events, what is due, anything undated in the daily note, what got done, and a button to open or create the note. It used to be a list of every daily note in the vault, newest first.
+- **A proper header**: the day written out, its week number, and what it holds.
+- **Moving around**: arrows for the previous and next day, a Today button, separate arrows for the month, and the left and right arrow keys once the calendar has focus.
+
 ## Build 57 · 7 September 2026
 
 - Notes only. Both apps now come from TestFlight and Xcode is out of the loop; this build records that.
