@@ -58,10 +58,20 @@ jobs:
 
       - name: Number this build
         run: |
-          BUILD=${{ github.run_number }}
+          # Use the app's own build number, the one shown in the sidebar and in
+          # Help, so TestFlight and the app never disagree. A second upload of the
+          # same build number is refused by Apple, so the run number is appended.
+          STAMP=$(sed -n 's/.*static let number = \([0-9][0-9]*\).*/\1/p' App/AMSPara/AppModel.swift | head -1)
+          if [ -z "$STAMP" ]; then
+            echo "Could not read BuildStamp.number from App/AMSPara/AppModel.swift"
+            exit 1
+          fi
+          echo "App build number: $STAMP"
+          BUILD="$STAMP.${{ github.run_number }}"
+          echo "STAMP=$STAMP" >> $GITHUB_ENV
           for plist in App/Config/AMSPara/Info.plist App/Config/AMSParaShare/Info.plist; do
             /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD" "$plist"
-            /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.$BUILD" "$plist"
+            /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.$STAMP" "$plist"
           done
           # Says the app uses no encryption beyond what Apple exempts, so TestFlight
           # does not ask the same question on every upload.
@@ -135,7 +145,7 @@ jobs:
         if: success()
         run: |
           echo "### Sent to TestFlight" >> $GITHUB_STEP_SUMMARY
-          echo "Version 1.0.${{ github.run_number }}, build ${{ github.run_number }}." >> $GITHUB_STEP_SUMMARY
+          echo "AMS PARA build $STAMP — the same number the app shows in the sidebar." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Apple processes it for a few minutes, then it appears in TestFlight on the phone." >> $GITHUB_STEP_SUMMARY
           if [ -n "${{ github.event.inputs.notes }}" ]; then

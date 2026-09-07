@@ -71,6 +71,12 @@ minutes and then emails you.
 Get **TestFlight** from the App Store, sign in with the same Apple ID, and AMS PARA is
 waiting there. Tap Install.
 
+## Which build is which
+
+TestFlight shows the same number the app shows itself: the one at the bottom of the sidebar on
+the Mac, and on the Browse tab on the phone. So "Build 52" in the app and "1.0.52" in TestFlight
+are the same thing.
+
 ## After that
 
 Every time there is something new, the build server sends it and TestFlight tells the

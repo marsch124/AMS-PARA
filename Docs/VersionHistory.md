@@ -2,6 +2,10 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 52 · 7 September 2026
+
+- **One build number everywhere.** TestFlight used to count its own uploads, so the phone said "Build 50" while TestFlight said "1.0.5". Now TestFlight uses the app's own number, the one at the bottom of the sidebar and on the Browse tab. Both say the same thing.
+
 ## Build 51 · 7 September 2026
 
 - **A sync button on the iPhone.** Today and Inbox have one in the top right corner, and Settings › Reminders sync has "Sync now". Until now the phone could only wait for the automatic sync, which also meant iOS never got round to asking for permission to use Reminders.
