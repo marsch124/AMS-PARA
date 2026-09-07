@@ -2,7 +2,7 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
-## Builds 58 and 59 · 7 September 2026
+## Builds 58 to 60 · 7 September 2026
 
 The Calendar section's day view, rebuilt.
 

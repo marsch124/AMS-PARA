@@ -39,6 +39,12 @@ TestFlight on the phone and on the Mac. Xcode is no longer part of his routine.
 - Colours: Projects green, Areas pink, Resources blue, Archive grey, Goals gold.
 - All model writes that SwiftUI triggers mid-update go through `afterUpdate` / deferred Bindings (`sectionSelection`, `noteSelection`, `sheetSelection`, `errorPresented`).
 - Navigation from links uses `AppModel.show(...)`: section first, note on the next turn.
+- **Nothing but views inside a `@ViewBuilder`.** `var x = …`, `x.append(…)`, loops and
+  early returns are not allowed there and fail the build with "'buildExpression' is
+  unavailable: this expression does not conform to 'View'" (build 58). Assemble strings,
+  arrays and conditions in a plain function or a computed property and let the view read
+  the result. There is no Swift compiler in this container, so CI is the only check and a
+  slip like this costs a whole build.
 
 ## Recently fixed (build 30)
 
