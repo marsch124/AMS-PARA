@@ -2,6 +2,10 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 56 · 7 September 2026
+
+- **The Mac app comes from TestFlight too.** One press of the build button now sends both the iPhone app and the Mac app. The Mac app installs into your Applications folder like any other app, appears in Spotlight and the Dock, and tells you itself when a new version is ready. No more quitting, pulling and pressing play in Xcode.
+
 ## Build 55 · 7 September 2026
 
 - **The Xcode project carries your signing team.** Until now Xcode had to be told by hand which Apple account signs the app, which meant the project file was changed on your Mac every time you pressed play, and those changes then got in the way of the next Pull. The team is part of the project now, so pressing play no longer modifies anything.

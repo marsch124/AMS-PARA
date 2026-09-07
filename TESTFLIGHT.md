@@ -71,6 +71,18 @@ minutes and then emails you.
 Get **TestFlight** from the App Store, sign in with the same Apple ID, and AMS PARA is
 waiting there. Tap Install.
 
+### 7. The Mac app, the same way
+
+The build button sends the Mac app as well. Two things are needed once:
+
+- In App Store Connect › **AMS PARA** › **Distribution**, press **Add Platform** and choose
+  **macOS**.
+- On the Mac, get **TestFlight** from the App Store (it is a Mac app too), sign in, and
+  AMS PARA is there. Press Install. It lands in your Applications folder.
+
+After that the Mac app updates itself through TestFlight, exactly like the phone. Xcode is
+only needed if you want to look at the code.
+
 ## Which build is which
 
 TestFlight shows the same number the app shows itself: the one at the bottom of the sidebar on

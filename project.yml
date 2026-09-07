@@ -81,6 +81,7 @@ targets:
         CURRENT_PROJECT_VERSION: 1
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: D24ENP83QQ
+        CODE_SIGN_ENTITLEMENTS[sdk=macosx*]: App/Config/AMSPara/AMSPara-macOS.entitlements
         GENERATE_INFOPLIST_FILE: false
         ENABLE_HARDENED_RUNTIME: true
         TARGETED_DEVICE_FAMILY: "1,2"

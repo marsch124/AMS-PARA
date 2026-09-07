@@ -163,6 +163,12 @@ Keep the vault in iCloud Drive and pick the same folder on both devices. iCloud 
 
 The app checks every few seconds whether files changed outside it and reloads them. It never writes over a newer file. If you were typing in a note that changed elsewhere at the same time, your text is saved as a copy named "… (conflict date time).md" next to the note, and the note shows the other version. Merge the two by hand when that happens; it is rare.
 
+## Getting new versions
+
+Both apps come from TestFlight. When a new build is sent, TestFlight tells you and you press
+Update: on the iPhone in the TestFlight app, on the Mac in TestFlight for Mac. The Mac app
+lives in your Applications folder like any other app.
+
 ## Keyboard shortcuts
 
 - ⌘N new note, ⇧⌘N quick capture, ⇧⌘F search everywhere, ⇧⌘R sync with Reminders

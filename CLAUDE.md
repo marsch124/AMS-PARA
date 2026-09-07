@@ -250,7 +250,8 @@ unchanged.
 
 ## TestFlight (build 48)
 
-`.github/workflows/testflight.yml`, manual dispatch only: xcodegen, PlistBuddy
+`.github/workflows/testflight.yml`, manual dispatch only, a two-way matrix (iOS and
+macOS, `fail-fast: false`) so one button ships both apps: xcodegen, PlistBuddy
 sets CFBundleVersion/ShortVersion from `github.run_number` and adds
 `ITSAppUsesNonExemptEncryption` (done in the workflow, not project.yml, so the
 committed Xcode project and his signing Team are never touched), writes the
@@ -271,7 +272,12 @@ Apple rejects an upload built with an older SDK. The key must have the **Admin**
 role — App Manager gives "Cloud signing permission error" at export. Both App IDs
 need the App Group `group.com.schabbauer.amspara` enabled in the developer portal,
 and `project.yml` declares `UISupportedInterfaceOrientations` (all four), without
-which Apple rejects the binary.
+which Apple rejects the binary. macOS signs with its own
+`App/Config/AMSPara/AMSPara-macOS.entitlements` (via
+`CODE_SIGN_ENTITLEMENTS[sdk=macosx*]`) which drops the App Group: the Mac App Store wants
+team-prefixed groups, the share extension is iOS only, and `outboxURL` already falls back to
+Application Support. The macOS platform must be added to the app record in App Store Connect
+(Distribution › Add Platform) before the first Mac upload.
 
 ## Not built (by choice)
 
