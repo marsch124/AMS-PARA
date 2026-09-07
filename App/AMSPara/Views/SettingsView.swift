@@ -25,6 +25,12 @@ struct SettingsView: View {
             }
 
             Section("Reminders sync") {
+                Button {
+                    Task { await model.syncNow() }
+                } label: {
+                    Label(model.isSyncing ? "Syncing…" : "Sync now", systemImage: "arrow.triangle.2.circlepath")
+                }
+                .disabled(model.isSyncing || model.vault == nil)
                 Picker("Sync automatically", selection: Binding(
                     get: { model.autoSyncMinutes },
                     set: { model.autoSyncMinutes = $0 }

@@ -153,6 +153,8 @@ The sync button is a menu. **Show me what would change…** rehearses the entire
 
 ## On the iPhone
 
+Sync with Reminders from the phone with the button in the top right of Today and Inbox, or Settings › Reminders sync › Sync now. The first sync is when iOS asks for permission to use Reminders.
+
 The phone shows four tabs. **Today** and **Inbox** are the same lists as on the Mac. **Browse** holds everything else: Goals, Projects, Areas, Resources, Archive, Calendar, Time Blocks, Done, Review, Map, Search, and Settings with Help. **Capture** opens the capture panel. Tap a note to open it and swipe from the left edge to go back. Long-press a task for the task menu. The share sheet in other apps has an AMS PARA entry that sends text or a link to the Inbox.
 
 ## Mac and iPhone together

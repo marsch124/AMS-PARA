@@ -17,12 +17,14 @@ struct PhoneRootView: View {
             PhoneStack(section: .today, isActive: tab == .today) {
                 TodayView()
                     .navigationTitle("Today")
+                    .toolbar { ToolbarItem(placement: .topBarTrailing) { PhoneSyncButton() } }
             }
             .tabItem { Label("Today", systemImage: "sun.max") }
             .tag(Tab.today)
 
             PhoneStack(section: .inbox, isActive: tab == .inbox) {
                 NoteListView()
+                    .toolbar { ToolbarItem(placement: .topBarTrailing) { PhoneSyncButton() } }
             }
             .tabItem { Label("Inbox", systemImage: "tray") }
             .badge(model.count(for: .inbox))
@@ -45,6 +47,25 @@ struct PhoneRootView: View {
                 tab = old
             }
         }
+    }
+}
+
+/// Sync with Reminders from the phone. The Mac has this in the window toolbar; without it
+/// here the phone could only wait for auto sync, and iOS never asked for Reminders access.
+struct PhoneSyncButton: View {
+    @EnvironmentObject private var model: AppModel
+
+    var body: some View {
+        Button {
+            Task { await model.syncNow() }
+        } label: {
+            if model.isSyncing {
+                ProgressView()
+            } else {
+                Label("Sync with Reminders", systemImage: "arrow.triangle.2.circlepath")
+            }
+        }
+        .disabled(model.isSyncing || model.vault == nil)
     }
 }
 
