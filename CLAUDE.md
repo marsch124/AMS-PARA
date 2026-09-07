@@ -202,6 +202,19 @@ count) and `EmptyStateView` (icon, title, sentence, one action button).
 of the list; `DetailView` uses `EmptyStateView` too. `TintStripe`/`KindBadge`
 stay in ContentView. TodayView opens with the date and a due count.
 
+## Live markdown editor (build 47)
+
+`MarkdownHighlight` (Core) turns a note into `[MarkdownSpan]` (range + style):
+block styles first (frontmatter, fences, heading, task, quote, rule), inline
+after (bold/italic/code/wikilink), so the later, smaller span wins.
+`MarkdownSyntaxEditor` (App) wraps NSTextView/UITextView in a representable and
+maps the styles to attributes in `MarkdownAttributes`; the whole note is
+restyled after each change (skipped over 200k characters). The binding is only
+written back when the text really differs, so typing is never interrupted, and
+`updateNSView` only replaces the string when it came from elsewhere. Replaces
+the TextEditor in `NoteEditorView`; all the save, flush and masking logic is
+unchanged.
+
 ## Not built (by choice)
 
 Saved searches. Roadmap stopped there on his request.

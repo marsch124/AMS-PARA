@@ -75,12 +75,7 @@ struct NoteEditorView: View {
             GeometryReader { geo in
                 HStack(spacing: 0) {
                     if mode != .preview {
-                        TextEditor(text: $text)
-                            .font(Theme.editorFont)
-                            .lineSpacing(Theme.editorLineSpacing)
-                            .scrollContentBackground(.hidden)
-                            .padding(.horizontal, Theme.gutter)
-                            .padding(.vertical, 10)
+                        MarkdownSyntaxEditor(text: $text, tint: note?.tint ?? .accentColor)
                             .onChange(of: text) { _, newValue in
                                 scheduleSave(newValue)
                             }

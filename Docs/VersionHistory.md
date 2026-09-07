@@ -2,6 +2,11 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 47 · 7 September 2026
+
+- **The editor draws markdown while you type.** Headings grow and turn bold, task boxes are coloured, a finished task is struck through, dates and priorities and tags stand out, and the syntax characters fade into the background. The text in the file does not change at all: it is still the same markdown, only easier to read.
+- Bold, italics, `code`, quotes, `[[links]]` and the settings block at the top of a note are all shown for what they are.
+
 ## Build 46 · 7 September 2026
 
 A pass over how the app looks.
