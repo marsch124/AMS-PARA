@@ -2,6 +2,15 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 46 · 7 September 2026
+
+A pass over how the app looks.
+
+- **The editor reads like a document,** not like code: proportional type, more line spacing, wider margins.
+- **Empty sections say what belongs there** and offer the button that fills them, instead of a bare line of text. Projects, Areas, Resources, Goals, Archive, Done and the note pane each have their own.
+- **Today starts with the date** and how much is due, and the sections read more calmly.
+- Headings above the task list and the linked notes are quieter and carry their count.
+
 ## Build 44 · 7 September 2026
 
 - **Backups.** The app saves a copy of the whole vault before every sync and once a day, keeping the last ten. They are plain folders in the vault under `.ams-para/Backups`, so you can also open one in Finder and drag a single note back. Settings › Backups has "Back up now", "Show in Finder" and "Restore a copy", and a switch for the backup before each sync. Restoring saves what you have now as a backup first, and leaves notes made since then alone.

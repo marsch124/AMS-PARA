@@ -193,6 +193,15 @@ last one, keeps 10, `restore` backs up first and never deletes newer notes,
 engine there and shows `SyncReportView` through `AppSheet.syncReport`
 (`reportToShow`/`reportIsPreview`) — never a second `.sheet` modifier.
 
+## Look and feel (build 46)
+
+`Views/Theme.swift`: `Theme` (gutter/gap/radius, `editorFont` = proportional
+`.body`, `editorLineSpacing`), `SectionLabel` (uppercase caption + optional
+count) and `EmptyStateView` (icon, title, sentence, one action button).
+`NoteListView.emptyList(searching:)` shows a per-section empty state instead
+of the list; `DetailView` uses `EmptyStateView` too. `TintStripe`/`KindBadge`
+stay in ContentView. TodayView opens with the date and a due count.
+
 ## Not built (by choice)
 
 Saved searches. Roadmap stopped there on his request.

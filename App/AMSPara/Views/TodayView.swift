@@ -12,12 +12,26 @@ struct TodayView: View {
         let overdue = dated.filter { ($0.task.dueDate ?? today) < today }
         let dueToday = dated.filter { $0.task.dueDate == today }
         let important = index.openTasks().filter { $0.task.dueDate == nil && $0.task.priority >= 2 }
+        let shown = Set((dated + important).map(\.id))
+        let nextActions = index.nextActions().filter { !shown.contains($0.id) }
         let todayNotePath = model.vault?.dailyNotePath(for: today)
         let fromTodayNote = (model.todayNote?.openTasks ?? [])
             .filter { $0.dueDate == nil }
             .map { TaskRef(notePath: todayNotePath ?? "", noteTitle: "Today's note", task: $0) }
 
         List(selection: model.noteSelection) {
+            Section {
+                HStack(alignment: .firstTextBaseline) {
+                    Text(today.date()?.formatted(.dateTime.weekday(.wide).day().month(.wide)) ?? today.description)
+                        .font(.title3.weight(.semibold))
+                    Spacer()
+                    let open = overdue.count + dueToday.count
+                    Text(open == 0 ? "Nothing due" : "\(open) due")
+                        .font(.callout)
+                        .foregroundStyle(overdue.isEmpty ? .secondary : Color.red)
+                }
+                .listRowSeparator(.hidden)
+            }
             if model.showsCalendarEvents {
                 Section("Calendar") {
                     CalendarEventRows(date: today)
@@ -34,17 +48,19 @@ struct TodayView: View {
                     rows(fromTodayNote)
                 }
             }
-            let shown = Set((overdue + dueToday).map(\.id))
-            let nextActions = index.nextActions().filter { !shown.contains($0.id) }
             if !nextActions.isEmpty {
                 Section("Next actions") { rows(nextActions) }
             }
             if !overdue.isEmpty {
                 Section("Overdue") { rows(overdue) }
             }
-            Section("Today") {
+            Section("Due today") {
                 if dueToday.isEmpty {
-                    Text("Nothing due today.").foregroundStyle(.secondary)
+                    Text(overdue.isEmpty && nextActions.isEmpty
+                         ? "Nothing is due today. Give a task a date, or pick a next action in a project."
+                         : "Nothing else is due today.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
                 } else {
                     rows(dueToday)
                 }

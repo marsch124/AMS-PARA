@@ -49,8 +49,8 @@ struct NoteEditorView: View {
                     DisclosureGroup(isExpanded: $showTasks) {
                         TaskChecklist(note: note, beforeToggle: flushSave)
                     } label: {
-                        Text("Tasks (\(note.openTasks.count) open)")
-                            .font(.subheadline.weight(.medium))
+                        SectionLabel(title: note.openTasks.isEmpty ? "Tasks" : "Tasks, \(note.openTasks.count) open",
+                                     count: nil, systemImage: "checklist", tint: note.tint)
                     }
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
@@ -61,7 +61,7 @@ struct NoteEditorView: View {
                     DisclosureGroup(isExpanded: $showLinks) {
                         LinkedNotesList(notes: linked)
                     } label: {
-                        Text("Linked notes (\(linked.count))")
+                        SectionLabel(title: "Linked notes", count: linked.count, systemImage: "link")
                             .font(.subheadline.weight(.medium))
                     }
                     .padding(.horizontal, 12)
@@ -76,9 +76,11 @@ struct NoteEditorView: View {
                 HStack(spacing: 0) {
                     if mode != .preview {
                         TextEditor(text: $text)
-                            .font(.system(.body, design: .monospaced))
+                            .font(Theme.editorFont)
+                            .lineSpacing(Theme.editorLineSpacing)
                             .scrollContentBackground(.hidden)
-                            .padding(8)
+                            .padding(.horizontal, Theme.gutter)
+                            .padding(.vertical, 10)
                             .onChange(of: text) { _, newValue in
                                 scheduleSave(newValue)
                             }
@@ -287,7 +289,7 @@ struct TaskChecklist: View {
     @State private var subtaskTitle = ""
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 5) {
             ForEach(note.tasks, id: \.lineIndex) { task in
                 TaskRow(ref: TaskRef(notePath: note.relativePath, noteTitle: note.title, task: task), showNote: false,
                         onAddSubtask: { subtaskTitle = ""; subtaskParent = task }) {

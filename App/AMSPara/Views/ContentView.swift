@@ -234,7 +234,12 @@ struct NoteListView: View {
             } else if model.section == .search {
                 SearchView()
             } else {
-                List(model.notes(in: model.section, matching: searchText), selection: model.noteSelection) { note in
+                let listed = model.notes(in: model.section, matching: searchText)
+                if listed.isEmpty {
+                    emptyList(searching: !searchText.trimmingCharacters(in: .whitespaces).isEmpty)
+                        .searchable(text: $searchText, prompt: "Search notes")
+                } else {
+                List(listed, selection: model.noteSelection) { note in
                     NoteRow(note: note)
                         .tag(note.relativePath)
                         .acceptsTaskDrop { ref in model.moveTask(ref, to: note.relativePath) }
@@ -256,6 +261,7 @@ struct NoteListView: View {
                 } message: { _ in
                     Text("You can put it back from the Trash in Finder.")
                 }
+                }
             }
         }
         .navigationTitle(model.section?.title ?? "Notes")
@@ -272,6 +278,41 @@ struct NoteListView: View {
         // The map wants room for its diagram; every other section is a list.
         .navigationSplitViewColumnWidth(min: model.section == .map ? 420 : 220, ideal: model.section == .map ? 720 : 280)
         #endif
+    }
+
+    @ViewBuilder
+    private func emptyList(searching: Bool) -> some View {
+        if searching {
+            EmptyStateView(title: "Nothing found",
+                           systemImage: "magnifyingglass",
+                           message: "No note in this section matches what you typed. Search Everywhere (⇧⌘F) looks inside every note and task.")
+        } else {
+            switch model.section {
+            case .kind(.project)?:
+                EmptyStateView(title: "No projects yet", systemImage: "flag",
+                               message: "A project is something with an end: a race, a move, a report. Give it an outcome and a first task.",
+                               tint: ParaKind.project.tint, actionTitle: "New project…") { model.activeSheet = .newNote }
+            case .kind(.area)?:
+                EmptyStateView(title: "No areas yet", systemImage: "circle.grid.2x2",
+                               message: "An area is something you keep up over time: health, home, a client. It has no finish line.",
+                               tint: ParaKind.area.tint, actionTitle: "New area…") { model.activeSheet = .newNote }
+            case .kind(.resource)?:
+                EmptyStateView(title: "No resources yet", systemImage: "books.vertical",
+                               message: "Resources are reference material: an article, a checklist, an idea you want to keep.",
+                               tint: ParaKind.resource.tint, actionTitle: "New resource…") { model.activeSheet = .newNote }
+            case .kind(.goal)?:
+                EmptyStateView(title: "No goals yet", systemImage: "star",
+                               message: "Goals sit above everything else. Write what you want, then point projects and areas at it with a goal: line.",
+                               tint: ParaKind.goal.tint, actionTitle: "New goal…") { model.activeSheet = .newNote }
+            case .kind(.archive)?:
+                EmptyStateView(title: "The archive is empty", systemImage: "archivebox",
+                               message: "Finished projects and closed areas land here. They stay searchable and stop syncing to Reminders.",
+                               tint: ParaKind.archive.tint)
+            default:
+                EmptyStateView(title: "Nothing here yet", systemImage: "doc.text",
+                               message: "Notes you add to this section show up in this list.")
+            }
+        }
     }
 }
 
@@ -349,11 +390,21 @@ struct DetailView: View {
             NoteEditorView(path: path)
                 .id(path)
         } else if model.section == .timeBlocks {
-            ContentUnavailableView("Time blocks live in Apple Calendar", systemImage: "calendar.badge.clock",
-                                   description: Text("Add a block on the left. It becomes an event in the calendar you chose and shows up on all your devices. Click a block to edit it, right-click to open it in Calendar or delete it."))
+            EmptyStateView(title: "Time blocks live in Apple Calendar",
+                           systemImage: "calendar.badge.clock",
+                           message: "Add a block on the left. It becomes an event in the calendar you chose and shows up on all your devices. Click a block to edit it, right-click to open it in Calendar or delete it.",
+                           tint: SidebarSection.timeBlocks.tint)
+        } else if model.section == .done {
+            EmptyStateView(title: "What you finished",
+                           systemImage: "checkmark.circle",
+                           message: "Pick a day on the left to see the tasks you ticked off, and the note each one came from.",
+                           tint: SidebarSection.done.tint)
         } else {
-            ContentUnavailableView("No note selected", systemImage: "doc.text",
-                                   description: Text("Choose a note on the left, or press ⌘N to create one."))
+            EmptyStateView(title: "No note open",
+                           systemImage: "doc.text",
+                           message: "Choose a note in the middle column, or make a new one.",
+                           actionTitle: "New note…",
+                           action: { model.activeSheet = .newNote })
         }
     }
 }
