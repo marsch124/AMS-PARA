@@ -68,7 +68,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 61
+    static let number = 62
 }
 
 @MainActor

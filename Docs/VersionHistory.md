@@ -2,6 +2,10 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 62 · 7 September 2026
+
+- A build server fix: it no longer asks Apple for a new signing certificate on every run, which had filled up the account's allowance. Nothing in the app changed.
+
 ## Build 61 · 7 September 2026
 
 - **The Calendar section now uses the whole window.** The right-hand column shows the selected day as a schedule: hours down the side, your Apple Calendar events in place and in their own colours, and your time blocks drawn on top of them. A red line marks now.
