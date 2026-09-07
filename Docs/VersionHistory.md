@@ -2,6 +2,10 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 49 · 7 September 2026
+
+- Fixes in the TestFlight build job: it now signs with the Apple team from the new `ASC_TEAM_ID` setting, and makes its log folder before writing to it. Nothing in the app itself changed.
+
 ## Build 48 · 7 September 2026
 
 - **The iPhone app can now come from TestFlight.** A new build server job builds the phone app and sends it to Apple, so new versions reach the phone by themselves: no cable, no Xcode, no seven-day expiry. The one-time setup is in TESTFLIGHT.md and happens entirely in a browser.

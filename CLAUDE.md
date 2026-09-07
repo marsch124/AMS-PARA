@@ -225,7 +225,9 @@ App Store Connect key to `~/private_keys/AuthKey_<ID>.p8`, archives for
 `generic/platform=iOS` with `-allowProvisioningUpdates` + the three
 `-authenticationKey…` flags (cloud signing, no Mac and no certificates needed),
 then `-exportArchive` with `method: app-store-connect` and `destination: upload`.
-Secrets: `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8`, optional `ASC_TEAM_ID`.
+Secrets: `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8`, `ASC_TEAM_ID` (all four
+required: `project.yml` sets no `DEVELOPMENT_TEAM`, so the workflow passes it on the
+xcodebuild command line — otherwise "Signing requires a development team").
 `TESTFLIGHT.md` at the repo root is his step-by-step (browser only, no Mac).
 
 ## Not built (by choice)

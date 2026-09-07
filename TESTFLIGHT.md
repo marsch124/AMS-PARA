@@ -54,9 +54,10 @@ Make three secrets, exactly these names:
 | `ASC_ISSUER_ID` | the Issuer ID from step 2 |
 | `ASC_KEY_ID` | the Key ID from step 2 |
 | `ASC_KEY_P8` | open the `.p8` file in TextEdit and paste **everything**, including the `-----BEGIN PRIVATE KEY-----` and `-----END PRIVATE KEY-----` lines |
+| `ASC_TEAM_ID` | the Team ID, ten characters. App Store Connect › **Users and Access** › your name › **Membership Details**, or <https://developer.apple.com/account> under Membership |
 
-If Apple ever says the team is unclear, add a fourth called `ASC_TEAM_ID` with the Team ID
-from App Store Connect › Membership.
+The Team ID is what tells the build server which Apple account signs the app. Without it the
+build stops with "Signing requires a development team".
 
 ### 5. Send the first build
 
