@@ -2,6 +2,10 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 72 · 8 September 2026
+
+- **Move an action to an area, not just a project.** Right-click any task › **Move to** now lists your active projects *and* your active areas (and the Inbox, if it is not already there). Before this, the menu only offered projects, so a task that had landed in the wrong area could not be moved back from the menu.
+
 ## Build 71 · 8 September 2026
 
 - **Edit an inbox line where it sits.** Double-click it, or right-click › Rename. Enter saves. The date, tags and any subtasks stay as they were.

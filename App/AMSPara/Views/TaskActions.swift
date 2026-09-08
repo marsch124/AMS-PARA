@@ -56,6 +56,14 @@ struct TaskContextMenu: View {
     var onAddSubtask: (() -> Void)?
 
     private var note: Note? { model.note(at: ref.notePath) }
+    private var inboxPath: String { model.vault?.config.inboxFile ?? "Inbox.md" }
+
+    /// The notes a task can be moved to: active projects, then active areas.
+    private func destinations(_ kind: ParaKind) -> [Note] {
+        model.notes.filter {
+            $0.kind == kind && !$0.isArchived && $0.status != "done" && $0.relativePath != ref.notePath
+        }
+    }
     private var isNext: Bool { ref.task.tags.contains(Note.nextActionTag) }
 
     private static let repeatChoices: [RepeatRule] = [
@@ -92,12 +100,18 @@ struct TaskContextMenu: View {
         Button("Block time for this…") { model.blockTime(for: ref) }
         if !ref.task.isSubtask {
             Menu("Move to") {
-                let inbox = model.vault?.config.inboxFile ?? "Inbox.md"
-                if ref.notePath != inbox {
-                    Button("Inbox") { model.moveTask(ref, to: inbox) }
+                if ref.notePath != inboxPath {
+                    Button("Inbox") { model.moveTask(ref, to: inboxPath) }
+                    Divider()
                 }
-                ForEach(model.notes.filter { $0.kind == .project && !$0.isArchived && $0.status != "done" && $0.relativePath != ref.notePath }) { project in
-                    Button(project.displayTitle) { model.moveTask(ref, to: project.relativePath) }
+                ForEach(destinations(.project)) { note in
+                    Button(note.displayTitle) { model.moveTask(ref, to: note.relativePath) }
+                }
+                if !destinations(.project).isEmpty, !destinations(.area).isEmpty {
+                    Divider()
+                }
+                ForEach(destinations(.area)) { note in
+                    Button(note.displayTitle) { model.moveTask(ref, to: note.relativePath) }
                 }
             }
         }
