@@ -91,6 +91,39 @@ public struct NoteIndex: Sendable {
             + target.outgoingReferences.compactMap(note(matching:)).filter { $0.kind == .resource && $0.relativePath != target.relativePath }
     }
 
+    /// The area a sub-area sits under, or nil when it stands on its own.
+    /// Areas nest one level only, so an area that already has a parent cannot be one;
+    /// that also keeps a pair pointing at each other from dropping out of the list.
+    public func parentArea(of note: Note) -> Note? {
+        guard note.kind == .area, let name = note.parent,
+              let found = self.note(matching: name), found.kind == .area,
+              found.relativePath != note.relativePath else { return nil }
+        if let grandparent = found.parent, let above = self.note(matching: grandparent),
+           above.kind == .area, above.relativePath != found.relativePath { return nil }
+        return found
+    }
+
+    /// The areas that sit under this one, in list order.
+    public func subAreas(of area: Note) -> [Note] {
+        guard area.kind == .area else { return [] }
+        return notes(kind: .area)
+            .filter { parentArea(of: $0)?.relativePath == area.relativePath }
+            .sorted(by: Note.byArrangedOrder)
+    }
+
+    /// Every area with its sub-areas, in list order: what the Areas list and the Map draw.
+    public func areaTree() -> [AreaBranch] {
+        notes(kind: .area)
+            .filter { parentArea(of: $0) == nil }
+            .sorted(by: Note.byArrangedOrder)
+            .map { AreaBranch(area: $0, subAreas: subAreas(of: $0)) }
+    }
+
+    /// Areas flattened back into one list, each parent followed by its sub-areas.
+    public func areasInFamilyOrder() -> [Note] {
+        areaTree().flatMap { [$0.area] + $0.subAreas }
+    }
+
     /// Projects belonging to an area (via `area:` frontmatter or a link).
     public func projects(in area: Note) -> [Note] {
         backlinks(to: area).filter { $0.kind == .project }
@@ -147,4 +180,19 @@ public struct NoteIndex: Sendable {
             return a.noteTitle.localizedCaseInsensitiveCompare(b.noteTitle) == .orderedAscending
         }
     }
+}
+
+/// An area together with the areas that sit under it.
+public struct AreaBranch: Sendable, Identifiable {
+    public let area: Note
+    public let subAreas: [Note]
+
+    public init(area: Note, subAreas: [Note]) {
+        self.area = area
+        self.subAreas = subAreas
+    }
+
+    public var id: String { area.relativePath }
+    /// The whole branch as one list: the area, then its sub-areas.
+    public var all: [Note] { [area] + subAreas }
 }

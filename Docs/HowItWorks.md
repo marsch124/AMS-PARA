@@ -6,7 +6,7 @@ AMS PARA is a plain-text project and life management app. Everything you write i
 
 - **Goals** say what you want in life. They sit above everything else.
 - **Projects** are things with an end: a race, a move, a report. Each one should serve a goal.
-- **Areas** are things you keep up over time: health, home, a client. They also serve goals.
+- **Areas** are things you keep up over time: health, home, a client. They also serve goals. An area can sit under another one as a **sub-area** — Mobility under Health, say, or Yoga, Pliability and Stretching under Mobility. Right-click an area › **Part of** to put it under another, or to take it back out. Areas nest one level, no deeper, so the list stays a list.
 - **Resources** are reference material: articles, checklists, ideas.
 - **Archive** is where finished projects and closed areas go. They stay searchable.
 - **Inbox** catches everything you have not sorted yet. Its screen is built for emptying: type at the top to capture, then work down the list with Today, Tomorrow, a date, or the menu to move it into a project or turn it into a note of its own. ↑ ↓ move, T is today, M tomorrow, D done, ⌫ deletes. Double-click a line to rename it, or right-click › Rename. The right-hand column shows the line you are on and where it can go: drag it there, or click one. "New note from this line…" makes a project, area or resource out of it instead.
@@ -148,6 +148,18 @@ Time Machine covers the rest: these backups sit inside the vault folder, so they
 ## Seeing what a sync will do
 
 The sync button is a menu. **Show me what would change…** rehearses the entire sync on a copy of your vault and a copy of your reminders and shows the result. Nothing is touched. From that sheet you can press **Sync now** to do it for real. **Last sync report…** shows the same for the sync you ran.
+
+## Sub-areas
+
+A sub-area is an ordinary area note with one extra line in its frontmatter, `parent: Health`. That means it behaves like any other area:
+
+- Its own tasks and its own list in Apple Reminders.
+- Its own box on the Map, drawn under the area it belongs to.
+- A destination of its own in the Inbox "File it" column and in a task's **Move to** menu, where it reads "Health › Mobility".
+
+In the Areas list a sub-area is indented under its area, and the chevron on the area folds its sub-areas away. Dragging to arrange works inside a family: a sub-area moves among its brothers and sisters, an area among the other areas. The note itself shows **Part of Health** at the top — click it to go there.
+
+An area that already has sub-areas cannot itself become one; move its children out first.
 
 ## Archive and Trash
 

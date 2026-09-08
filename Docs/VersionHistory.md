@@ -2,6 +2,15 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 73 · 8 September 2026
+
+- **Sub-areas.** An area can now sit under another area: Mobility under Health, or Yoga, Pliability and Stretching under Mobility. Right-click an area › **Part of** and pick where it belongs, or pick "Nothing" to take it back out.
+- The Areas list shows them indented under their area, and the small chevron folds them away.
+- A sub-area is a normal note in every other way: its own tasks, its own list in Apple Reminders, its own box on the Map (drawn under its area), and its own destination in the Inbox "File it" column and in a task's **Move to** menu, where it reads "Health › Mobility".
+- Arranging by hand still works and stays inside the family: a sub-area moves among its siblings, an area among the other areas.
+- The note itself shows **Part of Health** at the top; click it to go there.
+- Areas nest one level only. An area that already has sub-areas cannot become one until its children are moved out.
+
 ## Build 72 · 8 September 2026
 
 - **Move an action to an area, not just a project.** Right-click any task › **Move to** now lists your active projects *and* your active areas (and the Inbox, if it is not already there). Before this, the menu only offered projects, so a task that had landed in the wrong area could not be moved back from the menu.

@@ -71,7 +71,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 72
+    static let number = 73
 }
 
 @MainActor
@@ -726,8 +726,14 @@ final class AppModel: ObservableObject {
     /// Writes `order:` into the notes of one kind so the list keeps the arrangement.
     /// Numbered in tens, so a note dropped between two others still fits.
     func reorder(_ kind: ParaKind, from source: IndexSet, to destination: Int) {
+        reorder(notes.filter { $0.kind == kind }, from: source, to: destination)
+    }
+
+    /// The same for one row of a nested list: sub-areas are numbered among themselves,
+    /// so arranging a family never disturbs the areas around it.
+    func reorder(_ listed: [Note], from source: IndexSet, to destination: Int) {
         flushPendingEdits()
-        var listed = notes.filter { $0.kind == kind }
+        var listed = listed
         listed.move(fromOffsets: source, toOffset: destination)
         for (index, note) in listed.enumerated() {
             let wanted = (index + 1) * 10
@@ -735,6 +741,25 @@ final class AppModel: ObservableObject {
             updated.frontmatter.set("order", "\(wanted)")
             _ = save(updated)
         }
+        reload()
+    }
+
+    /// Puts an area under another one, or takes it back out with nil.
+    /// Areas only, one level: the note that becomes a parent loses any parent of its own.
+    func setParent(_ note: Note, to parent: Note?) {
+        flushPendingEdits()
+        guard note.kind == .area, var updated = self.note(at: note.relativePath) else { return }
+        if let parent {
+            guard parent.kind == .area, parent.relativePath != note.relativePath else { return }
+            updated.frontmatter.set("parent", parent.displayTitle)
+            if var lifted = self.note(at: parent.relativePath), lifted.parent != nil {
+                lifted.frontmatter.remove("parent")
+                _ = save(lifted)
+            }
+        } else {
+            updated.frontmatter.remove("parent")
+        }
+        guard save(updated) else { return }
         reload()
     }
 

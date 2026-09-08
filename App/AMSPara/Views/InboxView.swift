@@ -18,11 +18,16 @@ enum InboxItems {
         waiting(model).first { $0.triageID == model.inboxSelection }
     }
 
-    /// Where a line can go: the working notes, most recently touched first.
+    /// Where a line can go: the active projects, then the areas with their sub-areas
+    /// underneath them, in the same order as the sidebar list.
     static func destinations(_ model: AppModel) -> [Note] {
-        model.notes
-            .filter { ($0.kind == .project || $0.kind == .area) && !$0.isArchived && $0.status != "done" }
-            .sorted { $0.kind == $1.kind ? $0.displayTitle < $1.displayTitle : $0.kind == .project }
+        let projects = model.notes.filter { $0.kind == .project && isActive($0) }
+        let areas = model.index.areasInFamilyOrder().filter(isActive)
+        return projects + areas
+    }
+
+    static func isActive(_ note: Note) -> Bool {
+        !note.isArchived && note.status != "done"
     }
 
     /// Moves a line on and selects whatever follows it, so sorting keeps its rhythm.
@@ -165,9 +170,7 @@ struct InboxRow: View {
     @State private var draft = ""
     @FocusState private var fieldFocused: Bool
 
-    private var projects: [Note] {
-        model.notes.filter { ($0.kind == .project || $0.kind == .area) && !$0.isArchived && $0.status != "done" }
-    }
+    private var projects: [Note] { InboxItems.destinations(model) }
 
     var body: some View {
         HStack(spacing: 8) {
@@ -375,6 +378,9 @@ struct DestinationRow: View {
             if let selected { InboxItems.file(selected, into: note.relativePath, model: model) }
         } label: {
             HStack(spacing: 10) {
+                if isSubArea {
+                    Spacer().frame(width: 16)
+                }
                 TintStripe(color: note.kind.tint, height: 26)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(note.displayTitle)
@@ -403,9 +409,11 @@ struct DestinationRow: View {
         .help(selected == nil ? "Select a line on the left first" : "Move it to \(note.displayTitle)")
     }
 
+    private var isSubArea: Bool { model.index.parentArea(of: note) != nil }
+
     private var subtitle: String {
         let open = note.openTasks.count
-        let kind = note.kind == .project ? "Project" : "Area"
+        let kind = note.kind == .project ? "Project" : (isSubArea ? "Sub-area" : "Area")
         return open == 0 ? kind : "\(kind) · \(open) open"
     }
 }

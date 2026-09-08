@@ -251,7 +251,11 @@ public extension NoteIndex {
                     parent[path] = parentGoal.relativePath
                 }
             case .area:
-                if let goal = goalServed(by: note) {
+                // A sub-area hangs under its area, with a dashed link to its goal if it names one.
+                if let above = parentArea(of: note), activePaths.contains(above.relativePath) {
+                    parent[path] = above.relativePath
+                    if let goal = goalServed(by: note) { links.append(MapLink(from: path, to: goal.relativePath)) }
+                } else if let goal = goalServed(by: note) {
                     parent[path] = goal.relativePath
                 } else {
                     parent[path] = unlinkedID

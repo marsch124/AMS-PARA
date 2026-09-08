@@ -73,6 +73,13 @@ public struct Note: Equatable, Identifiable, Sendable {
     public var tags: [String] { frontmatter.list("tags") }
     public var related: [String] { frontmatter.list("related") }
     public var area: String? { frontmatter.string("area") }
+    /// The area a sub-area sits under, written as `parent: Title`. Areas only, one level deep.
+    public var parent: String? {
+        guard kind == .area else { return nil }
+        let parts = frontmatter.list("parent").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+        return parts.isEmpty ? nil : parts.joined(separator: ", ")
+    }
+
     /// The goal this note serves (projects, areas, or a dated goal pointing at a life goal).
     /// Written as `goal: Title`; a value typed inside `[...]` is joined back into one title.
     public var goal: String? {
@@ -416,10 +423,11 @@ public struct Note: Equatable, Identifiable, Sendable {
         return out
     }
 
-    /// Everything this note points at: frontmatter `related`, `area`, `goal`, and wikilinks.
+    /// Everything this note points at: frontmatter `related`, `area`, `parent`, `goal`, and wikilinks.
     public var outgoingReferences: [String] {
         var refs = related
         if let area { refs.append(area) }
+        if let parent { refs.append(parent) }
         if let goal { refs.append(goal) }
         refs.append(contentsOf: wikilinks)
         return refs

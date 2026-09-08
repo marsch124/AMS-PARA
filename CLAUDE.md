@@ -334,6 +334,18 @@ Inbox destinations and everything else agree. `AppModel.reorder(_:from:to:)` ren
 and writes `order:` into each note whose position changed; `NoteListView`'s `ForEach` carries
 `.onMove`.
 
+## Sub-areas (build 73)
+
+An area note can carry `parent: <area title>`; `NoteIndex.parentArea(of:)`, `subAreas(of:)`,
+`areaTree()` (→ `AreaBranch`) and `areasInFamilyOrder()` are the only places that resolve it.
+One level only: an area whose own parent resolves is never a parent, which also keeps a pair
+pointing at each other from dropping out of the list. `NoteListView` draws the Areas list flat
+but two-deep (`visibleNotes`, indent from `parentArea`, a chevron writing to `foldedAreas`), and
+`onMove` is mapped onto the row's family by `move(_:from:to:)`, so `AppModel.reorder` now also
+takes an explicit `[Note]`. `AppModel.setParent` writes/removes the line and lifts the new
+parent's own parent. `AreaParentMenu` (ContentView) is the "Part of" menu; the Inbox
+destinations, the task "Move to" menu and `linkMap()` all use family order.
+
 ## Not built (by choice)
 
 Saved searches. Roadmap stopped there on his request.

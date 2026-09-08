@@ -58,11 +58,19 @@ struct TaskContextMenu: View {
     private var note: Note? { model.note(at: ref.notePath) }
     private var inboxPath: String { model.vault?.config.inboxFile ?? "Inbox.md" }
 
-    /// The notes a task can be moved to: active projects, then active areas.
+    /// The notes a task can be moved to: the active projects, then the areas with their
+    /// sub-areas under them, in the same order as the sidebar lists.
     private func destinations(_ kind: ParaKind) -> [Note] {
-        model.notes.filter {
-            $0.kind == kind && !$0.isArchived && $0.status != "done" && $0.relativePath != ref.notePath
+        let listed = kind == .area ? model.index.areasInFamilyOrder() : model.notes.filter { $0.kind == kind }
+        return listed.filter {
+            !$0.isArchived && $0.status != "done" && $0.relativePath != ref.notePath
         }
+    }
+
+    /// Sub-areas read as "Mobility \u{203A} Yoga", so the menu is not a flat list of words.
+    private func label(for note: Note) -> String {
+        guard let parent = model.index.parentArea(of: note) else { return note.displayTitle }
+        return "\(parent.displayTitle) \u{203A} \(note.displayTitle)"
     }
     private var isNext: Bool { ref.task.tags.contains(Note.nextActionTag) }
 
@@ -111,7 +119,7 @@ struct TaskContextMenu: View {
                     Divider()
                 }
                 ForEach(destinations(.area)) { note in
-                    Button(note.displayTitle) { model.moveTask(ref, to: note.relativePath) }
+                    Button(label(for: note)) { model.moveTask(ref, to: note.relativePath) }
                 }
             }
         }

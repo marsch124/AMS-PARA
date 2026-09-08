@@ -228,6 +228,95 @@ struct NoteListView: View {
     /// Kept in the view, not the model: the toolbar search field writes to it while redrawing.
     @State private var searchText = ""
     @State private var noteToTrash: Note?
+    /// Areas folded shut by their chevron, by relative path. Sub-areas are shown by default.
+    @State private var foldedAreas: Set<String> = []
+
+    private var searching: Bool { !searchText.trimmingCharacters(in: .whitespaces).isEmpty }
+
+    /// Areas are a two-level list: each area followed by its sub-areas unless it is folded.
+    /// While searching, and for every other section, the plain flat list.
+    private var visibleNotes: [Note] {
+        let listed = model.notes(in: model.section, matching: searchText)
+        guard model.section == .kind(.area), !searching else { return listed }
+        return model.index.areaTree().flatMap { branch in
+            foldedAreas.contains(branch.area.relativePath) ? [branch.area] : branch.all
+        }
+    }
+
+    /// The areas a given area is arranged among: the top-level areas, or its parent's children.
+    private func siblings(of note: Note) -> [Note] {
+        guard model.section == .kind(.area), !searching else { return visibleNotes }
+        guard let parent = model.index.parentArea(of: note) else {
+            return model.index.areaTree().map(\.area)
+        }
+        return model.index.subAreas(of: parent)
+    }
+
+    /// Maps a drag in the visible list onto the row's own family, so a sub-area is arranged
+    /// among its siblings and a drop that would take it out of the family is left alone.
+    private func move(_ listed: [Note], from source: IndexSet, to destination: Int) {
+        guard model.section == .kind(.area), !searching else {
+            guard case .kind(let kind) = model.section else { return }
+            model.reorder(kind, from: source, to: destination)
+            return
+        }
+        guard let from = source.first, listed.indices.contains(from) else { return }
+        let family = siblings(of: listed[from])
+        guard let index = family.firstIndex(of: listed[from]) else { return }
+        // `toOffset` counts positions in the family before anything is removed, which is what
+        // the number of family members above the drop point gives us.
+        let to = listed[0..<min(destination, listed.count)].filter { member in
+            family.contains { $0.relativePath == member.relativePath }
+        }.count
+        model.reorder(family, from: IndexSet(integer: index), to: to)
+    }
+
+    private func fold(_ note: Note) {
+        if foldedAreas.contains(note.relativePath) {
+            foldedAreas.remove(note.relativePath)
+        } else {
+            foldedAreas.insert(note.relativePath)
+        }
+    }
+
+    /// True while the Areas list is showing its two levels and this area has sub-areas.
+    private func foldable(_ note: Note) -> Bool {
+        model.section == .kind(.area) && !searching && !model.index.subAreas(of: note).isEmpty
+    }
+
+    private func noteRow(_ note: Note) -> some View {
+        HStack(spacing: 4) {
+            if foldable(note) {
+                Button {
+                    fold(note)
+                } label: {
+                    Image(systemName: foldedAreas.contains(note.relativePath) ? "chevron.right" : "chevron.down")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 14)
+                }
+                .buttonStyle(.plain)
+                .help(foldedAreas.contains(note.relativePath) ? "Show the sub-areas" : "Hide the sub-areas")
+            } else if model.section == .kind(.area), !searching {
+                Spacer().frame(width: 14)
+            }
+            NoteRow(note: note)
+        }
+        .padding(.leading, model.index.parentArea(of: note) == nil ? 0 : 18)
+        .tag(note.relativePath)
+        .acceptsTaskDrop { ref in model.moveTask(ref, to: note.relativePath) }
+        .contextMenu {
+            if note.kind == .area {
+                AreaParentMenu(note: note)
+            }
+            if model.canArchive(note) {
+                Button("Archive") { model.archive(note) }
+            }
+            if note.kind != .inbox {
+                Button("Move to Trash…", role: .destructive) { noteToTrash = note }
+            }
+        }
+    }
 
     var body: some View {
         Group {
@@ -252,30 +341,19 @@ struct NoteListView: View {
             } else if model.section == .search {
                 SearchView()
             } else {
-                let listed = model.notes(in: model.section, matching: searchText)
+                let listed = visibleNotes
                 if listed.isEmpty {
                     emptyList(searching: !searchText.trimmingCharacters(in: .whitespaces).isEmpty)
                         .searchable(text: $searchText, prompt: "Search notes")
                 } else {
                 List(selection: model.noteSelection) {
                     ForEach(listed) { note in
-                        NoteRow(note: note)
-                            .tag(note.relativePath)
-                            .acceptsTaskDrop { ref in model.moveTask(ref, to: note.relativePath) }
-                            .contextMenu {
-                                if model.canArchive(note) {
-                                    Button("Archive") { model.archive(note) }
-                                }
-                                if note.kind != .inbox {
-                                    Button("Move to Trash…", role: .destructive) { noteToTrash = note }
-                                }
-                            }
+                        noteRow(note)
                     }
                     // Drag a note up or down to arrange the list; the position is written into
                     // the note as `order:` so both devices agree.
                     .onMove { source, destination in
-                        guard case .kind(let kind) = model.section else { return }
-                        model.reorder(kind, from: source, to: destination)
+                        move(listed, from: source, to: destination)
                     }
                 }
                 .searchable(text: $searchText, prompt: "Search notes")
@@ -339,6 +417,40 @@ struct NoteListView: View {
             default:
                 EmptyStateView(title: "Nothing here yet", systemImage: "doc.text",
                                message: "Notes you add to this section show up in this list.")
+            }
+        }
+    }
+}
+
+/// Puts an area under another area, or takes it back out. Areas nest one level only,
+/// so an area that already has sub-areas of its own cannot become a sub-area.
+struct AreaParentMenu: View {
+    @EnvironmentObject private var model: AppModel
+    let note: Note
+
+    private var parent: Note? { model.index.parentArea(of: note) }
+    private var hasSubAreas: Bool { !model.index.subAreas(of: note).isEmpty }
+    private var candidates: [Note] {
+        guard !hasSubAreas else { return [] }
+        return model.index.areaTree().map(\.area).filter { $0.relativePath != note.relativePath }
+    }
+
+    var body: some View {
+        Menu("Part of") {
+            Button(parent == nil ? "\u{2713} Nothing \u{2014} an area of its own" : "Nothing \u{2014} an area of its own") {
+                model.setParent(note, to: nil)
+            }
+            if hasSubAreas {
+                Divider()
+                Text("Move its sub-areas out first")
+            }
+            if !candidates.isEmpty {
+                Divider()
+                ForEach(candidates) { area in
+                    Button(parent?.relativePath == area.relativePath ? "\u{2713} \(area.displayTitle)" : area.displayTitle) {
+                        model.setParent(note, to: area)
+                    }
+                }
             }
         }
     }
