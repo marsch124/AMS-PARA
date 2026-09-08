@@ -68,7 +68,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 66
+    static let number = 67
 }
 
 @MainActor
@@ -126,6 +126,9 @@ final class AppModel: ObservableObject {
     @Published private(set) var timeBlocks: [TimeBlock] = []
     /// Filled by "Block time for this…" on a task; the Time Blocks form picks it up.
     @Published var timeBlockDraft: TimeBlockDraft?
+    /// The inbox line being sorted, as `TaskRef.triageID`. Shared so the middle column and
+    /// the "File it" column on the right are talking about the same line.
+    @Published var inboxSelection: String?
     /// Saved copies of the vault, newest first.
     @Published private(set) var backups: [VaultBackup] = []
     /// The report shown in the sync sheet, and whether it was a rehearsal.

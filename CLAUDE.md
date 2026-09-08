@@ -313,8 +313,11 @@ for both new and existing blocks; it saves through `AppModel.saveTimeBlock`/`del
 then the open non-subtask lines with per-row actions and a menu; `TaskRef.triageID`
 ("path#lineIndex") is the selection id, since `TaskRef` identity shifts as lines move. Single
 keys are guarded by `@FocusState` on the capture field so typing is never intercepted.
-`AppModel.deleteTask` and `makeNote(from:kind:)` were added for it. `DetailView` shows the
-inbox note itself when nothing else is selected.
+`AppModel.deleteTask` and `makeNote(from:kind:)` were added for it. The third column is
+`InboxFileItView` (build 67): the selected line plus active projects and areas as click and
+drop targets, sharing `AppModel.inboxSelection` with the middle column; `InboxItems` holds the
+lookups so the two columns cannot drift apart. Goals are not destinations by choice. Picking a
+line clears `selectedNotePath` so the destinations come back after "Open the Inbox note".
 
 ## Not built (by choice)
 

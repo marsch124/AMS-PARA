@@ -9,7 +9,7 @@ AMS PARA is a plain-text project and life management app. Everything you write i
 - **Areas** are things you keep up over time: health, home, a client. They also serve goals.
 - **Resources** are reference material: articles, checklists, ideas.
 - **Archive** is where finished projects and closed areas go. They stay searchable.
-- **Inbox** catches everything you have not sorted yet. Its screen is built for emptying: type at the top to capture, then work down the list with Today, Tomorrow, a date, or the menu to move it into a project or turn it into a note of its own. ↑ ↓ move, T is today, M tomorrow, D done, ⌫ deletes.
+- **Inbox** catches everything you have not sorted yet. Its screen is built for emptying: type at the top to capture, then work down the list with Today, Tomorrow, a date, or the menu to move it into a project or turn it into a note of its own. ↑ ↓ move, T is today, M tomorrow, D done, ⌫ deletes. The right-hand column shows the line you are on and where it can go: drag it onto a project or area, or click one. "New note from this line…" makes a project, area or resource out of it instead.
 
 That is PARA with a Goals layer on top. Every note answers "what does this serve?".
 
