@@ -68,7 +68,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 65
+    static let number = 66
 }
 
 @MainActor
@@ -681,6 +681,25 @@ final class AppModel: ObservableObject {
         guard !trimmed.isEmpty, var note = note(at: parent.notePath) else { return }
         note.appendSubtask(TaskParser.normalized(TaskItem(title: trimmed)), to: parent.task)
         save(note)
+    }
+
+    /// Removes a task and everything indented under it.
+    func deleteTask(_ ref: TaskRef) {
+        flushPendingEdits()
+        guard var note = note(at: ref.notePath), note.removeTaskBlock(for: ref.task) != nil else { return }
+        if save(note) {
+            log("deleted task \"\(ref.task.title)\" from \(ref.notePath)")
+            flash("Deleted \u{201C}\(ref.task.title)\u{201D}")
+        }
+    }
+
+    /// Turns a captured line into a note of its own and takes it out of the list it came from.
+    func makeNote(from ref: TaskRef, kind: ParaKind) {
+        flushPendingEdits()
+        let title = Note.removingTag(Note.nextActionTag, from: ref.task.title)
+        guard var source = note(at: ref.notePath), source.removeTaskBlock(for: ref.task) != nil else { return }
+        guard save(source) else { return }
+        createNote(kind: kind, title: title)
     }
 
     func select(_ ref: TaskRef) {

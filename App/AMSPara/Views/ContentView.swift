@@ -230,7 +230,11 @@ struct NoteListView: View {
 
     var body: some View {
         Group {
-            if model.section == .today {
+            if model.section == .inbox {
+                // One inbox note means a list of notes would be a list of one; sort the
+                // captured lines here instead.
+                InboxTriageView()
+            } else if model.section == .today {
                 TodayView()
             } else if model.section == .calendar {
                 CalendarView()
@@ -400,6 +404,11 @@ struct DetailView: View {
         if model.section == .calendar {
             // The Calendar section gets the day's schedule here, with the note one click away.
             CalendarDetailView()
+        } else if model.section == .inbox, model.selectedNotePath == nil,
+                  let inbox = model.notes(in: .inbox).first {
+            // Sorting happens in the middle column; the raw note stays readable here.
+            NoteEditorView(path: inbox.relativePath)
+                .id(inbox.relativePath)
         } else if let path = model.selectedNotePath, model.note(at: path) != nil {
             NoteEditorView(path: path)
                 .id(path)

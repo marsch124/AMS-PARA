@@ -306,6 +306,16 @@ time blocks and timed tasks; `lanes(for:)` puts overlapping items side by side a
 a one-hour block from a task. One `.sheet` only (build 44's lesson), keyed by `ScheduleSheet`,
 for both new and existing blocks; it saves through `AppModel.saveTimeBlock`/`deleteTimeBlock`.
 
+## Inbox triage (build 66)
+
+`InboxView.swift`: `InboxTriageView` is the middle column while `section == .inbox` (wired in
+`NoteListView`), because one inbox note made that column a list of one. Capture field on top,
+then the open non-subtask lines with per-row actions and a menu; `TaskRef.triageID`
+("path#lineIndex") is the selection id, since `TaskRef` identity shifts as lines move. Single
+keys are guarded by `@FocusState` on the capture field so typing is never intercepted.
+`AppModel.deleteTask` and `makeNote(from:kind:)` were added for it. `DetailView` shows the
+inbox note itself when nothing else is selected.
+
 ## Not built (by choice)
 
 Saved searches. Roadmap stopped there on his request.

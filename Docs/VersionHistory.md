@@ -2,6 +2,13 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 66 · 8 September 2026
+
+- **The Inbox is now a sorting screen.** There is only ever one inbox note, so the middle column used to be a list of one. It now holds everything waiting to be sorted, a line at a time, with a capture box at the top for typing new items straight in.
+- Each line has **Today**, **Tomorrow** and **Pick a date** to hand, and a menu for the rest: move it into a project or area, turn it into a project, area, resource or goal of its own, block time for it, or delete it.
+- **Keyboard**: ↑ and ↓ to move down the list, **T** for today, **M** for tomorrow, **D** for done, **⌫** to delete. The selection moves on by itself, so a full inbox takes a minute.
+- When you reach the end it says **Inbox zero** instead of showing an empty list. The note itself stays readable in the right-hand column.
+
 ## Builds 63 to 65 · 7-8 September 2026
 
 - **A gold frame around the app icon.** The four PARA squares now sit inside a gold ring, in the same colour goals have everywhere else in the app: everything you keep serves the goals around it.
