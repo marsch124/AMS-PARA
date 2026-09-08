@@ -78,9 +78,18 @@ struct InboxTriageView: View {
         .onKeyPress(KeyEquivalent("m")) { act { model.setDueDate($0, .today().adding(days: 1)) } }
         .onKeyPress(KeyEquivalent("d")) { act { model.toggle($0) } }
         .onKeyPress(.delete) { act { model.deleteTask($0) } }
+        .onAppear {
+            model.afterUpdate {
+                model.inboxShowsNote = false
+                model.selectedNotePath = nil
+            }
+        }
         .onChange(of: model.inboxSelection) { _, new in
-            guard new != nil, model.selectedNotePath != nil else { return }
-            model.afterUpdate { model.selectedNotePath = nil }
+            guard new != nil else { return }
+            model.afterUpdate {
+                model.inboxShowsNote = false
+                model.selectedNotePath = nil
+            }
         }
         .sheet(item: $pickingDateFor) { ref in
             TaskDatePicker(ref: ref, isPresented: Binding(get: { pickingDateFor != nil },
@@ -312,6 +321,7 @@ struct InboxFileItView: View {
             }
             .disabled(selected == nil)
             Button("Open the Inbox note") {
+                model.inboxShowsNote = true
                 model.selectedNotePath = InboxItems.note(model)?.relativePath
             }
             .buttonStyle(.borderless)

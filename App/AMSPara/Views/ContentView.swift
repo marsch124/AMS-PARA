@@ -404,7 +404,7 @@ struct DetailView: View {
         if model.section == .calendar {
             // The Calendar section gets the day's schedule here, with the note one click away.
             CalendarDetailView()
-        } else if model.section == .inbox, model.selectedNotePath == nil {
+        } else if model.section == .inbox, !model.inboxShowsNote {
             // Sorting happens in the middle column; this is where the lines can go.
             InboxFileItView()
         } else if let path = model.selectedNotePath, model.note(at: path) != nil {

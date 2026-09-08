@@ -319,8 +319,10 @@ keys are guarded by `@FocusState` on the capture field so typing is never interc
 `AppModel.deleteTask` and `makeNote(from:kind:)` were added for it. The third column is
 `InboxFileItView` (build 67): the selected line plus active projects and areas as click and
 drop targets, sharing `AppModel.inboxSelection` with the middle column; `InboxItems` holds the
-lookups so the two columns cannot drift apart. Goals are not destinations by choice. Picking a
-line clears `selectedNotePath` so the destinations come back after "Open the Inbox note".
+lookups so the two columns cannot drift apart. Goals are not destinations by choice. Whether the third column shows the note is an explicit `AppModel.inboxShowsNote`, not
+"is a note selected": entering the section or picking a line resets it, so a note opened
+elsewhere (or one just made from a line, which `createNote` selects) cannot take the column
+over (build 69).
 
 ## Not built (by choice)
 

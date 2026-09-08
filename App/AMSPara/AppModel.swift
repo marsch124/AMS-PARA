@@ -68,7 +68,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 68
+    static let number = 69
 }
 
 @MainActor
@@ -129,6 +129,9 @@ final class AppModel: ObservableObject {
     /// The inbox line being sorted, as `TaskRef.triageID`. Shared so the middle column and
     /// the "File it" column on the right are talking about the same line.
     @Published var inboxSelection: String?
+    /// True only while "Open the Inbox note" is showing the raw note. Otherwise the Inbox's
+    /// right-hand column is "File it" — a note selected elsewhere must not take it over.
+    @Published var inboxShowsNote = false
     /// Saved copies of the vault, newest first.
     @Published private(set) var backups: [VaultBackup] = []
     /// The report shown in the sync sheet, and whether it was a rehearsal.

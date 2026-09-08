@@ -2,6 +2,10 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 69 · 8 September 2026
+
+- **Fix: coming back to the Inbox shows "File it" again.** If you had opened a note elsewhere — including one you had just made from an inbox line — the right-hand column kept showing that note instead of your destinations. The Inbox now always opens on sorting; the raw note appears only when you ask for it with "Open the Inbox note".
+
 ## Builds 67 and 68 · 8 September 2026
 
 - **The Inbox's right-hand column is now "File it".** It used to repeat the same list of tasks the middle column already shows. It holds the line you are sorting — with room to read a long one in full — and under it your active projects and areas, each with its open count.
