@@ -151,6 +151,8 @@ The sync button is a menu. **Show me what would change…** rehearses the entire
 
 ## Sub-areas
 
+**Making one.** Open the area note and click **Part of…** in the top row, then pick the area it belongs to. "Not part of another area" takes it back out. The same choices sit on the right-click menu of an area in the list, and **New note › Area** has a **Part of** picker for making one from the start.
+
 A sub-area is an ordinary area note with one extra line in its frontmatter, `parent: Health`. That means it behaves like any other area:
 
 - Its own tasks and its own list in Apple Reminders.
@@ -159,7 +161,7 @@ A sub-area is an ordinary area note with one extra line in its frontmatter, `par
 
 In the Areas list a sub-area is indented under its area, and the chevron on the area folds its sub-areas away. Dragging to arrange works inside a family: a sub-area moves among its brothers and sisters, an area among the other areas. The note itself shows **Part of Health** at the top — click it to go there.
 
-An area that already has sub-areas cannot itself become one; move its children out first.
+Any area can be picked as the parent. Picking one that is already a sub-area lifts it up a level first, since areas nest one level only — asking for "Yoga under Mobility" means Mobility is the level above.
 
 ## Archive and Trash
 

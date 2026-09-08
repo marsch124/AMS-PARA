@@ -320,11 +320,8 @@ struct NoteHeader: View {
                 Label(area, systemImage: "circle.grid.2x2")
                     .foregroundStyle(ParaKind.area.tint)
             }
-            if let parent = model.index.parentArea(of: note) {
-                Label("Part of \(parent.displayTitle)", systemImage: "arrow.turn.left.up")
-                    .foregroundStyle(ParaKind.area.tint)
-                    .contentShape(Rectangle())
-                    .onTapGesture { model.show(parent) }
+            if note.kind == .area {
+                AreaParentChip(model: model, note: note)
             }
             if let goal = note.goal {
                 Label(goal, systemImage: "star")

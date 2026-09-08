@@ -307,7 +307,7 @@ struct NoteListView: View {
         .acceptsTaskDrop { ref in model.moveTask(ref, to: note.relativePath) }
         .contextMenu {
             if note.kind == .area {
-                AreaParentMenu(note: note)
+                AreaParentMenu(model: model, note: note)
             }
             if model.canArchive(note) {
                 Button("Archive") { model.archive(note) }
@@ -422,37 +422,80 @@ struct NoteListView: View {
     }
 }
 
-/// Puts an area under another area, or takes it back out. Areas nest one level only,
-/// so an area that already has sub-areas of its own cannot become a sub-area.
-struct AreaParentMenu: View {
-    @EnvironmentObject private var model: AppModel
+/// The places an area can sit: nothing, or another area. Shared by the menu on a row
+/// and the chip at the top of the note, so both offer exactly the same choices.
+struct AreaParentOptions: View {
+    /// Passed in rather than read from the environment: these choices are shown inside a
+    /// context menu, whose content is built outside the row's own view hierarchy.
+    @ObservedObject var model: AppModel
     let note: Note
 
     private var parent: Note? { model.index.parentArea(of: note) }
-    private var hasSubAreas: Bool { !model.index.subAreas(of: note).isEmpty }
+    private var children: [Note] { model.index.subAreas(of: note) }
+
+    /// Every other area, its own sub-areas apart: they cannot hold their own parent.
+    /// Picking one that is itself a sub-area lifts it out first, which is what asking for
+    /// "Yoga under Mobility" means when Mobility sits under Health.
     private var candidates: [Note] {
-        guard !hasSubAreas else { return [] }
-        return model.index.areaTree().map(\.area).filter { $0.relativePath != note.relativePath }
+        model.index.areasInFamilyOrder().filter { area in
+            area.relativePath != note.relativePath &&
+            !children.contains { $0.relativePath == area.relativePath }
+        }
+    }
+
+    private func label(for area: Note) -> String {
+        let name = model.index.parentArea(of: area).map { "\($0.displayTitle) \u{203A} \(area.displayTitle)" } ?? area.displayTitle
+        return parent?.relativePath == area.relativePath ? "\u{2713} \(name)" : name
     }
 
     var body: some View {
-        Menu("Part of") {
-            Button(parent == nil ? "\u{2713} Nothing \u{2014} an area of its own" : "Nothing \u{2014} an area of its own") {
-                model.setParent(note, to: nil)
-            }
-            if hasSubAreas {
-                Divider()
-                Text("Move its sub-areas out first")
-            }
-            if !candidates.isEmpty {
-                Divider()
-                ForEach(candidates) { area in
-                    Button(parent?.relativePath == area.relativePath ? "\u{2713} \(area.displayTitle)" : area.displayTitle) {
-                        model.setParent(note, to: area)
-                    }
-                }
+        if let parent {
+            Button("Open \(parent.displayTitle)") { model.show(parent) }
+            Divider()
+        }
+        Button(parent == nil ? "\u{2713} Not part of another area" : "Not part of another area") {
+            model.setParent(note, to: nil)
+        }
+        if !candidates.isEmpty {
+            Divider()
+            ForEach(candidates) { area in
+                Button(label(for: area)) { model.setParent(note, to: area) }
             }
         }
+    }
+}
+
+/// Right-click an area in the list: where does it belong?
+struct AreaParentMenu: View {
+    @ObservedObject var model: AppModel
+    let note: Note
+
+    var body: some View {
+        Menu("Part of") {
+            AreaParentOptions(model: model, note: note)
+        }
+    }
+}
+
+/// The same choices at the top of an area note, where they can actually be found.
+struct AreaParentChip: View {
+    @ObservedObject var model: AppModel
+    let note: Note
+
+    private var title: String {
+        model.index.parentArea(of: note).map { "Part of \($0.displayTitle)" } ?? "Part of\u{2026}"
+    }
+
+    var body: some View {
+        Menu {
+            AreaParentOptions(model: model, note: note)
+        } label: {
+            Label(title, systemImage: "arrow.turn.left.up")
+        }
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .foregroundStyle(ParaKind.area.tint)
+        .help("Put this area under another area, or take it back out")
     }
 }
 

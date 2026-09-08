@@ -45,6 +45,9 @@ TestFlight on the phone and on the Mac. Xcode is no longer part of his routine.
   arrays and conditions in a plain function or a computed property and let the view read
   the result. There is no Swift compiler in this container, so CI is the only check and a
   slip like this costs a whole build.
+- **A tap gesture on a List row swallows the click that selects it** (build 71 broke picking
+  an inbox line; fixed in 74). Use `.simultaneousGesture(TapGesture(count: 2)…)` for
+  double-click actions on rows, never `.onTapGesture`.
 - A helper type that touches `AppModel` needs `@MainActor` on it (the model is main-actor
   bound), or the build fails with "main actor-isolated property … can not be referenced from
   a nonisolated context" (build 67).
@@ -343,8 +346,12 @@ pointing at each other from dropping out of the list. `NoteListView` draws the A
 but two-deep (`visibleNotes`, indent from `parentArea`, a chevron writing to `foldedAreas`), and
 `onMove` is mapped onto the row's family by `move(_:from:to:)`, so `AppModel.reorder` now also
 takes an explicit `[Note]`. `AppModel.setParent` writes/removes the line and lifts the new
-parent's own parent. `AreaParentMenu` (ContentView) is the "Part of" menu; the Inbox
+parent's own parent. `AreaParentOptions` (ContentView) holds the choices and is used by
+`AreaParentMenu` (right-click a row) and `AreaParentChip` (the "Part of…" button in the
+note header, build 74 — the context menu alone was unfindable); both take the model as a
+parameter because context-menu content is built outside the row's hierarchy. The Inbox
 destinations, the task "Move to" menu and `linkMap()` all use family order.
+
 
 ## Not built (by choice)
 

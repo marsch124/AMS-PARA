@@ -9,6 +9,7 @@ struct NewNoteSheet: View {
     @State private var horizon: GoalHorizon = .year
     @State private var target = ""
     @State private var parentGoal = ""
+    @State private var parentArea = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -41,6 +42,12 @@ struct NewNoteSheet: View {
                     }
                 }
             }
+            if kind == .area, !possibleParents.isEmpty {
+                Picker("Part of", selection: $parentArea) {
+                    Text("Nothing \u{2014} an area of its own").tag("")
+                    ForEach(possibleParents) { area in Text(area.displayTitle).tag(area.displayTitle) }
+                }
+            }
             HStack(spacing: 8) {
                 KindBadge(kind: kind, size: 22)
                 Text(kind.displayName)
@@ -71,10 +78,16 @@ struct NewNoteSheet: View {
         }
     }
 
+    /// Areas a new one can be made under. One level, so only the areas that are not
+    /// already sub-areas themselves.
+    private var possibleParents: [Note] {
+        model.index.areaTree().map(\.area).filter { !$0.isArchived }
+    }
+
     private var hint: String {
         switch kind {
         case .project: return "A project has an outcome and an end date. Its tasks are mirrored to a Reminders list with the same name."
-        case .area: return "An area is an ongoing responsibility with a standard to maintain. Its tasks are mirrored to Reminders too."
+        case .area: return "An area is an ongoing responsibility with a standard to maintain. Its tasks are mirrored to Reminders too. Put it under another area to make it a sub-area, like Yoga under Mobility."
         case .goal: return horizon == .life
             ? "A life goal has no date. It gives direction; projects and areas serve it and link back with goal: in their frontmatter."
             : "A dated goal has a target and a measure, and can point at a life goal. Not synced to Reminders; its work lives in projects."
@@ -86,6 +99,9 @@ struct NewNoteSheet: View {
         let trimmed = title.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return }
         var extra: [(String, String)] = []
+        if kind == .area, !parentArea.isEmpty {
+            extra.append(("parent", parentArea))
+        }
         if kind == .goal {
             extra.append(("horizon", horizon.rawValue))
             let t = target.trimmingCharacters(in: .whitespaces)

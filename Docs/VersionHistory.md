@@ -2,6 +2,13 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 74 · 8 September 2026
+
+- **Fix: you can pick an inbox line again.** Build 71's double-click-to-rename was swallowing the click the list needs to select a row, so marking a line and then pressing a destination stopped working. Sorry — selecting, the single keys and "click a destination" all work as before, and double-click still renames.
+- **Sub-areas are now where you can find them.** Open an area note and the top row has a **Part of…** button: click it and pick the area it belongs to, or "Not part of another area" to take it back out. The right-click menu on an area in the list has the same choices.
+- **New note › Area** now has a **Part of** picker, so a sub-area can be made as one from the start.
+- Any area can now be picked as the parent, not only the top-level ones. Choosing one that is itself a sub-area lifts it up first — asking for "Yoga under Mobility" means Mobility is the level above.
+
 ## Build 73 · 8 September 2026
 
 - **Sub-areas.** An area can now sit under another area: Mobility under Health, or Yoga, Pliability and Stretching under Mobility. Right-click an area › **Part of** and pick where it belongs, or pick "Nothing" to take it back out.

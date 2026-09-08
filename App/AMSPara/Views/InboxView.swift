@@ -206,7 +206,9 @@ struct InboxRow: View {
         .contentShape(Rectangle())
         // Drag it straight onto a destination in the right-hand column.
         .draggable(TaskTransfer(ref))
-        .onTapGesture(count: 2) { startEditing() }
+        // Simultaneous, not `.onTapGesture`: a tap gesture of its own swallows the click the
+        // list needs to select the row, which is what broke picking a line in build 71.
+        .simultaneousGesture(TapGesture(count: 2).onEnded { startEditing() })
         .contextMenu { menuItems }
     }
 
