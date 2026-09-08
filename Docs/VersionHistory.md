@@ -2,6 +2,10 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 63 · 7 September 2026
+
+- **A gold frame around the app icon.** The four PARA squares now sit inside a gold ring, in the same colour goals have everywhere else in the app: everything you keep serves the goals around it.
+
 ## Build 62 · 7 September 2026
 
 - A build server fix: it no longer asks Apple for a new signing certificate on every run, which had filled up the account's allowance. Nothing in the app changed.
