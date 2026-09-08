@@ -9,10 +9,9 @@ name: TestFlight
 #   ASC_KEY_P8     the whole contents of the AuthKey_XXXXXXXXXX.p8 file
 #   ASC_TEAM_ID    the ten-character Team ID from App Store Connect > Membership
 # The key must have the Admin role: App Manager cannot create signing certificates.
-# The archive signs with "Apple Distribution" on purpose. Left to itself Xcode signs an
-# archive for development, and since every runner is a fresh machine it asked Apple for a
-# new development certificate on every run until the account hit its limit. Distribution
-# certificates are managed by Apple and reused, and an upload needs nothing else.
+# The archive is built unsigned and the export signs it for the App Store. Signing at
+# archive time signs for development, and since every runner is a fresh machine that asked
+# Apple for a new development certificate on every run until the account hit its limit.
 on:
   workflow_dispatch:
     inputs:
@@ -111,18 +110,18 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p build
+          # Archive without signing. Signing happens at export, with the distribution
+          # identity, which is cloud managed and reused. Signing here would sign for
+          # development instead, and every fresh runner then asked Apple for a new
+          # development certificate until the account hit its limit (build 61).
           xcodebuild archive \
             -project AMSPara.xcodeproj \
             -scheme AMSPara \
             -destination '${{ matrix.destination }}' \
             -archivePath "$PWD/build/${{ matrix.archive }}.xcarchive" \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$HOME/private_keys/AuthKey_$KEY_ID.p8" \
-            -authenticationKeyID "$KEY_ID" \
-            -authenticationKeyIssuerID "$ISSUER" \
             DEVELOPMENT_TEAM="$TEAM_ID" \
-            CODE_SIGN_STYLE=Automatic \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
             2>&1 | tee build/archive.log | grep -E "error:|warning:|\*\* ARCHIVE" || true
           grep -q "\*\* ARCHIVE SUCCEEDED \*\*" build/archive.log
 

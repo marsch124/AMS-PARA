@@ -276,10 +276,13 @@ The uploaded version is `1.0.<BuildStamp.number>` with CFBundleVersion
 TestFlight and the app always show the same build number.
 The job runs on `macos-26` and `xcode-select`s the highest Xcode on the image:
 Apple rejects an upload built with an older SDK. The key must have the **Admin**
-role — App Manager gives "Cloud signing permission error" at export. The archive passes
-`CODE_SIGN_IDENTITY="Apple Distribution"`: left alone Xcode signs an archive for development
-and, every runner being a fresh machine, minted a new development certificate per run until
-the account hit Apple's limit ("Choose a certificate to revoke", build 61). Both App IDs
+role — App Manager gives "Cloud signing permission error" at export. The archive is built
+**unsigned** (`CODE_SIGNING_ALLOWED=NO`, no `-allowProvisioningUpdates`) and `-exportArchive`
+does the signing: signing at archive time signs for *development*, and every runner being a
+fresh machine that minted a new development certificate per run until the account hit Apple's
+limit ("Choose a certificate to revoke", build 61). Forcing
+`CODE_SIGN_IDENTITY="Apple Distribution"` instead fails — automatic signing rejects a manual
+identity ("conflicting provisioning settings", build 63). Both App IDs
 need the App Group `group.com.schabbauer.amspara` enabled in the developer portal,
 and `project.yml` declares `UISupportedInterfaceOrientations` (all four), without
 which Apple rejects the binary. macOS signs with its own
