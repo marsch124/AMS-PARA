@@ -41,7 +41,7 @@ tags: [sport, training]
 ---
 ```
 
-Useful keys: `status` (active, on hold, done), `area`, `goal`, `due`, `tags`, `related`, `reviewed`, `reminders-list` to sync into a Reminders list with a different name, `sync: false` to keep a note out of Reminders.
+Useful keys: `status` (active, on hold, done), `area`, `goal`, `due`, `tags`, `related`, `reviewed`, `order` (where the note sits when you have arranged the list by hand), `reminders-list` to sync into a Reminders list with a different name, `sync: false` to keep a note out of Reminders.
 
 Links between notes use `[[Note title]]`. Unknown titles become a new resource note when you click them.
 
@@ -93,6 +93,7 @@ New › Goal creates a goal. A life goal has no date. A dated goal has a target 
 ## Today, Calendar, daily and weekly notes
 
 - **Today** shows the day's calendar events, one next action per active project, overdue tasks, tasks due today, and undated tasks marked `!!` or more.
+- **All actions** lists every open task in the vault, grouped by its note, with a filter for All, With a date, No date and Next actions.
 - **Done** lists what you completed, day by day, for the last 30 days.
 - **Calendar** lets you pick a day, week or month. The day view has a month grid with week numbers and a dot under every day that holds something — green for tasks due, red if one is overdue, blue for calendar events, grey for a day that already has a note. Under the grid is the day itself: its events, what is due, what got done, and a button to open or create the daily note. Move with the arrows, the Today button, or the left and right arrow keys. Drop a task on a day to give it that date.
 - A daily note shows the day's events and the tasks due that day above its own text. A weekly note shows all seven days as a plan: drop tasks onto a day, tick them off there.

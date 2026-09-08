@@ -14,6 +14,7 @@ enum SidebarSection: Hashable, Identifiable {
     case map
     case timeBlocks
     case done
+    case allActions
     case search
     case kind(ParaKind)
 
@@ -28,6 +29,7 @@ enum SidebarSection: Hashable, Identifiable {
         case .map: return "Map"
         case .timeBlocks: return "Time Blocks"
         case .done: return "Done"
+        case .allActions: return "All actions"
         case .search: return "Search"
         case .kind(let kind): return kind.displayName
         }
@@ -42,6 +44,7 @@ enum SidebarSection: Hashable, Identifiable {
         case .map: return "point.3.filled.connected.trianglepath.dotted"
         case .timeBlocks: return "calendar.badge.clock"
         case .done: return "checkmark.circle"
+        case .allActions: return "list.bullet"
         case .search: return "magnifyingglass"
         case .kind(.daily): return "calendar"
         case .kind(.goal): return "star"
@@ -53,7 +56,7 @@ enum SidebarSection: Hashable, Identifiable {
         }
     }
 
-    static let all: [SidebarSection] = [.inbox, .today, .calendar, .timeBlocks, .done, .review, .map, .search, .kind(.goal), .kind(.project), .kind(.area), .kind(.resource), .kind(.archive)]
+    static let all: [SidebarSection] = [.inbox, .today, .allActions, .calendar, .timeBlocks, .done, .review, .map, .search, .kind(.goal), .kind(.project), .kind(.area), .kind(.resource), .kind(.archive)]
 }
 
 /// The sheets the main window can present.
@@ -68,7 +71,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 69
+    static let number = 70
 }
 
 @MainActor
@@ -345,7 +348,7 @@ final class AppModel: ObservableObject {
         case .inbox?: base = notes.filter { $0.kind == .inbox }
         case .kind(let kind)?: base = notes.filter { $0.kind == kind }
         case .calendar?: base = index.dailyNotes
-        case .today?, .review?, .map?, .timeBlocks?, .done?, .search?, nil: base = notes
+        case .today?, .review?, .map?, .timeBlocks?, .done?, .allActions?, .search?, nil: base = notes
         }
         let query = searchText.trimmingCharacters(in: .whitespaces)
         guard !query.isEmpty else { return base }
@@ -357,6 +360,7 @@ final class AppModel: ObservableObject {
         case .inbox: return note(at: vault?.config.inboxFile)?.openTasks.count ?? 0
         case .today: return index.openTasks(dueOnOrBefore: .today()).count + (todayNote?.openTasks.count ?? 0)
         case .calendar, .map, .search: return 0
+        case .allActions: return index.openTasks(includeArchived: false).count
         case .timeBlocks: return timeBlocks.filter { $0.day == .today() }.count
         case .done: return index.tasksCompleted(on: .today()).count
         case .review: return index.review(config: config).projectsNeedingAttention.count
@@ -706,6 +710,21 @@ final class AppModel: ObservableObject {
         guard var source = note(at: ref.notePath), source.removeTaskBlock(for: ref.task) != nil else { return }
         guard save(source) else { return }
         createNote(kind: kind, title: title)
+    }
+
+    /// Writes `order:` into the notes of one kind so the list keeps the arrangement.
+    /// Numbered in tens, so a note dropped between two others still fits.
+    func reorder(_ kind: ParaKind, from source: IndexSet, to destination: Int) {
+        flushPendingEdits()
+        var listed = notes.filter { $0.kind == kind }
+        listed.move(fromOffsets: source, toOffset: destination)
+        for (index, note) in listed.enumerated() {
+            let wanted = (index + 1) * 10
+            guard note.sortOrder != wanted, var updated = self.note(at: note.relativePath) else { continue }
+            updated.frontmatter.set("order", "\(wanted)")
+            _ = save(updated)
+        }
+        reload()
     }
 
     func select(_ ref: TaskRef) {

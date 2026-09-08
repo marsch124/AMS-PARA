@@ -324,6 +324,16 @@ lookups so the two columns cannot drift apart. Goals are not destinations by cho
 elsewhere (or one just made from a line, which `createNote` selects) cannot take the column
 over (build 69).
 
+## All actions and hand-arranged lists (build 70)
+
+`AllActionsView` (sidebar `.allActions`): every `index.openTasks()` grouped by note in
+`model.notes` order, filtered by All / With a date / No date / Next actions.
+Ordering: `Note.sortOrder` reads `order:` from frontmatter and `Note.byArrangedOrder` sorts
+arranged notes first (then by title); `Vault.notes(kind:)` uses it, so the sidebar list, the
+Inbox destinations and everything else agree. `AppModel.reorder(_:from:to:)` renumbers in tens
+and writes `order:` into each note whose position changed; `NoteListView`'s `ForEach` carries
+`.onMove`.
+
 ## Not built (by choice)
 
 Saved searches. Roadmap stopped there on his request.

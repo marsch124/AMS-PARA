@@ -181,7 +181,7 @@ public final class Vault {
                 return a.isWeeklyNote && !b.isWeeklyNote
             }
         }
-        return result.sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
+        return result.sorted(by: Note.byArrangedOrder)
     }
 
     // MARK: Weekly notes

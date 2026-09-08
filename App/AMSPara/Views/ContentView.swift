@@ -180,6 +180,7 @@ struct SidebarView: View {
                 row(.inbox)
                     .acceptsTaskDrop { ref in model.moveTask(ref, to: model.vault?.config.inboxFile ?? "Inbox.md") }
                 row(.today)
+                row(.allActions)
                 row(.calendar)
                 row(.timeBlocks)
                 row(.done)
@@ -246,6 +247,8 @@ struct NoteListView: View {
                 TimeBlocksView()
             } else if model.section == .done {
                 DoneView()
+            } else if model.section == .allActions {
+                AllActionsView()
             } else if model.section == .search {
                 SearchView()
             } else {
@@ -254,18 +257,26 @@ struct NoteListView: View {
                     emptyList(searching: !searchText.trimmingCharacters(in: .whitespaces).isEmpty)
                         .searchable(text: $searchText, prompt: "Search notes")
                 } else {
-                List(listed, selection: model.noteSelection) { note in
-                    NoteRow(note: note)
-                        .tag(note.relativePath)
-                        .acceptsTaskDrop { ref in model.moveTask(ref, to: note.relativePath) }
-                        .contextMenu {
-                            if model.canArchive(note) {
-                                Button("Archive") { model.archive(note) }
+                List(selection: model.noteSelection) {
+                    ForEach(listed) { note in
+                        NoteRow(note: note)
+                            .tag(note.relativePath)
+                            .acceptsTaskDrop { ref in model.moveTask(ref, to: note.relativePath) }
+                            .contextMenu {
+                                if model.canArchive(note) {
+                                    Button("Archive") { model.archive(note) }
+                                }
+                                if note.kind != .inbox {
+                                    Button("Move to Trash…", role: .destructive) { noteToTrash = note }
+                                }
                             }
-                            if note.kind != .inbox {
-                                Button("Move to Trash…", role: .destructive) { noteToTrash = note }
-                            }
-                        }
+                    }
+                    // Drag a note up or down to arrange the list; the position is written into
+                    // the note as `order:` so both devices agree.
+                    .onMove { source, destination in
+                        guard case .kind(let kind) = model.section else { return }
+                        model.reorder(kind, from: source, to: destination)
+                    }
                 }
                 .searchable(text: $searchText, prompt: "Search notes")
                 .onChange(of: model.section) { _, _ in searchText = "" }
@@ -484,6 +495,7 @@ extension SidebarSection {
         case .calendar: return Color("CalendarTint")
         case .timeBlocks: return Color("CalendarTint")
         case .done: return Color("ReviewTint")
+        case .allActions: return Color("ProjectTint")
         case .review: return Color("ReviewTint")
         case .map: return Color("GoalTint")
         case .search: return Color("ResourceTint")

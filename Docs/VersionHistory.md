@@ -2,6 +2,11 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 70 · 8 September 2026
+
+- **All actions.** A new sidebar section with every open task in the vault, grouped by the note it belongs to, with a filter for All, With a date, No date and Next actions. Tick tasks off in place, or press Open to go to the note. No more remembering a search.
+- **Arrange projects and areas by hand.** Drag a note up or down in the list and it stays there. The position is written into the note itself as `order: 20`, so the Mac and the iPhone agree, and so does the "File it" column in the Inbox. Notes you have never dragged stay in alphabetical order, after the arranged ones.
+
 ## Build 69 · 8 September 2026
 
 - **Fix: coming back to the Inbox shows "File it" again.** If you had opened a note elsewhere — including one you had just made from an inbox line — the right-hand column kept showing that note instead of your destinations. The Inbox now always opens on sorting; the raw note appears only when you ask for it with "Open the Inbox note".

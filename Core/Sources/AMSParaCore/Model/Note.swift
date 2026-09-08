@@ -56,6 +56,20 @@ public struct Note: Equatable, Identifiable, Sendable {
 
     public var title: String { frontmatter.string("title") ?? fileName }
     public var status: String? { frontmatter.string("status")?.lowercased() }
+
+    /// Where this note sits when the list is arranged by hand (`order: 20`). Notes without
+    /// one follow the arranged ones, by title.
+    public var sortOrder: Int? { frontmatter.string("order").flatMap { Int($0.trimmingCharacters(in: .whitespaces)) } }
+
+    /// Hand-arranged notes first in their order, then everything else by title.
+    public static func byArrangedOrder(_ a: Note, _ b: Note) -> Bool {
+        switch (a.sortOrder, b.sortOrder) {
+        case let (x?, y?): return x == y ? a.title.localizedCaseInsensitiveCompare(b.title) == .orderedAscending : x < y
+        case (_?, nil): return true
+        case (nil, _?): return false
+        case (nil, nil): return a.title.localizedCaseInsensitiveCompare(b.title) == .orderedAscending
+        }
+    }
     public var tags: [String] { frontmatter.list("tags") }
     public var related: [String] { frontmatter.list("related") }
     public var area: String? { frontmatter.string("area") }
