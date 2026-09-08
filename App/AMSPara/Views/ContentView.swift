@@ -292,12 +292,14 @@ struct NoteListView: View {
         }
         .navigationTitle(model.section?.title ?? "Notes")
         .toolbar {
-            ToolbarItem {
+            // Over the list it adds to, rather than away at the right by the search field.
+            ToolbarItem(placement: .navigation) {
                 Button {
                     model.activeSheet = .newNote
                 } label: {
                     Label("New note", systemImage: "square.and.pencil")
                 }
+                .help("New note in this section (⌘N)")
             }
         }
         #if os(macOS)

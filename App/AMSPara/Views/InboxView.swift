@@ -161,6 +161,9 @@ struct InboxRow: View {
     @EnvironmentObject private var model: AppModel
     let ref: TaskRef
     @Binding var pickingDateFor: TaskRef?
+    @State private var editing = false
+    @State private var draft = ""
+    @FocusState private var fieldFocused: Bool
 
     private var projects: [Note] {
         model.notes.filter { ($0.kind == .project || $0.kind == .area) && !$0.isArchived && $0.status != "done" }
@@ -178,8 +181,15 @@ struct InboxRow: View {
             .help("Mark as done")
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(Note.removingTag(Note.nextActionTag, from: ref.task.title))
-                    .lineLimit(2)
+                if editing {
+                    TextField("Title", text: $draft)
+                        .textFieldStyle(.roundedBorder)
+                        .focused($fieldFocused)
+                        .onSubmit(commit)
+                } else {
+                    Text(Note.removingTag(Note.nextActionTag, from: ref.task.title))
+                        .lineLimit(2)
+                }
                 if let due = ref.task.dueDate {
                     Label(due.description, systemImage: "calendar")
                         .font(.caption2)
@@ -190,7 +200,22 @@ struct InboxRow: View {
             actions
         }
         .padding(.vertical, 2)
+        .contentShape(Rectangle())
+        // Drag it straight onto a destination in the right-hand column.
+        .draggable(TaskTransfer(ref))
+        .onTapGesture(count: 2) { startEditing() }
         .contextMenu { menuItems }
+    }
+
+    private func startEditing() {
+        draft = Note.removingTag(Note.nextActionTag, from: ref.task.title)
+        editing = true
+        fieldFocused = true
+    }
+
+    private func commit() {
+        editing = false
+        model.renameTask(ref, to: draft)
     }
 
     @ViewBuilder
@@ -207,6 +232,7 @@ struct InboxRow: View {
             } label: {
                 Image(systemName: "ellipsis.circle")
             }
+            .menuIndicator(.hidden)
             .fixedSize()
             .help("File it somewhere")
         }
@@ -233,6 +259,7 @@ struct InboxRow: View {
         Button("Block time for this…") { model.blockTime(for: ref) }
         Button("Remove the date") { model.setDueDate(ref, nil) }
             .disabled(ref.task.dueDate == nil)
+        Button("Rename…") { startEditing() }
         Divider()
         Button("Delete", role: .destructive) { model.deleteTask(ref) }
     }

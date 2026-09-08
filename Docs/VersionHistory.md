@@ -2,6 +2,13 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 71 · 8 September 2026
+
+- **Edit an inbox line where it sits.** Double-click it, or right-click › Rename. Enter saves. The date, tags and any subtasks stay as they were.
+- **Drag an inbox line straight onto a destination** in the right-hand column, as well as clicking one.
+- The stray arrow next to the "…" button on each inbox line is gone.
+- **New note** now sits above the list it adds to, instead of over on the right by the search field.
+
 ## Build 70 · 8 September 2026
 
 - **All actions.** A new sidebar section with every open task in the vault, grouped by the note it belongs to, with a filter for All, With a date, No date and Next actions. Tick tasks off in place, or press Open to go to the note. No more remembering a search.

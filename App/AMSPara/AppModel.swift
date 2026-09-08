@@ -71,7 +71,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 70
+    static let number = 71
 }
 
 @MainActor
@@ -691,6 +691,17 @@ final class AppModel: ObservableObject {
         guard !trimmed.isEmpty, var note = note(at: parent.notePath) else { return }
         note.appendSubtask(TaskParser.normalized(TaskItem(title: trimmed)), to: parent.task)
         save(note)
+    }
+
+    /// Renames a task in place, keeping its id, date, tags and subtasks.
+    func renameTask(_ ref: TaskRef, to title: String) {
+        flushPendingEdits()
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, trimmed != ref.task.title, var note = note(at: ref.notePath) else { return }
+        var task = ref.task
+        task.title = trimmed
+        guard note.replace(task: task) else { return }
+        _ = save(note)
     }
 
     /// Removes a task and everything indented under it.
