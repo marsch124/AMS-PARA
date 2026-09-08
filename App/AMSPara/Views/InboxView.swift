@@ -2,6 +2,8 @@ import SwiftUI
 import AMSParaCore
 
 /// What the Inbox screen is working with. Both columns read it from here.
+/// `@MainActor` because everything here touches `AppModel`, which is main-actor bound.
+@MainActor
 enum InboxItems {
     static func note(_ model: AppModel) -> Note? { model.notes(in: .inbox).first }
 

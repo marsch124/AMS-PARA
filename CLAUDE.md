@@ -45,6 +45,9 @@ TestFlight on the phone and on the Mac. Xcode is no longer part of his routine.
   arrays and conditions in a plain function or a computed property and let the view read
   the result. There is no Swift compiler in this container, so CI is the only check and a
   slip like this costs a whole build.
+- A helper type that touches `AppModel` needs `@MainActor` on it (the model is main-actor
+  bound), or the build fails with "main actor-isolated property … can not be referenced from
+  a nonisolated context" (build 67).
 
 ## Recently fixed (build 30)
 
