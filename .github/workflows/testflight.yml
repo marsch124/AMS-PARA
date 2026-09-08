@@ -32,9 +32,15 @@ jobs:
           - label: the iPhone app
             destination: generic/platform=iOS
             archive: AMSPara-iOS
+            # Unsigned: the App Store profile supplies the entitlements at export.
+            signing: CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
           - label: the Mac app
             destination: generic/platform=macOS
             archive: AMSPara-macOS
+            # Ad-hoc ("-") costs no certificate but does embed the entitlements, which a
+            # Mac App Store upload insists on: without them Apple answers "App sandbox not
+            # enabled". The export replaces the placeholder with the real signature.
+            signing: CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO PROVISIONING_PROFILE_SPECIFIER=
     steps:
       - uses: actions/checkout@v4
 
@@ -110,18 +116,18 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p build
-          # Archive without signing. Signing happens at export, with the distribution
-          # identity, which is cloud managed and reused. Signing here would sign for
-          # development instead, and every fresh runner then asked Apple for a new
-          # development certificate until the account hit its limit (build 61).
+          # The real signing happens at export, with the distribution identity, which is
+          # cloud managed and reused. Signing properly here would sign for development
+          # instead, and every fresh runner then asked Apple for a new development
+          # certificate until the account hit its limit (build 61). How little signing each
+          # platform can get away with is in the matrix above.
           xcodebuild archive \
             -project AMSPara.xcodeproj \
             -scheme AMSPara \
             -destination '${{ matrix.destination }}' \
             -archivePath "$PWD/build/${{ matrix.archive }}.xcarchive" \
             DEVELOPMENT_TEAM="$TEAM_ID" \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
+            ${{ matrix.signing }} \
             2>&1 | tee build/archive.log | grep -E "error:|warning:|\*\* ARCHIVE" || true
           grep -q "\*\* ARCHIVE SUCCEEDED \*\*" build/archive.log
 

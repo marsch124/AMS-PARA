@@ -282,7 +282,11 @@ does the signing: signing at archive time signs for *development*, and every run
 fresh machine that minted a new development certificate per run until the account hit Apple's
 limit ("Choose a certificate to revoke", build 61). Forcing
 `CODE_SIGN_IDENTITY="Apple Distribution"` instead fails — automatic signing rejects a manual
-identity ("conflicting provisioning settings", build 63). Both App IDs
+identity ("conflicting provisioning settings", build 63). How little signing is possible
+differs per platform, so the matrix carries a `signing:` string: iOS archives fully unsigned,
+macOS ad-hoc (`CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=-`) because a Mac App Store upload
+needs the sandbox entitlement embedded and an unsigned build carries none ("App sandbox not
+enabled", build 64). Both App IDs
 need the App Group `group.com.schabbauer.amspara` enabled in the developer portal,
 and `project.yml` declares `UISupportedInterfaceOrientations` (all four), without
 which Apple rejects the binary. macOS signs with its own
