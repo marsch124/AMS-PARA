@@ -52,6 +52,9 @@ public final class SyncEngine {
         for skipped in vault.skippedFiles {
             report.warnings.append("\(skipped) could not be read and was left alone.")
         }
+        for waiting in vault.notesWaitingForCloud {
+            report.warnings.append("\(waiting) has not arrived from iCloud yet and was left alone.")
+        }
         let loadedPaths = Set(allNotes.map(\.relativePath))
         var allTaskIDs = Set(allNotes.flatMap { $0.tasks.compactMap(\.id) })
         var notesByPath: [String: Note] = [:]

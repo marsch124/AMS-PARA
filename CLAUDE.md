@@ -516,6 +516,21 @@ those were invisible in the list and so never pruned. `AppModel.backUp` asks iCl
 files first, or the copy is quietly short. `RestoreTests` is the first exercise the way back
 has ever had.
 
+## An empty vault is never drawn without saying why (build 100)
+
+What the restore incident actually was: every file in his vault was evicted to iCloud
+("Optimize Mac Storage"), `loadNote` failed on all of them, `notes(kind:)` swallowed each one
+into `skippedFiles`, and the app drew "No projects yet" — indistinguishable from having lost
+the lot. The restore was not the culprit; the silence was.
+`notes(kind:)` now sorts a failure into `Vault.notesWaitingForCloud` (when
+`CloudFiles.isMissing` or `.notDownloadedYet`, and it asks for the download there and then) or
+`skippedFiles` (really damaged). `AppModel` publishes both plus `vaultWarning`, shown by
+`VaultWarningBar` (Theme.swift) at the foot of the sidebar and by `emptyList` in place of the
+per-section empty state, both with "Ask iCloud again" → `fetchMissingNotes()`.
+`SyncReport.warnings` lists the waiting notes too.
+**Rule: never let a read failure look like an absence.** A count of what could not be read
+belongs in front of the user, not in the diagnostics log.
+
 ## Not built (by choice)
 
 Saved searches. Roadmap stopped there on his request.

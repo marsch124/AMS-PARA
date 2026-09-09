@@ -151,6 +151,7 @@ public final class Vault {
             result.append(try loadNote(relativePath: config.inboxFile))
         }
         skippedFiles = []
+        notesWaitingForCloud = []
         for kind in [ParaKind.project, .area, .resource, .archive, .daily, .goal] {
             result.append(contentsOf: try notes(kind: kind))
         }
@@ -175,7 +176,15 @@ public final class Vault {
             do {
                 result.append(try loadNote(relativePath: rel))
             } catch {
-                skippedFiles.append(rel)
+                // A note whose contents iCloud has not sent to this device is not a damaged
+                // note. Ask for it and report it as waiting, so the app can say "still coming"
+                // rather than draw an empty vault (build 100).
+                if CloudFiles.isMissing(fileURL) || (error as? VaultError) == .notDownloadedYet(rel) {
+                    CloudFiles.startDownload(fileURL)
+                    notesWaitingForCloud.append(rel)
+                } else {
+                    skippedFiles.append(rel)
+                }
             }
         }
         if kind == .daily {
@@ -235,6 +244,10 @@ public final class Vault {
         try save(note)
         return note
     }
+
+    /// Notes `allNotes()` could not read because iCloud has not sent them to this device yet.
+    /// They are not lost and not broken: a download has been asked for and they will appear.
+    public private(set) var notesWaitingForCloud: [String] = []
 
     /// Files `allNotes()` could not read on its last run, relative to the vault.
     public private(set) var skippedFiles: [String] = []

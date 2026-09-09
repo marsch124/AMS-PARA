@@ -2,6 +2,12 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 100 · 9 September 2026
+
+- **The app no longer shows an empty vault when it simply cannot read your notes.** If iCloud has the contents and this device does not, the app used to draw "No projects yet" — which looks exactly like losing everything. It now says how many notes are still coming, at the foot of the sidebar and in place of the empty-section message, with an **Ask iCloud again** button.
+- **It asks iCloud for those notes itself.** A note it could not read because the contents are not here is now requested there and then, so it arrives without you going into Finder.
+- **A sync report lists them too**, so it is plain that a sync ran while part of the vault was missing — and, as before, nothing is deleted in Reminders for a note the app cannot see.
+
 ## Build 99 · 9 September 2026
 
 Hardening, first part: the things the app does that touch several notes at once.

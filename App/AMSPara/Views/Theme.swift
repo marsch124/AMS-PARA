@@ -77,3 +77,29 @@ struct EmptyStateView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
+
+/// The line at the foot of the sidebar when the vault is not all readable: notes iCloud has
+/// not sent, or files that could not be read at all. It is deliberately hard to miss — an
+/// app that quietly draws an empty vault looks exactly like an app that has lost everything.
+struct VaultWarningBar: View {
+    let text: String
+    let retry: () -> Void
+
+    var body: some View {
+        VStack(spacing: 2) {
+            Label(text, systemImage: "exclamationmark.triangle.fill")
+                .font(.caption2)
+                .foregroundStyle(.orange)
+                .multilineTextAlignment(.center)
+            Button("Ask iCloud again", action: retry)
+                .font(.caption2)
+                .buttonStyle(.plain)
+                .foregroundStyle(.tint)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 6)
+        .padding(.horizontal, 8)
+        .background(Color.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: Theme.radius))
+        .padding(.horizontal, 8)
+    }
+}

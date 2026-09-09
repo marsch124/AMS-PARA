@@ -80,7 +80,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 99
+    static let number = 100
 }
 
 @MainActor
@@ -506,6 +506,36 @@ final class AppModel: ObservableObject {
         if !pending.isEmpty { log("waiting for iCloud: \(pending.joined(separator: ", "))") }
     }
 
+    /// Notes on this device that could not be read because iCloud has not sent their contents
+    /// yet. An empty list is not proof of an empty vault, and the app must say which it is.
+    @Published private(set) var notesWaitingForCloud: [String] = []
+    /// Notes that could not be read for some other reason: damaged, or in an encoding this
+    /// app does not understand.
+    @Published private(set) var unreadableNotes: [String] = []
+
+    /// One line for the sidebar when the vault is not all here, or nil when everything is.
+    var vaultWarning: String? {
+        let waiting = notesWaitingForCloud.count
+        let unreadable = unreadableNotes.count
+        if waiting > 0, unreadable > 0 {
+            return "\(waiting) note\(waiting == 1 ? "" : "s") still coming from iCloud, \(unreadable) unreadable"
+        }
+        if waiting > 0 {
+            return "\(waiting) note\(waiting == 1 ? "" : "s") still coming from iCloud"
+        }
+        if unreadable > 0 {
+            return "\(unreadable) note\(unreadable == 1 ? "" : "s") could not be read"
+        }
+        return nil
+    }
+
+    /// Asks iCloud again for whatever is missing and re-reads the vault. The button behind the
+    /// warning, for when waiting has gone on long enough to want a nudge.
+    func fetchMissingNotes() {
+        fetchCloudFiles(force: true)
+        reload()
+    }
+
     /// The names of templates iCloud is still fetching, so the list can say so instead of
     /// looking as if they never arrived.
     var templatesFromCloud: [String] {
@@ -576,9 +606,10 @@ final class AppModel: ObservableObject {
         }
         do {
             notes = try vault.allNotes()
-            if !vault.skippedFiles.isEmpty {
-                log("skipped unreadable files: \(vault.skippedFiles)")
-            }
+            unreadableNotes = vault.skippedFiles
+            notesWaitingForCloud = vault.notesWaitingForCloud
+            if !unreadableNotes.isEmpty { log("skipped unreadable files: \(unreadableNotes)") }
+            if !notesWaitingForCloud.isEmpty { log("waiting for iCloud: \(notesWaitingForCloud.count) notes") }
         } catch {
             errorMessage = error.localizedDescription
         }

@@ -203,11 +203,16 @@ struct SidebarView: View {
         }
         .navigationTitle("AMS PARA")
         .safeAreaInset(edge: .bottom) {
-            Text("Build \(BuildStamp.number)")
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 4)
+            VStack(spacing: 4) {
+                if let warning = model.vaultWarning {
+                    VaultWarningBar(text: warning) { model.fetchMissingNotes() }
+                }
+                Text("Build \(BuildStamp.number)")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .frame(maxWidth: .infinity)
+            }
+            .padding(.vertical, 4)
         }
         #if os(macOS)
         .navigationSplitViewColumnWidth(min: 180, ideal: 200)
@@ -425,7 +430,16 @@ struct NoteListView: View {
 
     @ViewBuilder
     private func emptyList(searching: Bool) -> some View {
-        if searching {
+        if !searching, let warning = model.vaultWarning {
+            // "No projects yet" in front of a vault the app cannot read is a lie, and a
+            // frightening one: it looks exactly like losing everything (build 100).
+            EmptyStateView(title: "Not everything is here yet",
+                           systemImage: "icloud.and.arrow.down",
+                           message: "\(warning). Your notes are in the vault folder; this Mac has "
+                                  + "their names but not their contents yet. They appear as they arrive.",
+                           tint: .orange,
+                           actionTitle: "Ask iCloud again") { model.fetchMissingNotes() }
+        } else if searching {
             EmptyStateView(title: "Nothing found",
                            systemImage: "magnifyingglass",
                            message: "No note in this section matches what you typed. Search Everywhere (⇧⌘F) looks inside every note and task.")
