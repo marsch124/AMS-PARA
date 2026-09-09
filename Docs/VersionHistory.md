@@ -2,6 +2,13 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 84 · 9 September 2026
+
+- **Move several boxes at once on the Map.** With **Arrange** on, tap boxes to mark them — the toolbar counts them — then drag any one of them and the whole set moves together, keeping its shape.
+- Tap a marked box again to unmark it, tap the empty background to clear the marks. Turning Arrange off clears them too.
+- Dragging a box that is not marked still moves only that box, and leaves your marks alone.
+- Right-click a marked box › **Place these N automatically** hands the whole set back to the layout.
+
 ## Build 83 · 9 September 2026
 
 - **Park the map's boxes where you want them.** A new **Arrange** button in the Map's toolbar. While it is on, dragging a box moves it and it stays where you let go; while it is off, dragging links things as before. One drag never means two things.

@@ -184,6 +184,8 @@ The boxes are placed by the app, worked out from your links. If you would rather
 
 **While Arrange is on**, dragging a box moves it. Let go and it stays there. Dragging no longer links things — that is the whole point of the switch, so one drag never means two things.
 
+**Moving several at once.** Tap a box to mark it; tap it again to unmark it. Mark as many as you like — the toolbar counts them — then drag any one of them and the whole set moves together, keeping its shape. Dragging a box that is *not* marked moves only that box and leaves your marks alone. Tap the empty background to clear the marks, and turning Arrange off clears them too.
+
 **While Arrange is off** (the normal state), dragging links things as described above and nothing moves.
 
 #### Where the position is kept
@@ -214,7 +216,7 @@ That means a **new note appears wherever the layout puts it**, which can be on t
 
 #### Putting a box back
 
-- **Right-click a box while arranging › Place this one automatically** takes its `map:` line out.
+- **Right-click a box while arranging › Place this one automatically** takes its `map:` line out. If the box is one of several marked, it offers to place all of them.
 - **Reset all** in the toolbar (also only while arranging) does the same for every note at once, after asking.
 
 Nothing else in the note changes either way.

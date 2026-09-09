@@ -429,7 +429,11 @@ their places and the edges, drawn from the final frames, follow. `size` is the m
 `MapNodeBox` is its own view because a live drag needs `@GestureState`: while `arranging` it
 carries a `DragGesture` and a context menu, otherwise the `.draggable`/`.dropDestination` pair
 from build 82 — an `if`, never both at once, so one gesture never means two things.
-`AppModel.setMapPosition`/`clearMapPositions` write and remove the line.
+`AppModel.setMapPosition`/`clearMapPositions` write and remove the line. Build 84 marks
+boxes for a group move: `MapView.marked` (node ids) is passed to `MapCanvas` as a binding, a
+tap toggles membership while arranging, and the live offset moved out of `MapNodeBox` into
+`MapCanvas` (`movingIDs` + `liveShift`) because one drag has to shift every marked box by the
+same amount; `onMove` therefore hands back an array of (node, point).
 
 ## Not built (by choice)
 

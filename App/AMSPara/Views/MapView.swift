@@ -12,6 +12,8 @@ struct MapView: View {
     /// While on, dragging a box moves it instead of linking it.
     @State private var arranging = false
     @State private var confirmResetAll = false
+    /// Boxes marked while arranging, so several can be moved with one drag.
+    @State private var marked: Set<String> = []
     #if !os(macOS)
     @State private var shared: SharedFile?
     #endif
@@ -31,8 +33,13 @@ struct MapView: View {
                               select: { node in select(node) },
                               onDrop: { transfer, node in link(transfer, onto: node) },
                               arranging: arranging,
-                              onMove: { node, point in park(node, at: point) },
-                              onUnpin: { node in park(node, at: nil) })
+                              marked: $marked,
+                              onMove: { moved in
+                                  for (node, point) in moved { park(node, at: point) }
+                              },
+                              onUnpin: { nodes in
+                                  for node in nodes { park(node, at: nil) }
+                              })
                     .frame(width: layout.size.width, height: layout.size.height)
                     .padding(28)
                 }
@@ -50,9 +57,13 @@ struct MapView: View {
                     Label("Arrange", systemImage: "hand.draw")
                 }
                 .toggleStyle(.button)
-                .help(arranging ? "Dragging moves a box. Turn off to go back to linking."
+                .onChange(of: arranging) { _, on in if !on { marked = [] } }
+                .help(arranging ? "Tap boxes to mark them, then drag any one to move them all."
                                 : "Turn on to drag boxes where you want them")
                 if arranging {
+                    Text(marked.isEmpty ? "Tap boxes to mark them" : "\(marked.count) marked")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                     Button("Reset all") { confirmResetAll = true }
                         .help("Let the app place every box again")
                         .disabled(model.pinnedMapPositions.isEmpty)
@@ -295,10 +306,52 @@ struct MapCanvas: View {
     var onDrop: ((TaskTransfer, MapNode) -> Bool)? = nil
     /// While arranging, a drag moves the box instead of linking it.
     var arranging = false
-    /// Where a box was let go, in unzoomed points from the top left.
-    var onMove: ((MapNode, CGPoint) -> Void)? = nil
-    var onUnpin: ((MapNode) -> Void)? = nil
+    /// The boxes marked while arranging, by node id. They move together.
+    var marked: Binding<Set<String>> = .constant([])
+    /// Where the boxes were let go, in unzoomed points from the top left.
+    var onMove: (([(MapNode, CGPoint)]) -> Void)? = nil
+    var onUnpin: (([MapNode]) -> Void)? = nil
     @State private var targetedID: String?
+    /// The boxes being dragged right now, and how far they have come.
+    @State private var movingIDs: Set<String> = []
+    @State private var liveShift: CGSize = .zero
+
+    /// A drag moves everything marked when it starts on a marked box, otherwise that box alone.
+    private func group(around node: MapNode) -> Set<String> {
+        guard marked.wrappedValue.contains(node.id) else { return [node.id] }
+        return marked.wrappedValue
+    }
+
+    private func dragChanged(_ node: MapNode, _ translation: CGSize) {
+        if movingIDs.isEmpty { movingIDs = group(around: node) }
+        liveShift = translation
+    }
+
+    private func dragEnded(_ node: MapNode, _ translation: CGSize) {
+        let moving = movingIDs.isEmpty ? group(around: node) : movingIDs
+        let moved = layout.items.filter { moving.contains($0.id) && $0.node.note != nil }.map { item in
+            (item.node, CGPoint(x: (item.frame.minX + translation.width) / layout.zoom,
+                                y: (item.frame.minY + translation.height) / layout.zoom))
+        }
+        movingIDs = []
+        liveShift = .zero
+        guard !moved.isEmpty else { return }
+        onMove?(moved)
+    }
+
+    /// Tapping a box while arranging marks it, or unmarks it if it was already marked.
+    private func toggleMark(_ node: MapNode) {
+        if marked.wrappedValue.contains(node.id) {
+            marked.wrappedValue.remove(node.id)
+        } else {
+            marked.wrappedValue.insert(node.id)
+        }
+    }
+
+    private func unpinGroup(_ node: MapNode) {
+        let ids = group(around: node)
+        onUnpin?(layout.items.filter { ids.contains($0.id) }.map(\.node))
+    }
 
     var body: some View {
         let tints = Dictionary(layout.items.map { ($0.id, $0.node.tint) }, uniquingKeysWith: { a, _ in a })
@@ -318,13 +371,21 @@ struct MapCanvas: View {
                                                       dash: edge.dashed ? [5 * layout.zoom, 4 * layout.zoom] : []))
                 }
             }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                if arranging { marked.wrappedValue = [] }
+            }
             ForEach(layout.items) { item in
                 MapNodeBox(item: item, zoom: layout.zoom,
                            dimmed: lit.map { !$0.contains(item.id) } ?? false,
-                           selected: item.id == selectedID,
+                           selected: arranging ? marked.wrappedValue.contains(item.id) : item.id == selectedID,
                            targeted: targetedID == item.id,
                            arranging: arranging,
-                           select: { select(item.node) },
+                           shift: movingIDs.contains(item.id) ? liveShift : .zero,
+                           markedCount: marked.wrappedValue.count,
+                           select: {
+                               if arranging { toggleMark(item.node) } else { select(item.node) }
+                           },
                            drop: { transfer in onDrop?(transfer, item.node) ?? false },
                            targeting: { over in
                                if over {
@@ -333,15 +394,16 @@ struct MapCanvas: View {
                                    targetedID = nil
                                }
                            },
-                           moved: { point in onMove?(item.node, point) },
-                           unpin: { onUnpin?(item.node) })
+                           dragging: { translation in dragChanged(item.node, translation) },
+                           dropped: { translation in dragEnded(item.node, translation) },
+                           unpin: { unpinGroup(item.node) })
             }
         }
     }
 }
 
 /// One box: it either links things by being dragged onto another, or — while arranging —
-/// moves to wherever it is let go. Its own view, because a live drag needs gesture state.
+/// moves, along with everything else that is marked. Its own view so the list stays readable.
 struct MapNodeBox: View {
     let item: MapLayout.Item
     let zoom: CGFloat
@@ -349,14 +411,22 @@ struct MapNodeBox: View {
     let selected: Bool
     let targeted: Bool
     let arranging: Bool
+    /// How far the box has been dragged so far. Held by the canvas, because a whole group
+    /// of boxes moves with one drag and they all need the same number.
+    let shift: CGSize
+    let markedCount: Int
     let select: () -> Void
     let drop: (TaskTransfer) -> Bool
     let targeting: (Bool) -> Void
-    let moved: (CGPoint) -> Void
+    let dragging: (CGSize) -> Void
+    let dropped: (CGSize) -> Void
     let unpin: () -> Void
-    @GestureState private var shift: CGSize = .zero
 
     private var canMove: Bool { item.node.note != nil }
+
+    private var unpinTitle: String {
+        selected && markedCount > 1 ? "Place these \(markedCount) automatically" : "Place this one automatically"
+    }
 
     private var placed: some View {
         MapNodeView(node: item.node, zoom: zoom, dimmed: dimmed, selected: selected, targeted: targeted)
@@ -368,23 +438,21 @@ struct MapNodeBox: View {
         if arranging, canMove {
             placed
                 .offset(shift)
+                .onTapGesture(perform: select)
                 .gesture(
                     DragGesture(minimumDistance: 2)
-                        .updating($shift) { value, state, _ in state = value.translation }
-                        .onEnded { value in
-                            moved(CGPoint(x: (item.frame.minX + value.translation.width) / zoom,
-                                          y: (item.frame.minY + value.translation.height) / zoom))
-                        }
+                        .onChanged { value in dragging(value.translation) }
+                        .onEnded { value in dropped(value.translation) }
                 )
                 .contextMenu {
-                    Button("Place this one automatically", action: unpin)
+                    Button(unpinTitle, action: unpin)
                 }
         } else {
             placed
                 .onTapGesture(perform: select)
                 .draggable(MapCanvas.transfer(for: item.node))
-                .dropDestination(for: TaskTransfer.self) { dropped, _ in
-                    guard let first = dropped.first else { return false }
+                .dropDestination(for: TaskTransfer.self) { transfers, _ in
+                    guard let first = transfers.first else { return false }
                     return drop(first)
                 } isTargeted: { targeting($0) }
         }
