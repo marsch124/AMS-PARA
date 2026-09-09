@@ -2,6 +2,14 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 77 · 9 September 2026
+
+- **Rename a note.** Right-click it in the list on the Mac, or long-press it on the phone → **Rename…**. Works for projects, areas, sub-areas, resources, goals and archived notes. The note screen also has a **Rename** button in its toolbar.
+- The file on disk is renamed with it, and **every link follows**: `goal:`, `area:`, `parent:`, `related:` and any `[[wikilink]]` in another note is pointed at the new name, so nothing comes loose.
+- The note's own `# Heading` is updated too, when it still said the old name. Headings further down are left alone.
+- A name already taken by another note is refused rather than overwriting it.
+- The list in Apple Reminders follows on the next sync — the tasks keep their reminders.
+
 ## Build 76 · 9 September 2026
 
 - **Rename a task anywhere.** Right-click a task on the Mac, or long-press it on the phone, and the menu now has **Rename…**. The line turns into a field; type and press Return. Works in a note's task list, in Today, in All actions, in Done and in the calendar day.

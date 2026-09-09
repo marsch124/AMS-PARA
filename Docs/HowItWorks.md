@@ -164,6 +164,12 @@ In the Areas list a sub-area is indented under its area, and the chevron on the 
 
 Any area can be picked as the parent. Picking one that is already a sub-area lifts it up a level first, since areas nest one level only — asking for "Yoga under Mobility" means Mobility is the level above.
 
+## Renaming a note
+
+Right-click a note in the list (long-press on the phone) › **Rename…**, or press **Rename** in the toolbar of the note itself. The file is renamed with it, and every note that pointed at the old name — `goal:`, `area:`, `parent:`, `related:` or a `[[wikilink]]` — is updated, so no link comes loose. The note's own `# Heading` follows when it still said the old name.
+
+A name another note already uses is refused. In Apple Reminders the list follows on the next sync; the tasks keep their reminders. The Inbox and daily notes cannot be renamed.
+
 ## Archive and Trash
 
 - **Archive** moves a project, area, resource or goal to the Archive folder, marks it archived and stops syncing its tasks. Use it for finished work.

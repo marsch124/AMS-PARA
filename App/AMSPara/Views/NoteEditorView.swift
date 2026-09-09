@@ -13,6 +13,8 @@ struct NoteEditorView: View {
     @AppStorage("hideFinishedTasks") private var hideFinishedTasks = false
     @State private var showLinks = false
     @State private var confirmTrash = false
+    @State private var renamingNote = false
+    @State private var noteTitleDraft = ""
     @State private var vaultPath: String?
     /// The note's real text (markers included) that the shown text was made from.
     @State private var baseText = ""
@@ -80,6 +82,17 @@ struct NoteEditorView: View {
         } message: {
             Text("You can put it back from the Trash in Finder.")
         }
+        .alert("Rename \u{201C}\(note?.displayTitle ?? "")\u{201D}", isPresented: $renamingNote) {
+            TextField("Title", text: $noteTitleDraft)
+            Button("Cancel", role: .cancel) { }
+            Button("Rename") {
+                guard let note else { return }
+                flushSave()
+                model.renameNote(note, to: noteTitleDraft)
+            }
+        } message: {
+            Text("The file is renamed too, and every note that links to it is pointed at the new name.")
+        }
         .navigationTitle(note?.title ?? path)
         .toolbar {
             ToolbarItemGroup {
@@ -98,6 +111,15 @@ struct NoteEditorView: View {
                         Label("Archive", systemImage: "archivebox")
                     }
                     .help("Move this note to the Archive folder and stop syncing its tasks")
+                }
+                if let note, note.kind != .inbox, note.kind != .daily {
+                    Button {
+                        noteTitleDraft = note.displayTitle
+                        renamingNote = true
+                    } label: {
+                        Label("Rename", systemImage: "pencil")
+                    }
+                    .help("Change this note's name; links to it follow")
                 }
                 if let note, note.kind != .inbox {
                     Button {

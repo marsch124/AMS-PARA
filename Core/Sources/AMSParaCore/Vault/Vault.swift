@@ -323,6 +323,32 @@ public final class Vault {
 
     /// Moves a note into the Archive folder (keeping its original folder as a sub-folder) and marks it archived.
     @discardableResult
+    /// Renames a note: its `title:`, its own `# Heading` when that still said the old title,
+    /// and the file itself. References in other notes are the caller's to update
+    /// (`Note.retargeting(_:to:)`), because that touches files this one knows nothing about.
+    public func rename(_ note: Note, to newTitle: String) throws -> Note {
+        let clean = newTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        let fileName = Self.sanitizeFileName(clean)
+        guard !clean.isEmpty, !fileName.isEmpty, note.kind != .inbox, note.kind != .daily else {
+            throw VaultError.invalidTitle
+        }
+        var renamed = note.headingRenamed(from: note.displayTitle, to: clean)
+        renamed.frontmatter.set("title", clean)
+
+        let folder = (note.relativePath as NSString).deletingLastPathComponent
+        let target = folder.isEmpty ? "\(fileName).md" : "\(folder)/\(fileName).md"
+        guard target != note.relativePath else { return try save(renamed) }
+        guard !fm.fileExists(atPath: url(for: target).path) else {
+            throw VaultError.noteAlreadyExists(target)
+        }
+        // Write the new file before removing the old one, so a failure never loses the note.
+        renamed.relativePath = target
+        renamed.modifiedAt = nil
+        let saved = try save(renamed)
+        try fm.removeItem(at: url(for: note.relativePath))
+        return saved
+    }
+
     public func archive(_ note: Note) throws -> Note {
         guard note.kind != .archive, note.kind != .inbox, note.kind != .daily else { return note }
         var archived = note

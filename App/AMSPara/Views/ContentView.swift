@@ -228,6 +228,8 @@ struct NoteListView: View {
     /// Kept in the view, not the model: the toolbar search field writes to it while redrawing.
     @State private var searchText = ""
     @State private var noteToTrash: Note?
+    @State private var noteToRename: Note?
+    @State private var renameDraft = ""
     /// Areas folded shut by their chevron, by relative path. Sub-areas are shown by default.
     @State private var foldedAreas: Set<String> = []
 
@@ -306,6 +308,9 @@ struct NoteListView: View {
         .tag(note.relativePath)
         .acceptsTaskDrop { ref in model.moveTask(ref, to: note.relativePath) }
         .contextMenu {
+            if note.kind != .inbox, note.kind != .daily {
+                Button("Rename…") { startRenaming(note) }
+            }
             if note.kind == .area {
                 AreaParentMenu(model: model, note: note)
             }
@@ -380,10 +385,29 @@ struct NoteListView: View {
                 .help("New note in this section (⌘N)")
             }
         }
+        .alert("Rename \u{201C}\(noteToRename?.displayTitle ?? "")\u{201D}",
+               isPresented: Binding(get: { noteToRename != nil }, set: { if !$0 { noteToRename = nil } })) {
+            TextField("Title", text: $renameDraft)
+            Button("Cancel", role: .cancel) { noteToRename = nil }
+            Button("Rename") { commitRename() }
+        } message: {
+            Text("The file is renamed too, and every note that links to it is pointed at the new name.")
+        }
         #if os(macOS)
         // The map wants room for its diagram; every other section is a list.
         .navigationSplitViewColumnWidth(min: model.section == .map ? 420 : 220, ideal: model.section == .map ? 720 : 280)
         #endif
+    }
+
+    private func startRenaming(_ note: Note) {
+        renameDraft = note.displayTitle
+        noteToRename = note
+    }
+
+    private func commitRename() {
+        guard let note = noteToRename else { return }
+        noteToRename = nil
+        model.renameNote(note, to: renameDraft)
     }
 
     @ViewBuilder

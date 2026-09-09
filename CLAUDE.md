@@ -357,6 +357,16 @@ parameter because context-menu content is built outside the row's hierarchy. The
 destinations, the task "Move to" menu and `linkMap()` all use family order.
 
 
+## Renaming notes (build 77)
+
+`Vault.rename(_:to:)` writes `title:`, renames the file in the same folder (refusing a name in
+use) and calls `Note.headingRenamed` for the first `# Heading`. Links are the caller's job:
+`Note.retargeting(_:to:)` (Core, `Model/NoteRename.swift`) rewrites `goal`/`area`/`parent`/
+`related` and `[[wikilinks]]` and returns nil when a note never mentioned the old name, so
+`AppModel.renameNote` only saves the files that changed. Reached from the note row's context
+menu (`NoteListView`, an `.alert` with a TextField — not an inline field, which would take the
+row's click) and a toolbar button in `NoteEditorView`. Inbox and daily notes are excluded.
+
 ## Not built (by choice)
 
 Saved searches. Roadmap stopped there on his request.

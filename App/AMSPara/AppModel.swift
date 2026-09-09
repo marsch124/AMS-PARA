@@ -71,7 +71,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 76
+    static let number = 77
 }
 
 @MainActor
@@ -559,6 +559,28 @@ final class AppModel: ObservableObject {
             let note = try vault.createNote(kind: kind, title: title, extraFrontmatter: extraFrontmatter)
             reload()
             show(section: .kind(kind), notePath: note.relativePath)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    /// Renames a note and follows every link to it: `goal:`, `area:`, `parent:`, `related:`
+    /// and `[[wikilinks]]` elsewhere are pointed at the new title, so nothing comes loose.
+    /// The Reminders list follows on the next sync, which matches lists by their link.
+    func renameNote(_ note: Note, to title: String) {
+        flushPendingEdits()
+        guard let vault else { return }
+        let clean = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let oldTitle = note.displayTitle
+        guard !clean.isEmpty, clean != oldTitle else { return }
+        do {
+            let renamed = try vault.rename(note, to: clean)
+            for other in notes where other.relativePath != note.relativePath {
+                guard let updated = other.retargeting(oldTitle, to: clean) else { continue }
+                _ = try? vault.save(updated)
+            }
+            reload()
+            if selectedNotePath == note.relativePath { selectedNotePath = renamed.relativePath }
         } catch {
             errorMessage = error.localizedDescription
         }
