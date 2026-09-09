@@ -77,7 +77,8 @@ height as a minimum, the NavigationSplitView grew to ~1300pt inside an
 this "pressing Linked Goals"; the header goal link was never the trigger.
 Fix: the editor HStack sits in a GeometryReader with a fixed frame, so it
 takes the remaining height and never demands more. Diagnostics stay:
-**Help › Copy Diagnostics** (⌥⌘D) copies a log with clicks (hit view),
+**Help › Copy Diagnostics** (⌃⌘D since build 103; ⌥⌘D is macOS's own hide-the-Dock
+shortcut and never reached the app) copies a log with clicks (hit view),
 section/note changes and the window view tree; an OVERFLOW line appears
 if it ever happens again. Build 29's 1pt window nudge was removed (it made
 the window grow to the demanded height).

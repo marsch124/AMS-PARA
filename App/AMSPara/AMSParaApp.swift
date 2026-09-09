@@ -30,7 +30,8 @@ struct AMSParaApp: App {
                 HelpMenuButtons()
                 #endif
                 Button("Copy Diagnostics") { model.copyDiagnostics() }
-                    .keyboardShortcut("d", modifiers: [.command, .option])
+                    // Not ⌥⌘D: that is macOS's own "hide the Dock" and never reaches the app.
+                    .keyboardShortcut("d", modifiers: [.command, .control])
             }
         }
         #if os(macOS)

@@ -2,6 +2,10 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 103 · 9 September 2026
+
+- **Copy Diagnostics has a shortcut that works.** It was ⌥⌘D, which is macOS's own "hide the Dock" — the app never saw it. It is **⌃⌘D** now (control, not option), and it is still in the Help menu.
+
 ## Build 102 · 9 September 2026
 
 - **A vault that is all in iCloud now fills in gradually instead of stopping the app.** Waiting for a note to come down takes time, so the app waits for a handful per load and asks for the rest, then picks up the next few seconds later. You see the count going down rather than a frozen app — and the phone cannot be killed for taking too long.

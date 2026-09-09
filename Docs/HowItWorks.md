@@ -376,9 +376,9 @@ lives in your Applications folder like any other app.
 
 - ⌘N new note, ⇧⌘N quick capture, ⇧⌘F search everywhere, ⇧⌘R sync with Reminders
 - ⌘⌫ delete the open note (it waits in Deleted)
-- ⌥⌘D copy diagnostics, a log you can paste when reporting a problem
+- ⌃⌘D copy diagnostics, a log you can paste when reporting a problem
 - The sync button's menu holds the sync preview and the last report
 
 ## When something looks wrong
 
-Help › Copy Diagnostics (⌥⌘D) copies a short log: the build number, what was clicked, which section and note are open, and the window layout. Paste it into the chat with the developer. The build number is also shown at the bottom of the sidebar.
+Help › Copy Diagnostics (⌃⌘D — control, not option) copies a short log: the build number, what was clicked, which section and note are open, and the window layout. Paste it into the chat with the developer. The build number is also shown at the bottom of the sidebar.
