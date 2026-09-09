@@ -147,7 +147,7 @@ public final class Vault {
 
     public func allNotes() throws -> [Note] {
         var result: [Note] = []
-        if fm.fileExists(atPath: url(for: config.inboxFile).path) {
+        if CloudFiles.exists(url(for: config.inboxFile)) {
             result.append(try loadNote(relativePath: config.inboxFile))
         }
         skippedFiles = []
@@ -161,16 +161,34 @@ public final class Vault {
 
     public func notes(kind: ParaKind) throws -> [Note] {
         if kind == .inbox {
-            return fm.fileExists(atPath: url(for: config.inboxFile).path) ? [try loadNote(relativePath: config.inboxFile)] : []
+            return CloudFiles.exists(url(for: config.inboxFile)) ? [try loadNote(relativePath: config.inboxFile)] : []
         }
         guard let folder = config.folder(for: kind) else { return [] }
         let folderURL = rootURL.appendingPathComponent(folder, isDirectory: true)
+        // Hidden files are NOT skipped: a note iCloud has not sent to this device can be
+        // nothing but a hidden ".Note.md.icloud" stub, and skipping those is what made a full
+        // vault look empty — no files seen, so nothing even reported as unreadable (build 104).
         guard fm.fileExists(atPath: folderURL.path),
               let enumerator = fm.enumerator(at: folderURL, includingPropertiesForKeys: [.contentModificationDateKey, .isRegularFileKey],
-                                             options: [.skipsHiddenFiles, .skipsPackageDescendants]) else { return [] }
+                                             options: [.skipsPackageDescendants]) else { return [] }
         var result: [Note] = []
         for case let fileURL as URL in enumerator {
-            guard fileURL.pathExtension.lowercased() == "md",
+            let name = fileURL.lastPathComponent
+            if let real = CloudFiles.realName(ofPlaceholder: name), real.lowercased().hasSuffix(".md") {
+                let target = fileURL.deletingLastPathComponent().appendingPathComponent(real)
+                CloudFiles.startDownload(target)
+                CloudFiles.startDownload(fileURL)
+                guard let rel = relativePath(for: target) ?? placeholderRelativePath(of: fileURL, realName: real) else { continue }
+                // Fetch a few per load; the rest are named as waiting and come next time.
+                if cloudFetchesLeft > 0, let note = try? loadNote(relativePath: rel) {
+                    cloudFetchesLeft -= 1
+                    result.append(note)
+                } else {
+                    notesWaitingForCloud.append(rel)
+                }
+                continue
+            }
+            guard !name.hasPrefix("."), fileURL.pathExtension.lowercased() == "md",
                   (try? fileURL.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) == true,
                   let rel = relativePath(for: fileURL) else { continue }
             // Reading a note whose contents are still in iCloud means waiting for the
@@ -274,13 +292,12 @@ public final class Vault {
 
     public func loadNote(relativePath: String) throws -> Note {
         let fileURL = url(for: relativePath)
-        guard fm.fileExists(atPath: fileURL.path) else {
-            // iCloud has the file but has not sent it here yet: ask for it and say so.
-            if CloudFiles.exists(fileURL) {
-                CloudFiles.startDownload(fileURL)
-                throw VaultError.notDownloadedYet(relativePath)
-            }
-            throw VaultError.noteNotFound(relativePath)
+        if !fm.fileExists(atPath: fileURL.path) {
+            // Only an iCloud placeholder is there. That is not "no note": the coordinated read
+            // below is precisely how the contents are fetched, so it is worth trying (build
+            // 104). If iCloud cannot deliver, the read throws and the caller reports it.
+            guard CloudFiles.exists(fileURL) else { throw VaultError.noteNotFound(relativePath) }
+            CloudFiles.startDownload(fileURL)
         }
         // Through CloudFiles.read, so a note whose contents are still in iCloud is fetched
         // rather than declared unreadable.
@@ -289,6 +306,13 @@ public final class Vault {
         let modified = try? fileURL.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate
         let kind = kind(forRelativePath: relativePath) ?? .resource
         return Note(relativePath: relativePath, kind: kind, text: text, modifiedAt: modified)
+    }
+
+    /// The vault path a placeholder stands for. Worked out from the folder, because the file
+    /// itself does not exist yet and an unresolved path does not match the vault's own root.
+    private func placeholderRelativePath(of placeholder: URL, realName: String) -> String? {
+        guard let folder = relativePath(for: placeholder.deletingLastPathComponent()) else { return nil }
+        return folder.isEmpty ? realName : "\(folder)/\(realName)"
     }
 
     /// UTF-8 first, then UTF-16 with a byte-order mark, then Windows Latin text.

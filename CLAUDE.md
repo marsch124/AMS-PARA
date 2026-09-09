@@ -541,6 +541,14 @@ Build 102 bounds that: a coordinated read waits for the download, so `notes(kind
 most `Vault.cloudFetchesPerLoad` (15) of them per `allNotes()` and reports the rest as waiting,
 and `checkForExternalChanges` reloads while anything is waiting — materialising a file does not
 change its modification date, so the vault signature would never notice them arriving.
+**Build 104 is the real root cause**, found from his diagnostics ("notes: 1", no skipped-files
+line — the app had not *failed* to read anything, it had seen nothing): iCloud had every note as
+a hidden `.Name.md.icloud` stub and `notes(kind:)` enumerated with `.skipsHiddenFiles`. So the
+whole vault was invisible and nothing was even reported. `notes(kind:)` now enumerates without
+that option, turns a `.md` stub into its real path, asks for the download, and either fetches it
+(within `cloudFetchesPerLoad`) or names it in `notesWaitingForCloud`; other dot-files are still
+ignored by name. `loadNote` no longer refuses a path that is only a stub — the coordinated read
+is what fetches it. `allNotes`/`notes(kind: .inbox)` use `CloudFiles.exists`.
 **Rule: never let a read failure look like an absence.** A count of what could not be read
 belongs in front of the user, not in the diagnostics log.
 

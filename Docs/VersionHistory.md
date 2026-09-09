@@ -2,6 +2,14 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 104 · 9 September 2026
+
+**This is the fix for the empty vault.** Your diagnostics showed the app had loaded exactly one note and had not failed to read a single file — it never saw them. When iCloud has not sent a note to a device it can leave a hidden marker where the file belongs, and the app's note listing skipped hidden files. Finder showed you `Testproj.md` with a cloud; the app looked in the same folder and found nothing at all.
+
+- **The app now sees those markers, counts them, and fetches the notes behind them** — a few per load, so it never sits still, with the rest listed as "still coming from iCloud".
+- **Opening such a note now fetches it** instead of reporting it missing.
+- Neither the restore nor anything you did caused this. The notes were in iCloud the whole time.
+
 ## Build 103 · 9 September 2026
 
 - **Copy Diagnostics has a shortcut that works.** It was ⌥⌘D, which is macOS's own "hide the Dock" — the app never saw it. It is **⌃⌘D** now (control, not option), and it is still in the Help menu.
