@@ -65,8 +65,9 @@ final class VaultBackupTests: XCTestCase {
         XCTAssertTrue(try vault.loadNote(relativePath: "Projects/Race.md").body.contains("second version"))
         let later = try vault.createNote(kind: .project, title: "Later")
 
-        let written = try vault.restore(backup, now: Date().addingTimeInterval(300))
-        XCTAssertTrue(written > 0)
+        let result = try vault.restore(backup, now: Date().addingTimeInterval(300))
+        XCTAssertTrue(result.written > 0)
+        XCTAssertTrue(result.isComplete)
         XCTAssertTrue(try vault.loadNote(relativePath: "Projects/Race.md").body.contains("first version"))
         XCTAssertTrue(FileManager.default.fileExists(atPath: vault.url(for: later.relativePath).path),
                       "a note made after the backup is left alone")

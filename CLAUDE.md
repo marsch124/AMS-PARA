@@ -492,7 +492,7 @@ on `openVault` and from the 10 s poll at most once a minute; `templatesFromCloud
 `CloudFiles.exists`, or a note still on its way would be replaced by a fresh empty one and the
 two would collide in iCloud; `loadNote` throws `VaultError.notDownloadedYet` for a placeholder.
 
-## Multi-note writes and restore (build 98)
+## Multi-note writes and restore (build 99)
 
 Hardening, part one: everything that writes more than one file goes through
 `Core/Vault/VaultWrites.swift`, where the order and the failure handling live and can be

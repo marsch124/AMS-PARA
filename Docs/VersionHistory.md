@@ -2,7 +2,7 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
-## Build 98 · 9 September 2026
+## Build 99 · 9 September 2026
 
 Hardening, first part: the things the app does that touch several notes at once.
 
