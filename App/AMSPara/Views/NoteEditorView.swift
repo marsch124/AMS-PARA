@@ -280,7 +280,8 @@ struct NoteEditorView: View {
                 DisclosureGroup(isExpanded: $showLinks) {
                     LinkedNotesList(notes: linked)
                 } label: {
-                    SectionLabel(title: "Linked notes", count: linked.count, systemImage: "link")
+                    SectionLabel(title: "Linked notes", count: linked.count, systemImage: "link",
+                                 tint: note.tint)
                         .font(.subheadline.weight(.medium))
                 }
                 .padding(.horizontal, 12)

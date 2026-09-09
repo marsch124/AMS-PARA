@@ -2,6 +2,11 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 108 · 9 September 2026
+
+- **The section's colour now sits over the whole right-hand panel**, not only the top of it: the faintest tint everywhere, a little more at the top, and the hairline. The note's own text area keeps its plain background so reading and writing are unaffected.
+- The "Linked notes" heading takes the note's colour, like "Tasks" already did.
+
 ## Build 107 · 9 September 2026
 
 - **The right-hand panel now carries the colour of the section you are in** — green in Projects, pink in Areas, gold in Goals, blue in Resources and Templates, and so on. A hairline along the top and a wash that has faded away before it reaches the text. It follows the section rather than the note, so it stays put as you click from one note to the next.

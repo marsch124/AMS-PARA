@@ -104,8 +104,8 @@ struct VaultWarningBar: View {
     }
 }
 
-/// The colour of the section you are in, laid over the detail column: a hairline at the top and
-/// a wash that has faded out before it reaches anything you read. Enough to say "you are in
+/// The colour of the section you are in, laid over the detail column: a hairline at the top, a
+/// wash below it, and the faintest tint over the whole column. Enough to say "you are in
 /// Projects" out of the corner of your eye, and not enough to tire you out in a long note.
 struct ModeAccent: ViewModifier {
     let tint: Color
@@ -113,10 +113,15 @@ struct ModeAccent: ViewModifier {
     func body(content: Content) -> some View {
         content
             .background(alignment: .top) {
-                LinearGradient(colors: [tint.opacity(0.11), tint.opacity(0)],
-                               startPoint: .top, endPoint: .bottom)
-                    .frame(height: 160)
-                    .allowsHitTesting(false)
+                ZStack(alignment: .top) {
+                    // The whole column, just enough to colour the air in it.
+                    tint.opacity(0.055)
+                    // A little more at the top, gone before it reaches the text.
+                    LinearGradient(colors: [tint.opacity(0.10), tint.opacity(0)],
+                                   startPoint: .top, endPoint: .bottom)
+                        .frame(height: 180)
+                }
+                .allowsHitTesting(false)
             }
             .overlay(alignment: .top) {
                 Rectangle()
