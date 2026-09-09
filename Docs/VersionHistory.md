@@ -2,6 +2,10 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 105 · 9 September 2026
+
+- **A note iCloud cannot deliver now says "still coming from iCloud"** rather than showing a technical file error. Build 104's fix stands; this is the wording and the count behind it.
+
 ## Build 104 · 9 September 2026
 
 **This is the fix for the empty vault.** Your diagnostics showed the app had loaded exactly one note and had not failed to read a single file — it never saw them. When iCloud has not sent a note to a device it can leave a hidden marker where the file belongs, and the app's note listing skipped hidden files. Finder showed you `Testproj.md` with a cloud; the app looked in the same folder and found nothing at all.

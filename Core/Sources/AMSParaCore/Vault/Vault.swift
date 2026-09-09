@@ -292,16 +292,25 @@ public final class Vault {
 
     public func loadNote(relativePath: String) throws -> Note {
         let fileURL = url(for: relativePath)
+        var onlyInCloud = false
         if !fm.fileExists(atPath: fileURL.path) {
             // Only an iCloud placeholder is there. That is not "no note": the coordinated read
             // below is precisely how the contents are fetched, so it is worth trying (build
-            // 104). If iCloud cannot deliver, the read throws and the caller reports it.
+            // 104).
             guard CloudFiles.exists(fileURL) else { throw VaultError.noteNotFound(relativePath) }
             CloudFiles.startDownload(fileURL)
+            onlyInCloud = true
         }
         // Through CloudFiles.read, so a note whose contents are still in iCloud is fetched
-        // rather than declared unreadable.
-        let data = try CloudFiles.read(fileURL)
+        // rather than declared unreadable. If iCloud cannot deliver it after all, say that —
+        // "still coming" is the truth, and it is what the caller shows the user (build 105).
+        let data: Data
+        do {
+            data = try CloudFiles.read(fileURL)
+        } catch {
+            if onlyInCloud || CloudFiles.isMissing(fileURL) { throw VaultError.notDownloadedYet(relativePath) }
+            throw error
+        }
         guard let text = Self.decodeText(data) else { throw VaultError.unreadable(relativePath) }
         let modified = try? fileURL.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate
         let kind = kind(forRelativePath: relativePath) ?? .resource
