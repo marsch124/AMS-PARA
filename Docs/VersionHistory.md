@@ -2,6 +2,11 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 106 · 9 September 2026
+
+- **A sync will not start while notes are still coming from iCloud.** It would only see part of your vault. The app says how many are outstanding and asks you to try again in a moment. (Even before this, a sync never deleted a reminder whose note it could not read — that rule is what kept your Reminders intact today.)
+- **The app is now told when a note arrives** instead of looking every ten seconds. macOS reports what iCloud is doing with the vault's files, so notes appear as they come down. The old check stays underneath as a backstop.
+
 ## Build 105 · 9 September 2026
 
 - **A note iCloud cannot deliver now says "still coming from iCloud"** rather than showing a technical file error. Build 104's fix stands; this is the wording and the count behind it.

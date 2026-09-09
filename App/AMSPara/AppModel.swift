@@ -80,7 +80,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 105
+    static let number = 106
 }
 
 @MainActor
@@ -203,12 +203,18 @@ final class AppModel: ObservableObject {
     private var vaultSignature: String?
     private var terminationObserver: NSObjectProtocol?
 
+    /// Tells the app when iCloud has brought a file down, so notes appear as they arrive
+    /// instead of being found by the next poll.
+    private let cloudWatcher = CloudWatcher()
+
     /// A short in-memory log of what the app did, for Help \u{203A} Copy Diagnostics.
     /// Not published: the publish watcher below appends to it.
     private(set) var diagnostics: [String] = []
 
     init() {
         log("launch build \(BuildStamp.number)")
+        // Before the vault is opened: opening it is what starts the watch.
+        cloudWatcher.onChange = { [weak self] in self?.cloudFilesChanged() }
         restoreVault()
         fetchCloudFiles(force: true)
         #if os(macOS)
@@ -434,6 +440,7 @@ final class AppModel: ObservableObject {
         storeBookmark(for: url)
         selectedNotePath = nil
         vault = opened
+        cloudWatcher.watch(opened.rootURL)
         reload()
         fetchCloudFiles(force: true)
         backUpDaily()
@@ -452,6 +459,7 @@ final class AppModel: ObservableObject {
         securityScopedURL?.stopAccessingSecurityScopedResource()
         securityScopedURL = nil
         defaults.removeObject(forKey: bookmarkKey)
+        cloudWatcher.stop()
         vault = nil
         notes = []
         selectedNotePath = nil
@@ -509,6 +517,19 @@ final class AppModel: ObservableObject {
         Task.detached(priority: .utility) { [weak self] in
             let pending = CloudFiles.downloadMissing(under: root, skipping: skipped)
             await MainActor.run { self?.cloudDownloadsFound(pending) }
+        }
+    }
+
+    /// iCloud has finished with something in the vault. A note that has just come down is not
+    /// a change the vault signature can see — materialising a file leaves its date alone — so a
+    /// vault with anything outstanding is simply read again.
+    private func cloudFilesChanged() {
+        guard vault != nil, !isSyncing else { return }
+        if !notesWaitingForCloud.isEmpty || !cloudDownloads.isEmpty {
+            log("iCloud reported a change; re-reading the vault")
+            reload()
+        } else {
+            checkForExternalChanges()
         }
     }
 
@@ -602,6 +623,7 @@ final class AppModel: ObservableObject {
             let vault = try Vault(rootURL: url)
             try vault.bootstrap()
             self.vault = vault
+            cloudWatcher.watch(vault.rootURL)
             reload()
             scheduleAutoSync()
         } catch {
@@ -1734,8 +1756,19 @@ final class AppModel: ObservableObject {
         activeSheet = .syncReport
     }
 
-    func syncNow() async {
+    func syncNow(force: Bool = false) async {
         guard let vault, !isSyncing else { return }
+        // Never sync half a vault. A note that has not arrived from iCloud has no tasks as far
+        // as this device can see, and while the engine is careful never to delete a reminder
+        // whose note it could not read, a sync in that state is needless risk and produces a
+        // report full of warnings. Wait until the vault is all here (build 106).
+        if !force, !notesWaitingForCloud.isEmpty {
+            let count = notesWaitingForCloud.count
+            errorMessage = "\(count) note\(count == 1 ? " is" : "s are") still coming from iCloud, so the sync "
+                + "was not started: it would only see part of your vault. Try again in a moment."
+            log("sync refused: \(count) notes waiting for iCloud")
+            return
+        }
         flushPendingEdits()
         if backsUpBeforeSync { backUp(reason: "sync") }
         isSyncing = true

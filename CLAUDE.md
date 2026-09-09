@@ -549,6 +549,15 @@ that option, turns a `.md` stub into its real path, asks for the download, and e
 (within `cloudFetchesPerLoad`) or names it in `notesWaitingForCloud`; other dot-files are still
 ignored by name. `loadNote` no longer refuses a path that is only a stub — the coordinated read
 is what fetches it. `allNotes`/`notes(kind: .inbox)` use `CloudFiles.exists`.
+Build 106 replaces the polling with the system telling us: `App/CloudWatcher.swift` runs an
+`NSMetadataQuery` over the vault's path (scopes `…AccessibleUbiquitousExternalDocumentsScope`
++ `…UbiquitousDocumentsScope`, since the vault is a folder the user chose, not the app's own
+container), debounced to one report every 2 s, wired to `AppModel.cloudFilesChanged` →
+`reload()` while anything is outstanding. The 10 s poll stays as a backstop: a query that never
+reports must not leave the app blind. Also build 106: `AppModel.syncNow(force:)` refuses to run
+while `notesWaitingForCloud` is not empty — the engine never deletes a reminder whose note it
+could not read (`loadedPaths` in `SyncEngine.run`, verified), but syncing half a vault is
+needless risk.
 **Rule: never let a read failure look like an absence.** A count of what could not be read
 belongs in front of the user, not in the diagnostics log.
 
