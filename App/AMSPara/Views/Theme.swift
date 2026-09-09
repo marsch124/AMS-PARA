@@ -114,10 +114,10 @@ struct ModeAccent: ViewModifier {
         content
             .background(alignment: .top) {
                 ZStack(alignment: .top) {
-                    // The whole column, just enough to colour the air in it.
-                    tint.opacity(0.055)
-                    // A little more at the top, gone before it reaches the text.
-                    LinearGradient(colors: [tint.opacity(0.10), tint.opacity(0)],
+                    // The whole column, and the top of it stronger again. He picked these two
+                    // from the preview (build 109); they are the only numbers to change.
+                    tint.opacity(0.085)
+                    LinearGradient(colors: [tint.opacity(0.16), tint.opacity(0)],
                                    startPoint: .top, endPoint: .bottom)
                         .frame(height: 180)
                 }

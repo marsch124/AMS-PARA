@@ -2,6 +2,10 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 109 · 9 September 2026
+
+- **The section's colour on the right-hand panel is stronger**, both over the whole column and in the wash at the top — the setting you chose from the preview.
+
 ## Build 108 · 9 September 2026
 
 - **The section's colour now sits over the whole right-hand panel**, not only the top of it: the faintest tint everywhere, a little more at the top, and the hairline. The note's own text area keeps its plain background so reading and writing are unaffected.
