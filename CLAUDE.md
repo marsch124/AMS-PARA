@@ -52,6 +52,14 @@ the phone and on the Mac. Xcode is no longer part of his routine.
   either: builds 71 to 74 left the Inbox unusable because no line could be selected, and CI
   cannot catch it. Row actions belong on the context menu or the row's own buttons. Whatever
   the fix looks like, changing one thing per build is the only way to know which one it was.
+- **`.position` makes a view claim its parent's whole size**, so gestures attached to it fire
+  anywhere in the parent: in build 85 every map box swallowed clicks across the entire canvas
+  and the last one drawn won them all. Place things on a canvas with `.offset` inside a
+  top-leading stack instead — the view keeps its own size and hit area.
+- **One gesture, not two, when a view must handle both a tap and a drag.** `.onTapGesture`
+  beside `.gesture(DragGesture…)` on the same view argues over a click and the tap loses
+  (build 85). Use a single `DragGesture(minimumDistance: 0)` and decide in `onEnded`: no
+  movement is a tap.
 - A helper type that touches `AppModel` needs `@MainActor` on it (the model is main-actor
   bound), or the build fails with "main actor-isolated property … can not be referenced from
   a nonisolated context" (build 67).

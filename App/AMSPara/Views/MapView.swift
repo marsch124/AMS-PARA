@@ -318,25 +318,23 @@ struct MapCanvas: View {
     /// The rectangle being dragged across the background to mark everything inside it.
     @State private var band: CGRect?
 
-    /// Only on the Mac: on the phone a drag across the background scrolls the map, and one
-    /// gesture cannot be both.
-    private var bandEnabled: Bool {
-        #if os(macOS)
-        return arranging
-        #else
-        return false
-        #endif
-    }
-
+    /// Sweeping the empty background marks what the rectangle touches; a click on it with no
+    /// movement clears the marks. One gesture does both, so neither can swallow the other.
     private var bandGesture: some Gesture {
-        DragGesture(minimumDistance: 4)
+        DragGesture(minimumDistance: 0)
             .onChanged { value in
+                guard MapNodeBox.isDrag(value.translation) else { return }
                 band = CGRect(x: min(value.startLocation.x, value.location.x),
                               y: min(value.startLocation.y, value.location.y),
                               width: abs(value.location.x - value.startLocation.x),
                               height: abs(value.location.y - value.startLocation.y))
             }
-            .onEnded { _ in
+            .onEnded { value in
+                guard MapNodeBox.isDrag(value.translation) else {
+                    band = nil
+                    marked.wrappedValue = []
+                    return
+                }
                 if let band {
                     // Added to what is already marked, not instead of it, so tapping boxes
                     // and sweeping a rectangle can be used together.
@@ -404,10 +402,13 @@ struct MapCanvas: View {
                 }
             }
             .contentShape(Rectangle())
-            .onTapGesture {
-                if arranging { marked.wrappedValue = [] }
-            }
-            .gesture(bandGesture, including: bandEnabled ? .all : .subviews)
+            // The rectangle is a Mac thing: on the phone a drag across the background scrolls
+            // the map, so there a plain tap is all the background does.
+            #if os(macOS)
+            .gesture(bandGesture, including: arranging ? .all : .subviews)
+            #else
+            .onTapGesture { if arranging { marked.wrappedValue = [] } }
+            #endif
             ForEach(layout.items) { item in
                 MapNodeBox(item: item, zoom: layout.zoom,
                            dimmed: lit.map { !$0.contains(item.id) } ?? false,
@@ -436,7 +437,7 @@ struct MapCanvas: View {
                     .fill(Color.accentColor.opacity(0.12))
                     .overlay(Rectangle().strokeBorder(Color.accentColor, lineWidth: 1))
                     .frame(width: band.width, height: band.height)
-                    .position(x: band.midX, y: band.midY)
+                    .offset(x: band.minX, y: band.minY)
                     .allowsHitTesting(false)
             }
         }
@@ -469,27 +470,41 @@ struct MapNodeBox: View {
         selected && markedCount > 1 ? "Place these \(markedCount) automatically" : "Place this one automatically"
     }
 
-    private var placed: some View {
+    /// Placed with `.offset` inside a top-leading stack, never `.position`: a positioned view
+    /// takes its parent's whole size, so every box's touch area covered the entire map and
+    /// the topmost one swallowed every click (build 85).
+    private func placed(_ extra: CGSize) -> some View {
         MapNodeView(node: item.node, zoom: zoom, dimmed: dimmed, selected: selected, targeted: targeted)
             .frame(width: item.frame.width, height: item.frame.height)
-            .position(x: item.frame.midX, y: item.frame.midY)
+            .offset(x: item.frame.minX + extra.width, y: item.frame.minY + extra.height)
+    }
+
+    /// A tap and a drag through one gesture rather than two: two gestures on the same box
+    /// argue about which of them a click belongs to, and the tap loses.
+    private var moveGesture: some Gesture {
+        DragGesture(minimumDistance: 0)
+            .onChanged { value in
+                guard Self.isDrag(value.translation) else { return }
+                dragging(value.translation)
+            }
+            .onEnded { value in
+                if Self.isDrag(value.translation) { dropped(value.translation) } else { select() }
+            }
+    }
+
+    static func isDrag(_ translation: CGSize) -> Bool {
+        abs(translation.width) > 3 || abs(translation.height) > 3
     }
 
     var body: some View {
         if arranging, canMove {
-            placed
-                .offset(shift)
-                .onTapGesture(perform: select)
-                .gesture(
-                    DragGesture(minimumDistance: 2)
-                        .onChanged { value in dragging(value.translation) }
-                        .onEnded { value in dropped(value.translation) }
-                )
+            placed(shift)
+                .gesture(moveGesture)
                 .contextMenu {
                     Button(unpinTitle, action: unpin)
                 }
         } else {
-            placed
+            placed(.zero)
                 .onTapGesture(perform: select)
                 .draggable(MapCanvas.transfer(for: item.node))
                 .dropDestination(for: TaskTransfer.self) { transfers, _ in

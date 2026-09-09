@@ -2,6 +2,13 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 86 · 9 September 2026
+
+- **Fix: tapping a box and sweeping a rectangle work again.** In build 85 neither did, and it was my mistake twice over.
+  - Every box was placed in a way that made its touch area cover the whole map, so the box drawn last quietly swallowed every click anywhere on the canvas. Boxes now claim only their own space.
+  - The tap and the drag were two separate gestures on the same box, and they argued over which one a click belonged to. One gesture now handles both: no movement means a tap, movement means a move.
+- The background works the same way — sweep to mark, click to clear — through a single gesture.
+
 ## Build 85 · 9 September 2026
 
 - **Mark boxes by sweeping a rectangle.** On the Mac, with **Arrange** on, drag across the empty background and every box the rectangle touches is marked.
