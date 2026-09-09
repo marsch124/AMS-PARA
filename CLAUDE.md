@@ -477,6 +477,21 @@ picker never appeared, so every new template came out a project; and
 `currentVaultSignature()` includes the Templates folder and its files, or a template edited
 on the other device is never noticed.
 
+## Files iCloud has not sent yet (build 94)
+
+A file written on the Mac reaches the iPhone as a hidden `.Name.md.icloud` stub until something
+asks for it; every listing here skips hidden files or filters on `.md`, so it was invisible —
+which is why a new template (and, unreported, a new note) never turned up on the phone.
+`Core/Vault/CloudFiles.swift`: `realName(ofPlaceholder:)`, `placeholderURL(for:)`, `exists(_:)`
+(a placeholder counts as the file being there), `isMissing`, `startDownload`, and
+`Vault.downloadCloudFiles()` which walks the vault (skipping `.ams-para`) and asks for
+everything missing, returning the relative paths. `AppModel.fetchCloudFiles` runs it at launch,
+on `openVault` and from the 10 s poll at most once a minute; `templatesFromCloud` feeds the
+"coming from iCloud" rows in `TemplatesView`. Every decision to *write* a file — `bootstrap`,
+`createNote`, `rename`, `archive`, daily/weekly notes, `createTemplate`/`renameTemplate` — uses
+`CloudFiles.exists`, or a note still on its way would be replaced by a fresh empty one and the
+two would collide in iCloud; `loadNote` throws `VaultError.notDownloadedYet` for a placeholder.
+
 ## Not built (by choice)
 
 Saved searches. Roadmap stopped there on his request.

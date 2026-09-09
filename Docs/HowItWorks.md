@@ -340,6 +340,10 @@ Keep the vault in iCloud Drive and pick the same folder on both devices. iCloud 
 
 The app checks every few seconds whether files changed outside it and reloads them. It never writes over a newer file. If you were typing in a note that changed elsewhere at the same time, your text is saved as a copy named "… (conflict date time).md" next to the note, and the note shows the other version. Merge the two by hand when that happens; it is rare.
 
+### When something takes a moment to arrive
+
+iCloud does not send every file to every device straight away. A note or template written on the Mac may sit on the phone as a marker rather than a file until something asks for it. The app asks: when it starts, when you open a vault, and once a minute while it runs. So a new template can take a few seconds and a moment of Wi-Fi to appear on the phone; while it is on its way the Templates list says "coming from iCloud". If it does not turn up, open the phone's Files app, find the file in your vault folder and tap it once — that fetches it too.
+
 ## Getting new versions
 
 Both apps come from TestFlight. When a new build is sent, TestFlight tells you and you press

@@ -8,6 +8,7 @@ public enum VaultError: Error, LocalizedError, Equatable {
     case outsideVault(String)
     case modifiedOnDisk(String)
     case unreadable(String)
+    case notDownloadedYet(String)
 
     public var errorDescription: String? {
         switch self {
@@ -18,6 +19,7 @@ public enum VaultError: Error, LocalizedError, Equatable {
         case .outsideVault(let p): return "\(p) is not inside the vault."
         case .modifiedOnDisk(let p): return "\(p) was changed on disk by something else since it was opened."
         case .unreadable(let p): return "\(p) could not be read as text."
+        case .notDownloadedYet(let p): return "\(p) is still coming from iCloud. Try again in a moment."
         }
     }
 }
@@ -90,16 +92,16 @@ public final class Vault {
         }
         try fm.createDirectory(at: templatesURL, withIntermediateDirectories: true)
         let inbox = rootURL.appendingPathComponent(config.inboxFile)
-        if !fm.fileExists(atPath: inbox.path) {
+        if !CloudFiles.exists(inbox) {
             try Templates.inbox.write(to: inbox, atomically: true, encoding: .utf8)
         }
         for (name, content) in Templates.defaults {
             let url = templatesURL.appendingPathComponent("\(name).md")
-            if !fm.fileExists(atPath: url.path) {
+            if !CloudFiles.exists(url) {
                 try content.write(to: url, atomically: true, encoding: .utf8)
             }
         }
-        if !fm.fileExists(atPath: configURL.path) {
+        if !CloudFiles.exists(configURL) {
             try save(config: config)
         }
     }
@@ -191,13 +193,13 @@ public final class Vault {
     }
 
     public func weeklyNoteExists(for week: WeekRef) -> Bool {
-        fm.fileExists(atPath: url(for: weeklyNotePath(for: week)).path)
+        CloudFiles.exists(url(for: weeklyNotePath(for: week)))
     }
 
     /// Loads the weekly note for a week, creating it from the `Weekly` template when missing.
     public func weeklyNote(for week: WeekRef) throws -> Note {
         let path = weeklyNotePath(for: week)
-        if fm.fileExists(atPath: url(for: path).path) {
+        if CloudFiles.exists(url(for: path)) {
             return try loadNote(relativePath: path)
         }
         let template = (try? String(contentsOf: templatesURL.appendingPathComponent("Weekly.md"), encoding: .utf8)) ?? Templates.weekly
@@ -214,13 +216,13 @@ public final class Vault {
     }
 
     public func dailyNoteExists(for date: DateOnly) -> Bool {
-        fm.fileExists(atPath: url(for: dailyNotePath(for: date)).path)
+        CloudFiles.exists(url(for: dailyNotePath(for: date)))
     }
 
     /// Loads the daily note for a date, creating it from the `Daily` template when missing.
     public func dailyNote(for date: DateOnly) throws -> Note {
         let path = dailyNotePath(for: date)
-        if fm.fileExists(atPath: url(for: path).path) {
+        if CloudFiles.exists(url(for: path)) {
             return try loadNote(relativePath: path)
         }
         let template = (try? String(contentsOf: templatesURL.appendingPathComponent("Daily.md"), encoding: .utf8)) ?? Templates.daily
@@ -235,7 +237,14 @@ public final class Vault {
 
     public func loadNote(relativePath: String) throws -> Note {
         let fileURL = url(for: relativePath)
-        guard fm.fileExists(atPath: fileURL.path) else { throw VaultError.noteNotFound(relativePath) }
+        guard fm.fileExists(atPath: fileURL.path) else {
+            // iCloud has the file but has not sent it here yet: ask for it and say so.
+            if CloudFiles.exists(fileURL) {
+                CloudFiles.startDownload(fileURL)
+                throw VaultError.notDownloadedYet(relativePath)
+            }
+            throw VaultError.noteNotFound(relativePath)
+        }
         let data = try Data(contentsOf: fileURL)
         guard let text = Self.decodeText(data) else { throw VaultError.unreadable(relativePath) }
         let modified = try? fileURL.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate
@@ -295,7 +304,7 @@ public final class Vault {
         let fileName = Self.sanitizeFileName(cleanTitle)
         guard !fileName.isEmpty, kind != .daily, let folder = config.folder(for: kind) else { throw VaultError.invalidTitle }
         let relativePath = "\(folder)/\(fileName).md"
-        guard !fm.fileExists(atPath: url(for: relativePath).path) else { throw VaultError.noteAlreadyExists(relativePath) }
+        guard !CloudFiles.exists(url(for: relativePath)) else { throw VaultError.noteAlreadyExists(relativePath) }
 
         var text = template.flatMap { templateText(named: $0) } ?? templateText(for: kind) ?? Templates.minimal(kind: kind)
         text = Templates.fill(text, title: cleanTitle, date: DateOnly.today())
@@ -339,7 +348,7 @@ public final class Vault {
         let folder = (note.relativePath as NSString).deletingLastPathComponent
         let target = folder.isEmpty ? "\(fileName).md" : "\(folder)/\(fileName).md"
         guard target != note.relativePath else { return try save(renamed) }
-        guard !fm.fileExists(atPath: url(for: target).path) else {
+        guard !CloudFiles.exists(url(for: target)) else {
             throw VaultError.noteAlreadyExists(target)
         }
         // Write the new file before removing the old one, so a failure never loses the note.
@@ -357,12 +366,12 @@ public final class Vault {
         archived.frontmatter.set("archived", DateOnly.today().description)
         archived.frontmatter.set("sync", "false")
         var target = "\(config.archiveFolder)/\(note.relativePath)"
-        if fm.fileExists(atPath: url(for: target).path) {
+        if CloudFiles.exists(url(for: target)) {
             // An older note with the same name is already archived; keep both.
             let base = String(target.dropLast(3))
             target = "\(base) (archived \(DateOnly.today())).md"
             var n = 2
-            while fm.fileExists(atPath: url(for: target).path) {
+            while CloudFiles.exists(url(for: target)) {
                 target = "\(base) (archived \(DateOnly.today()) \(n)).md"
                 n += 1
             }

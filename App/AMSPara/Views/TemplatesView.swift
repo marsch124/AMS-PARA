@@ -75,6 +75,17 @@ struct TemplatesView: View {
                             .buttonStyle(.plain)
                         }
                     }
+                    // A template written on the Mac arrives as an iCloud placeholder and is
+                    // not a file yet. Saying so beats looking as if it never came.
+                    if !model.templatesFromCloud.isEmpty {
+                        Section {
+                            ForEach(model.templatesFromCloud, id: \.self) { name in
+                                Label("\(name) \u{2014} coming from iCloud",
+                                      systemImage: "icloud.and.arrow.down")
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
                 }
             }
         }

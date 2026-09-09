@@ -80,7 +80,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 93
+    static let number = 94
 }
 
 @MainActor
@@ -210,6 +210,7 @@ final class AppModel: ObservableObject {
     init() {
         log("launch build \(BuildStamp.number)")
         restoreVault()
+        fetchCloudFiles(force: true)
         #if os(macOS)
         terminationObserver = NotificationCenter.default.addObserver(forName: NSApplication.willTerminateNotification, object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.flushPendingEdits() }
@@ -434,6 +435,7 @@ final class AppModel: ObservableObject {
         selectedNotePath = nil
         vault = opened
         reload()
+        fetchCloudFiles(force: true)
         backUpDaily()
         purgeOldDeleted()
         scheduleAutoSync()
@@ -483,10 +485,43 @@ final class AppModel: ObservableObject {
         return parts.joined(separator: "|")
     }
 
+    // MARK: Files iCloud has not sent yet
+
+    /// Vault files this device does not have the contents of, by relative path. A note or a
+    /// template written on the Mac reaches the iPhone as a placeholder, and iCloud only
+    /// fetches it when something asks: `Vault.downloadCloudFiles` is that asking, and this is
+    /// what it is still waiting for.
+    @Published private(set) var cloudDownloads: [String] = []
+    private var lastCloudCheck: Date?
+
+    /// Asks iCloud for everything missing. Runs on the change poll, but at most once a minute:
+    /// a download takes longer than the poll's ten seconds anyway.
+    func fetchCloudFiles(force: Bool = false) {
+        guard let vault else { return }
+        if !force, let last = lastCloudCheck, Date().timeIntervalSince(last) < 60 { return }
+        lastCloudCheck = Date()
+        let pending = vault.downloadCloudFiles()
+        guard pending != cloudDownloads else { return }
+        cloudDownloads = pending
+        if !pending.isEmpty { log("waiting for iCloud: \(pending.joined(separator: ", "))") }
+    }
+
+    /// The names of templates iCloud is still fetching, so the list can say so instead of
+    /// looking as if they never arrived.
+    var templatesFromCloud: [String] {
+        guard let vault else { return [] }
+        let prefix = "\(vault.config.templatesFolder)/"
+        return cloudDownloads.compactMap { path in
+            guard path.hasPrefix(prefix), path.hasSuffix(".md") else { return nil }
+            return String(path.dropFirst(prefix.count).dropLast(3))
+        }
+    }
+
     /// Reloads when files changed on disk (iCloud, the iPhone, another editor), checking every
     /// few seconds. A dirty editor keeps its text; its save then meets the conflict check.
     func checkForExternalChanges() {
         guard vault != nil, !isSyncing else { return }
+        fetchCloudFiles()
         let signature = currentVaultSignature()
         if vaultSignature == nil { vaultSignature = signature; return }
         guard signature != vaultSignature else { return }

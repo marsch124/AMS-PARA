@@ -158,7 +158,7 @@ public extension Vault {
         let clean = Self.sanitizeFileName(name.trimmingCharacters(in: .whitespacesAndNewlines))
         guard !clean.isEmpty else { throw VaultError.invalidTitle }
         let target = templatesURL.appendingPathComponent("\(clean).md")
-        guard !FileManager.default.fileExists(atPath: target.path) else {
+        guard !CloudFiles.exists(target) else {
             throw VaultError.noteAlreadyExists("Templates/\(clean).md")
         }
         let seed = templateText(named: TemplateFile.defaultName(for: kind))
@@ -171,7 +171,7 @@ public extension Vault {
         let clean = Self.sanitizeFileName(newName.trimmingCharacters(in: .whitespacesAndNewlines))
         guard !clean.isEmpty, clean != name else { throw VaultError.invalidTitle }
         let target = templatesURL.appendingPathComponent("\(clean).md")
-        guard !FileManager.default.fileExists(atPath: target.path) else {
+        guard !CloudFiles.exists(target) else {
             throw VaultError.noteAlreadyExists("Templates/\(clean).md")
         }
         try FileManager.default.moveItem(at: templatesURL.appendingPathComponent("\(name).md"), to: target)
