@@ -2,6 +2,12 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 85 · 9 September 2026
+
+- **Mark boxes by sweeping a rectangle.** On the Mac, with **Arrange** on, drag across the empty background and every box the rectangle touches is marked.
+- It **adds to** what you already tapped rather than replacing it, so tapping single boxes and sweeping a cluster can be used together.
+- On the phone a drag across the background scrolls the map, so there is no rectangle there; tapping boxes works as before.
+
 ## Build 84 · 9 September 2026
 
 - **Move several boxes at once on the Map.** With **Arrange** on, tap boxes to mark them — the toolbar counts them — then drag any one of them and the whole set moves together, keeping its shape.

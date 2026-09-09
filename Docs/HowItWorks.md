@@ -184,7 +184,12 @@ The boxes are placed by the app, worked out from your links. If you would rather
 
 **While Arrange is on**, dragging a box moves it. Let go and it stays there. Dragging no longer links things — that is the whole point of the switch, so one drag never means two things.
 
-**Moving several at once.** Tap a box to mark it; tap it again to unmark it. Mark as many as you like — the toolbar counts them — then drag any one of them and the whole set moves together, keeping its shape. Dragging a box that is *not* marked moves only that box and leaves your marks alone. Tap the empty background to clear the marks, and turning Arrange off clears them too.
+**Moving several at once.** There are two ways to mark boxes, and they work together:
+
+- **Tap a box** to mark it, tap it again to unmark it.
+- **On the Mac, drag a rectangle across the empty background** and everything it touches is marked as well. It adds to whatever you had already tapped rather than replacing it. (On the phone a drag across the background scrolls the map, so there is no rectangle there — tapping does the job.)
+
+The toolbar counts what is marked. Then drag any marked box and the whole set moves together, keeping its shape. Dragging a box that is *not* marked moves only that box and leaves your marks alone. Tap the empty background to clear the marks, and turning Arrange off clears them too.
 
 **While Arrange is off** (the normal state), dragging links things as described above and nothing moves.
 

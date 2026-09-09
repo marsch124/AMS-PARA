@@ -315,6 +315,38 @@ struct MapCanvas: View {
     /// The boxes being dragged right now, and how far they have come.
     @State private var movingIDs: Set<String> = []
     @State private var liveShift: CGSize = .zero
+    /// The rectangle being dragged across the background to mark everything inside it.
+    @State private var band: CGRect?
+
+    /// Only on the Mac: on the phone a drag across the background scrolls the map, and one
+    /// gesture cannot be both.
+    private var bandEnabled: Bool {
+        #if os(macOS)
+        return arranging
+        #else
+        return false
+        #endif
+    }
+
+    private var bandGesture: some Gesture {
+        DragGesture(minimumDistance: 4)
+            .onChanged { value in
+                band = CGRect(x: min(value.startLocation.x, value.location.x),
+                              y: min(value.startLocation.y, value.location.y),
+                              width: abs(value.location.x - value.startLocation.x),
+                              height: abs(value.location.y - value.startLocation.y))
+            }
+            .onEnded { _ in
+                if let band {
+                    // Added to what is already marked, not instead of it, so tapping boxes
+                    // and sweeping a rectangle can be used together.
+                    marked.wrappedValue.formUnion(layout.items
+                        .filter { $0.node.note != nil && $0.frame.intersects(band) }
+                        .map(\.id))
+                }
+                band = nil
+            }
+    }
 
     /// A drag moves everything marked when it starts on a marked box, otherwise that box alone.
     private func group(around node: MapNode) -> Set<String> {
@@ -375,6 +407,7 @@ struct MapCanvas: View {
             .onTapGesture {
                 if arranging { marked.wrappedValue = [] }
             }
+            .gesture(bandGesture, including: bandEnabled ? .all : .subviews)
             ForEach(layout.items) { item in
                 MapNodeBox(item: item, zoom: layout.zoom,
                            dimmed: lit.map { !$0.contains(item.id) } ?? false,
@@ -397,6 +430,14 @@ struct MapCanvas: View {
                            dragging: { translation in dragChanged(item.node, translation) },
                            dropped: { translation in dragEnded(item.node, translation) },
                            unpin: { unpinGroup(item.node) })
+            }
+            if let band {
+                Rectangle()
+                    .fill(Color.accentColor.opacity(0.12))
+                    .overlay(Rectangle().strokeBorder(Color.accentColor, lineWidth: 1))
+                    .frame(width: band.width, height: band.height)
+                    .position(x: band.midX, y: band.midY)
+                    .allowsHitTesting(false)
             }
         }
     }

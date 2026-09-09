@@ -433,7 +433,10 @@ from build 82 — an `if`, never both at once, so one gesture never means two th
 boxes for a group move: `MapView.marked` (node ids) is passed to `MapCanvas` as a binding, a
 tap toggles membership while arranging, and the live offset moved out of `MapNodeBox` into
 `MapCanvas` (`movingIDs` + `liveShift`) because one drag has to shift every marked box by the
-same amount; `onMove` therefore hands back an array of (node, point).
+same amount; `onMove` therefore hands back an array of (node, point). Build 85 adds a
+rubber band: a `DragGesture` on the Canvas (gated by `including:` to macOS while arranging —
+on iOS that drag scrolls the map) fills `band`, and on end unions the intersecting items into
+`marked`, so sweeping and tapping compose.
 
 ## Not built (by choice)
 
