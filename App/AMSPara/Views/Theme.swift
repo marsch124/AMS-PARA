@@ -103,3 +103,31 @@ struct VaultWarningBar: View {
         .padding(.horizontal, 8)
     }
 }
+
+/// The colour of the section you are in, laid over the detail column: a hairline at the top and
+/// a wash that has faded out before it reaches anything you read. Enough to say "you are in
+/// Projects" out of the corner of your eye, and not enough to tire you out in a long note.
+struct ModeAccent: ViewModifier {
+    let tint: Color
+
+    func body(content: Content) -> some View {
+        content
+            .background(alignment: .top) {
+                LinearGradient(colors: [tint.opacity(0.11), tint.opacity(0)],
+                               startPoint: .top, endPoint: .bottom)
+                    .frame(height: 160)
+                    .allowsHitTesting(false)
+            }
+            .overlay(alignment: .top) {
+                Rectangle()
+                    .fill(tint.opacity(0.6))
+                    .frame(height: 2)
+                    .allowsHitTesting(false)
+            }
+    }
+}
+
+extension View {
+    /// Marks a column with the colour of the section it belongs to.
+    func modeAccent(_ tint: Color) -> some View { modifier(ModeAccent(tint: tint)) }
+}

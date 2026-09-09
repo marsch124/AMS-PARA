@@ -623,6 +623,13 @@ struct DetailView: View {
     @EnvironmentObject private var model: AppModel
 
     var body: some View {
+        // The colour follows the section, not the note: it is there to say which mode you are
+        // in, and it stays put while you click from note to note.
+        detail.modeAccent(model.section?.tint ?? .secondary)
+    }
+
+    @ViewBuilder
+    private var detail: some View {
         if model.section == .calendar {
             // The Calendar section gets the day's schedule here, with the note one click away.
             CalendarDetailView()

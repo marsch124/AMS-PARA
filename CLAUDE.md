@@ -561,6 +561,15 @@ needless risk.
 **Rule: never let a read failure look like an absence.** A count of what could not be read
 belongs in front of the user, not in the diagnostics log.
 
+## The colour of the mode (build 107)
+
+`ModeAccent` (Theme.swift, applied as `.modeAccent(_:)`) puts a 2pt hairline and a 160pt wash
+of `SidebarSection.tint` over the detail column; `DetailView.body` applies it to a
+`detail` computed property holding the old `if`/`else` chain, so the ViewBuilder rule is kept.
+Background and overlay, never a frame or an inset — the third column's intrinsic size is what
+builds 30/34 were about. The tint follows the *section*, so it does not flicker as notes are
+clicked. The phone does not have this column and is unchanged.
+
 ## Not built (by choice)
 
 Saved searches. Roadmap stopped there on his request.
