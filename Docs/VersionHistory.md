@@ -2,6 +2,11 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 92 · 9 September 2026
+
+- **Fix: you can type in a template.** The editor showed the file but would not take a keystroke on the Mac. It is the same editor the notes use now — proven, and it colours the markdown while you write.
+- **Templates save themselves** a moment after you stop typing, and when you switch to another one or leave the section. **Save** (⌘S) is still there when you want to be sure.
+
 ## Build 91 · 9 September 2026
 
 - **The manual now says "long-press" where it meant it.** It said "right-click" throughout, which is a Mac instruction and no help on the iPhone. Every place that offers a menu now names both, and there is a line near the top saying that right-click on the Mac is long-press on the phone.

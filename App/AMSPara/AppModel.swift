@@ -80,7 +80,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 91
+    static let number = 92
 }
 
 @MainActor
@@ -921,12 +921,14 @@ final class AppModel: ObservableObject {
         vault?.templateText(named: name) ?? ""
     }
 
-    func saveTemplate(named name: String, text: String) {
+    /// `announce` is off while typing is being saved in the background, so the message is
+    /// kept for the times you asked for it.
+    func saveTemplate(named name: String, text: String, announce: Bool = true) {
         guard let vault else { return }
         do {
             try vault.saveTemplate(named: name, text: text)
             refreshSnippets()
-            flash("Saved the \(name) template")
+            if announce { flash("Saved the \(name) template") }
         } catch {
             errorMessage = error.localizedDescription
         }

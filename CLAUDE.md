@@ -467,6 +467,9 @@ Build 90: a template's own `type:` line says what it makes (`Vault.templates()` 
 template:)` takes the chosen one; `TemplateFile.defaultName(for:)` is the one used otherwise.
 `TemplatesView` groups by kind in the kind's tint with folds, and has new/rename/delete.
 `PhoneRoute.template` pushes the editor on the phone, where tapping a template did nothing.
+Build 92: `TemplateEditorView` uses `MarkdownSyntaxEditor`, not a plain SwiftUI `TextEditor` —
+the latter rendered the file in that column but never took a keystroke on macOS — and it saves
+on a debounce as well as on ⌘S, on switching template and on disappearing.
 
 ## Not built (by choice)
 

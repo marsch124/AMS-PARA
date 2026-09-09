@@ -172,6 +172,7 @@ struct TemplateEditorView: View {
     let name: String
     @State private var text = ""
     @State private var loaded = ""
+    @State private var pending: Task<Void, Never>?
 
     private var isDirty: Bool { text != loaded }
 
@@ -179,9 +180,10 @@ struct TemplateEditorView: View {
         VStack(alignment: .leading, spacing: 0) {
             header
             Divider()
-            TextEditor(text: $text)
-                .font(.system(.body, design: .monospaced))
-                .padding(6)
+            // The same editor the notes use. A plain SwiftUI TextEditor showed the file here
+            // but would not take a keystroke (build 90); this one is proven in the note
+            // screen, in this very column, and colours the markdown as a bonus.
+            MarkdownSyntaxEditor(text: $text, tint: ParaKind.resource.tint)
         }
         .navigationTitle(name)
         .toolbar {
@@ -192,7 +194,14 @@ struct TemplateEditorView: View {
             }
         }
         .onAppear(perform: load)
-        .onChange(of: name) { _, _ in load() }
+        .onChange(of: name) { _, _ in
+            saveIfNeeded()
+            load()
+        }
+        // Typing is saved a moment after you stop, the way a note is, so the Save button is
+        // a reassurance rather than something you must remember.
+        .onChange(of: text) { _, _ in scheduleSave() }
+        .onDisappear { saveIfNeeded() }
     }
 
     private var header: some View {
@@ -218,9 +227,25 @@ struct TemplateEditorView: View {
         text = loaded
     }
 
-    private func save() {
-        model.saveTemplate(named: name, text: text)
+    private func save(announce: Bool = true) {
+        pending?.cancel()
+        pending = nil
+        model.saveTemplate(named: name, text: text, announce: announce)
         loaded = text
+    }
+
+    private func saveIfNeeded() {
+        guard isDirty else { return }
+        save(announce: false)
+    }
+
+    private func scheduleSave() {
+        pending?.cancel()
+        pending = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(800))
+            guard !Task.isCancelled else { return }
+            saveIfNeeded()
+        }
     }
 }
 

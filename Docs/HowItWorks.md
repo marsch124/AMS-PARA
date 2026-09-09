@@ -300,7 +300,7 @@ A template says what it makes in its own `type:` line, so you can keep several s
 
 ### Changing them
 
-Open **Templates** in the sidebar, pick a file, edit it, press **Save** (⌘S). Or edit the files in `Templates/` in any other editor — it is the same thing.
+Open **Templates** in the sidebar, pick a file and edit it. It saves itself a moment after you stop typing, and when you move to another template or leave the section; **Save** (⌘S) is there when you want to be sure. Or edit the files in `Templates/` in any other editor — it is the same thing.
 
 - Add a snippet by writing a new `## Heading` with task lines under it. Delete one by deleting its heading and lines. Rename it by renaming the heading.
 - Add a template of your own by putting a file in the folder; the six named above are the ones the app looks for when it makes a note, so a new file is for your own use.
