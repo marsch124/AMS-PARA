@@ -80,7 +80,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 100
+    static let number = 101
 }
 
 @MainActor
@@ -496,11 +496,23 @@ final class AppModel: ObservableObject {
 
     /// Asks iCloud for everything missing. Runs on the change poll, but at most once a minute:
     /// a download takes longer than the poll's ten seconds anyway.
+    ///
+    /// The walk touches every file in the vault and asks iCloud about each one, which on a
+    /// phone can take long enough for iOS to kill the app for not finishing its launch
+    /// (build 101). So it runs off the main thread and comes back with the answer.
     func fetchCloudFiles(force: Bool = false) {
         guard let vault else { return }
         if !force, let last = lastCloudCheck, Date().timeIntervalSince(last) < 60 { return }
         lastCloudCheck = Date()
-        let pending = vault.downloadCloudFiles()
+        let root = vault.rootURL
+        let skipped = Vault.stateFolderName
+        Task.detached(priority: .utility) { [weak self] in
+            let pending = CloudFiles.downloadMissing(under: root, skipping: skipped)
+            await MainActor.run { self?.cloudDownloadsFound(pending) }
+        }
+    }
+
+    private func cloudDownloadsFound(_ pending: [String]) {
         guard pending != cloudDownloads else { return }
         cloudDownloads = pending
         if !pending.isEmpty { log("waiting for iCloud: \(pending.joined(separator: ", "))") }

@@ -2,6 +2,11 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 101 · 9 September 2026
+
+- **The app now reads a note the way TextEdit does.** This is the real cause of today's scare. When iCloud keeps a file's contents off the Mac, a plain read of it fails — so TextEdit could open a note while the app called it unreadable and drew an empty vault. The app now asks macOS for the file properly, which makes iCloud fetch it first and wait for it. Notes appear whether or not they happen to be downloaded.
+- **Fix: the iPhone app could be killed at launch.** Since build 95 the app asked iCloud about every file in the vault before it finished starting up. On a phone that can take long enough for iOS to give up and close the app. That now happens in the background, out of the way of starting.
+
 ## Build 100 · 9 September 2026
 
 - **The app no longer shows an empty vault when it simply cannot read your notes.** If iCloud has the contents and this device does not, the app used to draw "No projects yet" — which looks exactly like losing everything. It now says how many notes are still coming, at the foot of the sidebar and in place of the empty-section message, with an **Ask iCloud again** button.

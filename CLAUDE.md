@@ -528,6 +528,14 @@ the lot. The restore was not the culprit; the silence was.
 `VaultWarningBar` (Theme.swift) at the foot of the sidebar and by `emptyList` in place of the
 per-section empty state, both with "Ask iCloud again" → `fetchMissingNotes()`.
 `SyncReport.warnings` lists the waiting notes too.
+Build 101 found the cause underneath it: **a plain `Data(contentsOf:)` fails on a file whose
+contents iCloud has not put on the device**, which is why TextEdit opened the very note the app
+called unreadable. `CloudFiles.read(_:)` tries the plain read and, on failure, repeats it inside
+`NSFileCoordinator().coordinate(readingItemAt:)`, which makes iCloud materialise the file and
+waits; `loadNote` goes through it. Also build 101: the whole-vault walk moved into
+`CloudFiles.downloadMissing(under:skipping:)` (no `Vault`, so it is Sendable-safe) and
+`AppModel.fetchCloudFiles` runs it in a `Task.detached` — done synchronously in `init` since
+build 95 it could hold up launch long enough for iOS to kill the app.
 **Rule: never let a read failure look like an absence.** A count of what could not be read
 belongs in front of the user, not in the diagnostics log.
 

@@ -262,7 +262,9 @@ public final class Vault {
             }
             throw VaultError.noteNotFound(relativePath)
         }
-        let data = try Data(contentsOf: fileURL)
+        // Through CloudFiles.read, so a note whose contents are still in iCloud is fetched
+        // rather than declared unreadable.
+        let data = try CloudFiles.read(fileURL)
         guard let text = Self.decodeText(data) else { throw VaultError.unreadable(relativePath) }
         let modified = try? fileURL.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate
         let kind = kind(forRelativePath: relativePath) ?? .resource

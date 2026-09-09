@@ -41,6 +41,65 @@ public enum CloudFiles {
     public static func startDownload(_ url: URL) {
         try? FileManager.default.startDownloadingUbiquitousItem(at: url)
     }
+
+    /// Reads a file the way TextEdit does.
+    ///
+    /// iCloud keeps a file's contents off the device until something asks for them, and a
+    /// plain `Data(contentsOf:)` of such a file simply fails — which is why a note opened in
+    /// TextEdit while this app called it unreadable and drew an empty vault (build 101).
+    /// A coordinated read makes iCloud materialise the file first and waits for it, so it is
+    /// used as the second attempt: the fast path stays fast for a file that is already here.
+    public static func read(_ url: URL) throws -> Data {
+        do {
+            return try Data(contentsOf: url)
+        } catch let first {
+            startDownload(url)
+            var data: Data?
+            var readError: Error?
+            var coordinationError: NSError?
+            NSFileCoordinator().coordinate(readingItemAt: url, options: [], error: &coordinationError) { actual in
+                do { data = try Data(contentsOf: actual) } catch { readError = error }
+            }
+            if let data { return data }
+            throw readError ?? coordinationError ?? first
+        }
+    }
+
+    /// Every file under `root` that iCloud has not sent to this device, asked for as it goes.
+    /// Free of `Vault` on purpose: the walk touches every file and must be runnable off the
+    /// main thread, where an app cannot carry a non-Sendable object (build 101).
+    public static func downloadMissing(under root: URL, skipping skipped: String) -> [String] {
+        let fm = FileManager.default
+        guard let walker = fm.enumerator(at: root,
+                                         includingPropertiesForKeys: [.isUbiquitousItemKey, .ubiquitousItemDownloadingStatusKey],
+                                         options: [.skipsPackageDescendants]) else { return [] }
+        let rootPath = root.standardizedFileURL.resolvingSymlinksInPath().path
+        var asked: [String] = []
+        func relative(_ url: URL) -> String? {
+            let path = url.standardizedFileURL.resolvingSymlinksInPath().path
+            let prefix = rootPath.hasSuffix("/") ? rootPath : rootPath + "/"
+            guard path.hasPrefix(prefix) else { return nil }
+            return String(path.dropFirst(prefix.count))
+        }
+        for case let fileURL as URL in walker {
+            let name = fileURL.lastPathComponent
+            if name == skipped {
+                walker.skipDescendants()
+                continue
+            }
+            if let real = realName(ofPlaceholder: name) {
+                let parent = fileURL.deletingLastPathComponent()
+                startDownload(parent.appendingPathComponent(real))
+                startDownload(fileURL)
+                let folder = relative(parent) ?? ""
+                asked.append(folder.isEmpty ? real : "\(folder)/\(real)")
+            } else if isMissing(fileURL) {
+                startDownload(fileURL)
+                asked.append(relative(fileURL) ?? name)
+            }
+        }
+        return asked.sorted()
+    }
 }
 
 public extension Vault {
@@ -50,31 +109,8 @@ public extension Vault {
     /// a placeholder and nothing else would ever open it.
     @discardableResult
     func downloadCloudFiles() -> [String] {
-        let fm = FileManager.default
-        guard let walker = fm.enumerator(at: rootURL,
-                                         includingPropertiesForKeys: [.isUbiquitousItemKey, .ubiquitousItemDownloadingStatusKey],
-                                         options: [.skipsPackageDescendants]) else { return [] }
-        var asked: [String] = []
-        for case let fileURL as URL in walker {
-            let name = fileURL.lastPathComponent
-            // Backups and deleted notes live here and are none of this device's business.
-            if name == Vault.stateFolderName {
-                walker.skipDescendants()
-                continue
-            }
-            if let real = CloudFiles.realName(ofPlaceholder: name) {
-                let parent = fileURL.deletingLastPathComponent()
-                CloudFiles.startDownload(parent.appendingPathComponent(real))
-                CloudFiles.startDownload(fileURL)
-                // From the folder, not the file: the file is not there yet, and a path that
-                // does not exist does not resolve to the same place as the vault's own.
-                let folder = relativePath(for: parent) ?? ""
-                asked.append(folder.isEmpty ? real : "\(folder)/\(real)")
-            } else if CloudFiles.isMissing(fileURL) {
-                CloudFiles.startDownload(fileURL)
-                asked.append(relativePath(for: fileURL) ?? name)
-            }
-        }
-        return asked.sorted()
+        // Backups and deleted notes are none of this device's business, so the state folder
+        // is skipped.
+        CloudFiles.downloadMissing(under: rootURL, skipping: Vault.stateFolderName)
     }
 }
