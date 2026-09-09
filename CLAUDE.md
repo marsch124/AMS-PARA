@@ -376,6 +376,15 @@ so the ordinary note list draws it. `CalendarMode.notes` adds a fourth Calendar 
 `DailyNotesListView`, over `index.dailyNotes` with its own `.searchable`; `DailyNoteRow` takes
 `preview: true` there to show the first line of prose.
 
+## Nested File it column (build 79)
+
+`InboxFileItView` groups its destinations: `InboxItems.projects` and `InboxItems.areaBranches`
+(the active part of `index.areaTree()`) under coloured headings, with `AreaDestinationGroup`
+drawing an area's sub-areas indented beneath it — a rail overlay plus a per-row tick, and a
+chevron writing to the view's `foldedAreas`. The chevron sits beside `DestinationRow`, never
+inside it: the row is itself a Button. `DestinationRow` no longer indents itself; it tints a
+sub-area's card instead.
+
 ## Not built (by choice)
 
 Saved searches. Roadmap stopped there on his request.

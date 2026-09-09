@@ -2,6 +2,13 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 79 · 9 September 2026
+
+- **The Inbox "File it" column now shows the shape of your vault.** Two headings — **Projects** in green, **Areas** in pink — instead of one long run of cards.
+- **Sub-areas sit under their area**, indented, on a faint tint of their own colour and joined to the parent by a thin line, so a family reads as a family. They say "Sub-area" rather than "Area".
+- Any area with sub-areas has a small **chevron** to fold its family away when the list gets long.
+- Every card is still a click target and a drop target, exactly as before.
+
 ## Build 78 · 9 September 2026
 
 - **Recent.** A new sidebar section listing the notes you opened most recently, newest first, of any kind. It survives quitting the app, and **Clear** in the toolbar empties it. On the phone it is under Browse › Plan.

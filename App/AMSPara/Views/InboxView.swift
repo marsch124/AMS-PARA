@@ -30,6 +30,17 @@ enum InboxItems {
         !note.isArchived && note.status != "done"
     }
 
+    static func projects(_ model: AppModel) -> [Note] {
+        model.notes.filter { $0.kind == .project && isActive($0) }
+    }
+
+    /// The areas as families, so the column can draw sub-areas under the area they belong to.
+    static func areaBranches(_ model: AppModel) -> [AreaBranch] {
+        model.index.areaTree()
+            .filter { isActive($0.area) }
+            .map { AreaBranch(area: $0.area, subAreas: $0.subAreas.filter(isActive)) }
+    }
+
     /// Moves a line on and selects whatever follows it, so sorting keeps its rhythm.
     static func file(_ ref: TaskRef, into path: String, model: AppModel) {
         let ids = waiting(model).map(\.triageID)
@@ -273,8 +284,12 @@ struct InboxRow: View {
 struct InboxFileItView: View {
     @EnvironmentObject private var model: AppModel
 
+    @State private var foldedAreas: Set<String> = []
+
     private var selected: TaskRef? { InboxItems.selected(model) }
     private var destinations: [Note] { InboxItems.destinations(model) }
+    private var projects: [Note] { InboxItems.projects(model) }
+    private var branches: [AreaBranch] { InboxItems.areaBranches(model) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -296,9 +311,19 @@ struct InboxFileItView: View {
                     .padding(.top, 6)
             }
             ScrollView {
-                VStack(spacing: 6) {
-                    ForEach(destinations) { note in
-                        DestinationRow(note: note, selected: selected)
+                VStack(alignment: .leading, spacing: 6) {
+                    if !projects.isEmpty {
+                        groupLabel("Projects", tint: ParaKind.project.tint)
+                        ForEach(projects) { note in
+                            DestinationRow(note: note, selected: selected)
+                        }
+                    }
+                    if !branches.isEmpty {
+                        groupLabel("Areas", tint: ParaKind.area.tint)
+                            .padding(.top, projects.isEmpty ? 0 : 8)
+                        ForEach(branches) { branch in
+                            AreaDestinationGroup(branch: branch, selected: selected, folded: $foldedAreas)
+                        }
                     }
                 }
                 .padding(.horizontal, 16)
@@ -311,6 +336,16 @@ struct InboxFileItView: View {
 
     private var destinationsTitle: String {
         selected == nil ? "Where things go" : "Click where it should go"
+    }
+
+    /// A coloured heading over each group. `SectionLabel` paints itself secondary, and the
+    /// point here is that green means project and pink means area.
+    private func groupLabel(_ title: String, tint: Color) -> some View {
+        Text(title.uppercased())
+            .font(.caption.weight(.semibold))
+            .tracking(0.6)
+            .foregroundStyle(tint)
+            .padding(.top, 4)
     }
 
     @ViewBuilder
@@ -366,6 +401,61 @@ struct InboxFileItView: View {
     }
 }
 
+/// An area with its sub-areas under it: the same cards, joined by a thin rail so a family
+/// reads as one thing, and foldable when the list gets long.
+struct AreaDestinationGroup: View {
+    let branch: AreaBranch
+    let selected: TaskRef?
+    @Binding var folded: Set<String>
+
+    private var isFolded: Bool { folded.contains(branch.area.relativePath) }
+
+    private func toggle() {
+        if isFolded {
+            folded.remove(branch.area.relativePath)
+        } else {
+            folded.insert(branch.area.relativePath)
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                DestinationRow(note: branch.area, selected: selected)
+                if !branch.subAreas.isEmpty {
+                    Button(action: toggle) {
+                        Image(systemName: isFolded ? "chevron.right" : "chevron.down")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .frame(width: 16)
+                    }
+                    .buttonStyle(.plain)
+                    .help(isFolded ? "Show the sub-areas" : "Hide the sub-areas")
+                }
+            }
+            if !branch.subAreas.isEmpty, !isFolded {
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(branch.subAreas) { child in
+                        HStack(spacing: 6) {
+                            Rectangle()
+                                .fill(.quaternary)
+                                .frame(width: 10, height: 1)
+                            DestinationRow(note: child, selected: selected)
+                        }
+                    }
+                }
+                .padding(.leading, 12)
+                .overlay(alignment: .leading) {
+                    Rectangle()
+                        .fill(.quaternary)
+                        .frame(width: 1)
+                        .padding(.vertical, 2)
+                }
+            }
+        }
+    }
+}
+
 /// One place a line can be filed, as a click target and a drop target.
 struct DestinationRow: View {
     @EnvironmentObject private var model: AppModel
@@ -378,9 +468,6 @@ struct DestinationRow: View {
             if let selected { InboxItems.file(selected, into: note.relativePath, model: model) }
         } label: {
             HStack(spacing: 10) {
-                if isSubArea {
-                    Spacer().frame(width: 16)
-                }
                 TintStripe(color: note.kind.tint, height: 26)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(note.displayTitle)
@@ -394,8 +481,7 @@ struct DestinationRow: View {
             .padding(.vertical, 8)
             .padding(.horizontal, 10)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(hovering && selected != nil ? Color.accentColor.opacity(0.10) : Color.clear,
-                        in: RoundedRectangle(cornerRadius: 9))
+            .background(background, in: RoundedRectangle(cornerRadius: 9))
             .overlay {
                 RoundedRectangle(cornerRadius: 9)
                     .strokeBorder(.quaternary, lineWidth: 1)
@@ -410,6 +496,13 @@ struct DestinationRow: View {
     }
 
     private var isSubArea: Bool { model.index.parentArea(of: note) != nil }
+
+    /// Hovering while a line is picked shows where it would land; a sub-area otherwise sits
+    /// on a faint tint of its own colour, so a family reads as a family.
+    private var background: Color {
+        if hovering, selected != nil { return Color.accentColor.opacity(0.10) }
+        return isSubArea ? note.kind.tint.opacity(0.05) : .clear
+    }
 
     private var subtitle: String {
         let open = note.openTasks.count
