@@ -2,6 +2,14 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 93 · 9 September 2026
+
+- **Fix: the Templates list drew its rows on top of each other.** The headings and the rows below them overlapped. Plain sections now, with a fold arrow in each heading.
+- **Fix: New template really asks what it makes.** The choice was in a Mac alert, which quietly drops anything that is not a text field — so the picker never appeared and every new template came out a project. It is a proper panel now, with the name, what it makes, and a sentence explaining what a template is for.
+- **The Save button says "Saved" when there is nothing to save**, instead of going grey. Your typing is written a moment after you stop; the dimmed button made it look as though nothing had happened.
+- **A template edited on one device now reaches the other.** The app watches the notes for outside changes but was not watching the Templates folder, so an edit made on the Mac sat there until the phone was restarted.
+- A template that is not the default for its kind says so: "One way to start a project note. Pick it under New note › Start from."
+
 ## Build 92 · 9 September 2026
 
 - **Fix: you can type in a template.** The editor showed the file but would not take a keystroke on the Mac. It is the same editor the notes use now — proven, and it colours the markdown while you write.

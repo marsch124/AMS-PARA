@@ -80,7 +80,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 92
+    static let number = 93
 }
 
 @MainActor
@@ -469,10 +469,16 @@ final class AppModel: ObservableObject {
         for note in notes {
             parts.append("\(note.relativePath)@\(vault.modificationDate(of: note.relativePath)?.timeIntervalSince1970 ?? 0)")
         }
-        // Folder dates change when notes are added or removed.
+        // Folder dates change when notes are added or removed. Templates is in the list so a
+        // template edited on the other device is picked up too; nothing else notices it.
         for folder in [vault.config.projectsFolder, vault.config.areasFolder, vault.config.resourcesFolder,
-                       vault.config.archiveFolder, vault.config.calendarFolder, vault.config.goalsFolder] {
+                       vault.config.archiveFolder, vault.config.calendarFolder, vault.config.goalsFolder,
+                       vault.config.templatesFolder] {
             parts.append("\(folder)/@\(vault.modificationDate(of: folder)?.timeIntervalSince1970 ?? 0)")
+        }
+        for name in vault.templateNames() {
+            let path = "\(vault.config.templatesFolder)/\(name).md"
+            parts.append("\(path)@\(vault.modificationDate(of: path)?.timeIntervalSince1970 ?? 0)")
         }
         return parts.joined(separator: "|")
     }

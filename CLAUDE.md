@@ -470,6 +470,12 @@ template:)` takes the chosen one; `TemplateFile.defaultName(for:)` is the one us
 Build 92: `TemplateEditorView` uses `MarkdownSyntaxEditor`, not a plain SwiftUI `TextEditor` —
 the latter rendered the file in that column but never took a keystroke on macOS — and it saves
 on a debounce as well as on ⌘S, on switching template and on disappearing.
+Build 93: the groups are plain `Section`s with a fold button in the header (DisclosureGroups
+inside a List drew their rows over each other); `NewTemplateSheet` replaced an `.alert`,
+because a macOS alert silently drops everything that is not a TextField and the "makes a"
+picker never appeared, so every new template came out a project; and
+`currentVaultSignature()` includes the Templates folder and its files, or a template edited
+on the other device is never noticed.
 
 ## Not built (by choice)
 
