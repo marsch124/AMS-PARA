@@ -10,9 +10,15 @@ Apple Reminders, daily/weekly notes, quick capture, full-text search.
 
 Owner: Martin Schabbauer (project manager, part-time retired, Sweden, not a
 developer). Communicate in short, friendly, concrete steps. He cannot run
-Terminal commands. Since build 56 both apps come from TestFlight: when CI is
-green, tell him to press **Run workflow** on the TestFlight page, then Update in
-TestFlight on the phone and on the Mac. Xcode is no longer part of his routine.
+Terminal commands. Since build 56 both apps come from TestFlight. When CI is green, spell the two
+steps out every time — he asked for this explicitly, "TestFlight page" is ambiguous
+because the GitHub page and Apple's TestFlight app are different things:
+1. In the browser, signed in to GitHub:
+   `https://github.com/marsch124/AMS-PARA/actions/workflows/testflight.yml`
+   → blue bar → **Run workflow ▾** → keep the branch → green **Run workflow**. ~5 min.
+2. Then Apple's **TestFlight app** on the phone and on the Mac → AMS PARA → **Update**,
+   5-10 minutes later. The sidebar's build number confirms which one he is running.
+Xcode is no longer part of his routine.
 
 ## Layout
 
