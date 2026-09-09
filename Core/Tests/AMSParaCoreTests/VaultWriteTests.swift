@@ -75,7 +75,7 @@ final class VaultWriteTests: XCTestCase {
         source.append(task: TaskItem(title: "Call the roofer"))
         source = try vault.save(source)
         let target = try vault.createNote(kind: .project, title: "Roof")
-        let task = try XCTUnwrap(source.tasks.first)
+        let task = try XCTUnwrap(source.tasks.first { $0.title == "Call the roofer" })
 
         let move = try vault.move(task: task, from: source, to: target)
 
@@ -91,7 +91,7 @@ final class VaultWriteTests: XCTestCase {
         source.append(task: TaskItem(title: "Order gravel"))
         source = try vault.save(source)
         let target = try vault.createNote(kind: .project, title: "Roof")
-        let task = try XCTUnwrap(source.tasks.first)
+        let task = try XCTUnwrap(source.tasks.first { $0.title == "Order gravel" })
         // The source is rewritten elsewhere with the task on a different line, so taking it out
         // of what is now on disk cannot work either.
         try changeOnDisk(source.relativePath) { text in

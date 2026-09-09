@@ -2,7 +2,7 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
-## Build 97 · 9 September 2026
+## Build 98 · 9 September 2026
 
 Hardening, first part: the things the app does that touch several notes at once.
 
@@ -12,6 +12,14 @@ Hardening, first part: the things the app does that touch several notes at once.
 - **A rename makes a backup first.** It is the one action that can touch every note in the vault.
 - **Rearranging a list reports once, not once per note.** And a note whose file changed while you were dragging is written again rather than skipped.
 - Underneath all of these: when a note has changed on disk in the moment between reading and writing, the app now re-reads it and makes the same change to what is actually there, instead of giving up. Nothing of the other device's work is overwritten.
+
+Hardening, second part: the backups.
+
+- **Restoring a backup no longer stops halfway.** A single file it could not write used to abort the whole restore, leaving the vault half old and half new with no word about which. It now restores everything it can and tells you exactly which files it could not put back.
+- **A backup is no longer lost to one unreadable file.** The same problem the other way round: one file that could not be copied meant no backup at all that day. Those files are skipped, listed inside the backup in `skipped.txt`, and the rest is saved. If nothing at all could be copied, you are told rather than left with an empty folder that looks like a safe copy.
+- **A second backup in the same minute was invisible.** It got a slightly different folder name that the app could not read back, so it never appeared in the list and was never cleaned up.
+- **A backup asks iCloud for anything missing first**, so it does not quietly copy a vault with holes in it.
+- Restoring is now covered by tests: that a deleted note comes back, that a note made after the backup is left alone, that your current text is kept as a backup of its own first, and that a file it cannot write is reported.
 
 ## Build 96 · 9 September 2026
 

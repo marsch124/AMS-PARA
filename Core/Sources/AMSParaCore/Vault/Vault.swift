@@ -10,6 +10,7 @@ public enum VaultError: Error, LocalizedError, Equatable {
     case unreadable(String)
     case notDownloadedYet(String)
     case taskNotFound(String)
+    case backupFailed(Int)
 
     public var errorDescription: String? {
         switch self {
@@ -22,6 +23,7 @@ public enum VaultError: Error, LocalizedError, Equatable {
         case .unreadable(let p): return "\(p) could not be read as text."
         case .notDownloadedYet(let p): return "\(p) is still coming from iCloud. Try again in a moment."
         case .taskNotFound(let t): return "\u{201C}\(t)\u{201D} is no longer where it was; the note may have changed."
+        case .backupFailed(let n): return "The backup could not be made: \(n) file(s) could not be copied."
         }
     }
 }

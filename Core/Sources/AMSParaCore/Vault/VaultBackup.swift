@@ -13,12 +13,35 @@ public struct VaultBackup: Identifiable, Equatable, Sendable {
 
     public static let folderFormat = "yyyy-MM-dd HHmm"
 
+    /// The date in a folder name. A second backup in the same minute is named "… 2~reason";
+    /// without the trailing number it would not parse, and such a backup was invisible in the
+    /// list and therefore never cleared out either.
+    static func date(fromFolderPart part: String) -> Date? {
+        if let date = formatter.date(from: part) { return date }
+        guard let space = part.lastIndex(of: " "), Int(part[part.index(after: space)...]) != nil else { return nil }
+        return formatter.date(from: String(part[part.startIndex..<space]))
+    }
+
     static let formatter: DateFormatter = {
         let f = DateFormatter()
         f.dateFormat = folderFormat
         f.locale = Locale(identifier: "en_US_POSIX")
         return f
     }()
+}
+
+/// What a restore managed to put back. `failed` names the files that could not be written,
+/// which are the ones still holding whatever was in the vault before.
+public struct RestoreResult: Equatable, Sendable {
+    public let written: Int
+    public let failed: [String]
+
+    public var isComplete: Bool { failed.isEmpty }
+
+    public init(written: Int, failed: [String]) {
+        self.written = written
+        self.failed = failed
+    }
 }
 
 public extension Vault {
@@ -33,7 +56,7 @@ public extension Vault {
             guard fm.fileExists(atPath: url.path, isDirectory: &isDir), isDir.boolValue else { return nil }
             let name = url.lastPathComponent
             let parts = name.split(separator: "~", maxSplits: 1).map(String.init)
-            guard let date = VaultBackup.formatter.date(from: parts[0]) else { return nil }
+            guard let date = VaultBackup.date(fromFolderPart: parts[0]) else { return nil }
             let count = (fm.enumerator(at: url, includingPropertiesForKeys: nil)?
                 .compactMap { $0 as? URL }
                 .filter { $0.pathExtension.lowercased() == "md" }
@@ -68,14 +91,34 @@ public extension Vault {
         try fm.createDirectory(at: target, withIntermediateDirectories: true)
 
         var copied = 0
-        for relativePath in try backedUpPaths() {
+        var skipped: [String] = []
+        let wanted = try backedUpPaths()
+        for relativePath in wanted {
             let destination = target.appendingPathComponent(relativePath)
-            try fm.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
-            try? fm.removeItem(at: destination)
-            try fm.copyItem(at: url(for: relativePath), to: destination)
+            do {
+                try fm.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
+                try? fm.removeItem(at: destination)
+                try fm.copyItem(at: url(for: relativePath), to: destination)
+            } catch {
+                // A file that has just been deleted, or that this device cannot read, must not
+                // cost every other note its backup.
+                skipped.append(relativePath)
+                continue
+            }
             if relativePath.lowercased().hasSuffix(".md") { copied += 1 }
         }
+        // A backup of nothing is not a backup; better to fail loudly than to leave an empty
+        // folder looking like a safe copy.
+        if copied == 0, wanted.contains(where: { $0.lowercased().hasSuffix(".md") }) {
+            try? fm.removeItem(at: target)
+            throw VaultError.backupFailed(skipped.count)
+        }
         try signature.write(to: target.appendingPathComponent("signature.txt"), atomically: true, encoding: .utf8)
+        if !skipped.isEmpty {
+            // Written beside the notes so it is plain, later, what this copy does not hold.
+            try? skipped.joined(separator: "\n").write(to: target.appendingPathComponent("skipped.txt"),
+                                                       atomically: true, encoding: .utf8)
+        }
 
         // Oldest first out.
         for old in backups().dropFirst(max(limit, 1)) {
@@ -86,17 +129,19 @@ public extension Vault {
 
     /// Puts the notes from a backup back into the vault, after saving the current state as a
     /// backup of its own. Notes created since the backup are left where they are.
-    /// Returns how many files were written.
     @discardableResult
-    func restore(_ backup: VaultBackup, now: Date = Date()) throws -> Int {
+    func restore(_ backup: VaultBackup, now: Date = Date()) throws -> RestoreResult {
         let fm = FileManager.default
         let source = backupsURL.appendingPathComponent(backup.folderName, isDirectory: true)
         guard fm.fileExists(atPath: source.path) else { throw VaultError.noteNotFound(backup.folderName) }
         try makeBackup(reason: "before restore", now: now)
 
         var written = 0
+        var failed: [String] = []
         let sourceComponents = source.standardizedFileURL.pathComponents
-        guard let walker = fm.enumerator(at: source, includingPropertiesForKeys: [.isRegularFileKey]) else { return 0 }
+        guard let walker = fm.enumerator(at: source, includingPropertiesForKeys: [.isRegularFileKey]) else {
+            return RestoreResult(written: 0, failed: [])
+        }
         for case let fileURL as URL in walker {
             guard (try? fileURL.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) == true else { continue }
             // From path components, so a symlinked or oddly spelled path cannot turn into a
@@ -105,15 +150,20 @@ public extension Vault {
             guard components.count > sourceComponents.count,
                   Array(components.prefix(sourceComponents.count)) == sourceComponents else { continue }
             let relative = components.dropFirst(sourceComponents.count).joined(separator: "/")
-            guard relative != "signature.txt", !relative.isEmpty else { continue }
+            guard relative != "signature.txt", relative != "skipped.txt", !relative.isEmpty else { continue }
             let destination = url(for: relative)
-            try fm.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
-            try? fm.removeItem(at: destination)
-            try fm.copyItem(at: fileURL, to: destination)
-            written += 1
+            do {
+                try fm.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
+                try? fm.removeItem(at: destination)
+                try fm.copyItem(at: fileURL, to: destination)
+                written += 1
+            } catch {
+                // Half a restore is worse than a reported one: keep going and name the rest.
+                failed.append(relative)
+            }
         }
         reloadConfig()
-        return written
+        return RestoreResult(written: written, failed: failed)
     }
 
     /// Copies the vault into an empty folder elsewhere, for the sync preview.

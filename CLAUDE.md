@@ -492,7 +492,7 @@ on `openVault` and from the 10 s poll at most once a minute; `templatesFromCloud
 `CloudFiles.exists`, or a note still on its way would be replaced by a fresh empty one and the
 two would collide in iCloud; `loadNote` throws `VaultError.notDownloadedYet` for a placeholder.
 
-## Multi-note writes (build 97)
+## Multi-note writes and restore (build 98)
 
 Hardening, part one: everything that writes more than one file goes through
 `Core/Vault/VaultWrites.swift`, where the order and the failure handling live and can be
@@ -506,6 +506,15 @@ every link untouched) and returns `staleLinks`, the notes that still name the ol
 them and now *say* when something did not happen: `makeNote` creates the note before removing
 the line, and `renameNote` backs the vault up first. `VaultWriteTests` forces each failure by
 writing the file behind the app's back or by putting a folder where the file was.
+
+Part two, backups: `Vault.restore` returns `RestoreResult` (written + failed) and keeps going
+past a file it cannot write instead of stopping halfway; `makeBackup` skips a file it cannot
+copy (writing their paths to `skipped.txt` beside `signature.txt`) rather than losing the whole
+backup, and throws `VaultError.backupFailed` if it copied no note at all. `VaultBackup.date(
+fromFolderPart:)` also parses "… 2~reason", the name a second backup in the same minute gets —
+those were invisible in the list and so never pruned. `AppModel.backUp` asks iCloud for missing
+files first, or the copy is quietly short. `RestoreTests` is the first exercise the way back
+has ever had.
 
 ## Not built (by choice)
 

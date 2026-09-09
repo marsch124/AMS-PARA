@@ -80,7 +80,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 97
+    static let number = 98
 }
 
 @MainActor
@@ -1577,6 +1577,9 @@ final class AppModel: ObservableObject {
     func backUp(reason: String) -> VaultBackup? {
         guard let vault else { return nil }
         flushPendingEdits()
+        // A file iCloud has not sent is a file that cannot be copied, and a backup missing
+        // notes without saying so is worse than none.
+        fetchCloudFiles()
         do {
             let made = try vault.makeBackup(reason: reason)
             if let made { log("backup saved: \(made.folderName)") }
@@ -1613,12 +1616,19 @@ final class AppModel: ObservableObject {
         guard let vault else { return }
         flushPendingEdits()
         do {
-            let written = try vault.restore(backup)
-            log("restored \(backup.folderName): \(written) files")
+            let result = try vault.restore(backup)
+            log("restored \(backup.folderName): \(result.written) files, \(result.failed.count) not written")
             selectedNotePath = nil
             reload()
             refreshBackups()
-            flash("Restored \(written) file\(written == 1 ? "" : "s") from \(backup.folderName)")
+            if result.isComplete {
+                flash("Restored \(result.written) file\(result.written == 1 ? "" : "s") from \(backup.folderName)")
+            } else {
+                // The rest of the vault is restored; these files are still as they were.
+                errorMessage = "Restored \(result.written) of \(result.written + result.failed.count) files. "
+                    + "\(result.failed.count) could not be written and still hold what they held before: "
+                    + result.failed.prefix(5).joined(separator: ", ")
+            }
         } catch {
             errorMessage = "The backup could not be restored: \(error.localizedDescription)"
         }
