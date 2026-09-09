@@ -396,6 +396,19 @@ beside it), `purge` and `purgeDeleted(olderThan:)`. `AppModel` keeps `deletedNot
 refreshed from `reload()`, runs `purgeOldDeleted()` (30 days) at launch and on open, and
 `DeletedView` is the sidebar section.
 
+## Map export and a navigable Help (build 81)
+
+`MapExport` (App) renders `MapCanvas` at zoom 1 through `ImageRenderer` — the canvas takes no
+environment object, so it renders off screen as is — for PNG (`nsImage`/`uiImage`) and PDF
+(`render { size, draw in }` into a `CGContext(consumer:mediaBox:)`); `LinkMap.outline()` (Core)
+is the text version. macOS saves through `NSSavePanel`, iOS through a `ShareSheet`
+(`UIActivityViewController`) presented by MapView's only `.sheet`.
+
+`HelpDocument` no longer renders one scroll: `HelpParts` splits a bundled document at its `##`
+headings into `HelpSection`s drawn as `DisclosureGroup`s, `###` parses to `.subheading`, and a
+search field filters the sections (a match forces them open). `Docs/HowItWorks.md` is written
+for that shape — one subject per `##`, `###` inside the long ones.
+
 ## Not built (by choice)
 
 Saved searches. Roadmap stopped there on his request.

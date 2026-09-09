@@ -9,6 +9,9 @@ struct MapView: View {
     @State private var map = LinkMap(roots: [])
     @State private var selectedID: String?
     @State private var zoom: CGFloat = 1
+    #if !os(macOS)
+    @State private var shared: SharedFile?
+    #endif
 
     private static let zoomSteps: [CGFloat] = [0.6, 0.75, 0.9, 1, 1.15, 1.3, 1.5]
 
@@ -37,8 +40,24 @@ struct MapView: View {
                     .disabled(zoom <= Self.zoomSteps.first!)
                 Button { step(1) } label: { Label("Zoom in", systemImage: "plus.magnifyingglass") }
                     .disabled(zoom >= Self.zoomSteps.last!)
+                Menu {
+                    Button("PDF\u{2026}") { export(MapExport.pdfData(for: map), extension: "pdf") }
+                    Button("PNG\u{2026}") { export(MapExport.pngData(for: map), extension: "png") }
+                    Divider()
+                    Button("Copy image") { MapExport.copyImage(for: map) }
+                    Button("Copy as outline") { MapExport.copyToPasteboard(map.outline()) }
+                } label: {
+                    Label("Export", systemImage: "square.and.arrow.up")
+                }
+                .disabled(map.isEmpty)
+                .help("Save the map as a PDF or a picture, or copy it")
             }
         }
+        #if !os(macOS)
+        .sheet(item: $shared) { file in
+            ShareSheet(url: file.url)
+        }
+        #endif
         .onAppear { rebuild() }
         .onChange(of: model.notes) { _, _ in rebuild() }
         .onChange(of: model.selectedNotePath) { _, path in
@@ -51,6 +70,23 @@ struct MapView: View {
     private func rebuild() {
         map = model.index.linkMap()
         if let selectedID, map.node(selectedID) == nil { self.selectedID = nil }
+    }
+
+    /// The Mac asks where to put the file; the phone hands it to the share sheet.
+    private func export(_ data: Data?, extension ext: String) {
+        guard let data else {
+            model.errorMessage = "The map could not be drawn into a \(ext.uppercased())."
+            return
+        }
+        #if os(macOS)
+        MapExport.save(data, extension: ext)
+        #else
+        guard let url = MapExport.temporaryFile(data, extension: ext) else {
+            model.errorMessage = "The \(ext.uppercased()) could not be written."
+            return
+        }
+        shared = SharedFile(url: url)
+        #endif
     }
 
     private func step(_ direction: Int) {

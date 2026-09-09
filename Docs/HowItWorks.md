@@ -2,6 +2,8 @@
 
 AMS PARA is a plain-text project and life management app. Everything you write is a markdown file in a folder you own. The app reads and writes those files; Apple Reminders and Apple Calendar stay in sync with them.
 
+Every heading below opens and closes, so this page is a contents list you drill into rather than a wall of text. The box at the top searches it: type a word and only the parts that mention it are shown, already opened.
+
 ## The idea
 
 - **Goals** say what you want in life. They sit above everything else.
@@ -9,7 +11,7 @@ AMS PARA is a plain-text project and life management app. Everything you write i
 - **Areas** are things you keep up over time: health, home, a client. They also serve goals. An area can sit under another one as a **sub-area** — Mobility under Health, say, or Yoga, Pliability and Stretching under Mobility. Right-click an area › **Part of** to put it under another, or to take it back out. Areas nest one level, no deeper, so the list stays a list.
 - **Resources** are reference material: articles, checklists, ideas.
 - **Archive** is where finished projects and closed areas go. They stay searchable.
-- **Inbox** catches everything you have not sorted yet. Its screen is built for emptying: type at the top to capture, then work down the list with Today, Tomorrow, a date, or the menu to move it into a project or turn it into a note of its own. ↑ ↓ move, T is today, M tomorrow, D done, ⌫ deletes. To rename a line, use its ⋯ menu › Rename… (or right-click › Rename…). The right-hand column shows the line you are on and where it can go: click a destination. It is grouped into Projects and Areas, with sub-areas indented under the area they belong to and a chevron to fold a family away. "New note from this line…" makes a project, area or resource out of it instead.
+- **Inbox** catches everything you have not sorted yet. It has a screen of its own; see **The Inbox** below.
 
 That is PARA with a Goals layer on top. Every note answers "what does this serve?".
 
@@ -45,6 +47,33 @@ Useful keys: `status` (active, on hold, done), `area`, `goal`, `due`, `tags`, `r
 
 Links between notes use `[[Note title]]`. Unknown titles become a new resource note when you click them.
 
+### Renaming a note
+
+Right-click a note in the list (long-press on the phone) › **Rename…**, or press **Rename** in the toolbar of the note itself. The file is renamed with it, and every note that pointed at the old name — `goal:`, `area:`, `parent:`, `related:` or a `[[wikilink]]` — is updated, so no link comes loose. The note's own `# Heading` follows when it still said the old name.
+
+A name another note already uses is refused. In Apple Reminders the list follows on the next sync; the tasks keep their reminders. The Inbox and daily notes cannot be renamed.
+
+### Archive and Deleted
+
+- **Archive** moves a project, area, resource or goal to the Archive folder, marks it archived and stops syncing its tasks. Use it for finished work.
+- **Delete** (⌘⌫ or right-click) moves a note to the **Deleted** section in the sidebar. Nothing is lost: each entry has **Put back**, which returns it to the folder it came from (or beside it, if that name has been taken since), and **Delete for good**. **Empty** in the toolbar clears the lot.
+- Deleted notes are kept for **30 days**, then cleared out on their own. They live in a hidden folder inside the vault, so the phone and the Mac behave the same way and nothing there syncs to Reminders. The Inbox note cannot be deleted.
+- Only whole notes go here. A task you delete from a list is gone from the note straight away.
+
+## Sub-areas
+
+**Making one.** Open the area note and click **Part of…** in the top row, then pick the area it belongs to. "Not part of another area" takes it back out. The same choices sit on the right-click menu of an area in the list, and **New note › Area** has a **Part of** picker for making one from the start.
+
+A sub-area is an ordinary area note with one extra line in its frontmatter, `parent: Health`. That means it behaves like any other area:
+
+- Its own tasks and its own list in Apple Reminders.
+- Its own box on the Map, drawn under the area it belongs to.
+- A destination of its own in the Inbox "File it" column and in a task's **Move to** menu, where it reads "Health › Mobility".
+
+In the Areas list a sub-area is indented under its area, and the chevron on the area folds its sub-areas away. Dragging to arrange works inside a family: a sub-area moves among its brothers and sisters, an area among the other areas. The note itself shows **Part of Health** at the top — click it to go there.
+
+Any area can be picked as the parent. Picking one that is already a sub-area lifts it up a level first, since areas nest one level only — asking for "Yoga under Mobility" means Mobility is the level above.
+
 ## Tasks
 
 Tasks are ordinary list lines inside the notes:
@@ -73,6 +102,22 @@ Right-click any task, anywhere in the app, for the task menu:
 
 You can also **drag** a task: onto a note in the middle column or onto Inbox to move it, onto a day in the Calendar's month grid or week list to set its date, or onto a day in the weekly note.
 
+## The Inbox
+
+Everything you capture lands here, and the screen is built for emptying it.
+
+The middle column is the list of lines waiting to be sorted, with a capture field on top. Work down it with the buttons on each row — Today, Tomorrow, pick a date — or its **⋯** menu, which also holds **Rename…** and **New note from this line…** (a project, area or resource made out of the line).
+
+### The keys
+
+↑ and ↓ move down the list, **T** gives a line today's date, **M** tomorrow's, **D** ticks it off and **⌫** deletes it. Typing in the capture field never triggers them.
+
+### Where it goes
+
+The right-hand column shows the line you are on and everywhere it can go. Click a destination and the line moves there, and the next line is selected so you can keep going.
+
+The destinations are grouped into **Projects** and **Areas**, with sub-areas indented under the area they belong to and a chevron to fold a family away.
+
 ## Reminders sync
 
 The sync goes both ways. Press the sync button or ⇧⌘R, or let auto sync run at the interval set in Settings.
@@ -87,6 +132,10 @@ The sync goes both ways. Press the sync button or ⇧⌘R, or let auto sync run 
 
 Each device keeps its own sync bookkeeping, so the Mac and the iPhone can both sync the same vault.
 
+### Seeing what a sync will do
+
+The sync button is a menu. **Show me what would change…** rehearses the entire sync on a copy of your vault and a copy of your reminders and shows the result. Nothing is touched. From that sheet you can press **Sync now** to do it for real. **Last sync report…** shows the same for the sync you ran.
+
 ## Goals
 
 New › Goal creates a goal. A life goal has no date. A dated goal has a target date, a measure, and can point at a life goal. Projects and areas link to a goal with the `goal:` line. The goal note shows how many projects and areas serve it, open tasks, activity in the last 30 days, and flags such as "Nothing serves this", "Past its target date" or "Achieved".
@@ -99,6 +148,14 @@ New › Goal creates a goal. A life goal has no date. A dated goal has a target 
 - **Calendar** lets you pick a day, week or month. The day view has a month grid with week numbers and a dot under every day that holds something — green for tasks due, red if one is overdue, blue for calendar events, grey for a day that already has a note. Under the grid is the day itself: its events, what is due, what got done, and a button to open or create the daily note. Move with the arrows, the Today button, or the left and right arrow keys. Drop a task on a day to give it that date.
 - A daily note shows the day's events and the tasks due that day above its own text. A weekly note shows all seven days as a plan: drop tasks onto a day, tick them off there.
 
+## Apple Calendar and Time Blocks
+
+The app reads events from the calendars you choose in Settings › Apple Calendar. Events appear in Today and in daily notes. Double-click an event, or use its arrow button, to open it in the Calendar app.
+
+The Calendar section shows the day's schedule in the right-hand column: hours down the side, events in place, your time blocks on top, a red line for now, and a strip at the top for all-day events and tasks with no time. Press "Block time" or double-click an hour to reserve time; click a block to change or delete it; drag a task onto an hour to block that hour for it. The switch at the top of the column swaps between the schedule and the daily note.
+
+Time Blocks are the one thing the app writes to Calendar. They are blocks of time you reserve, separate from tasks. Add one in the Time Blocks section: it becomes an ordinary event in the calendar chosen under "Time blocks go to", and shows on all your devices. Click a block to edit it, right-click to open it in Calendar or delete it. Nothing else in your calendars is ever changed.
+
 ## Weekly review
 
 The review walks through the inbox, the projects that need attention and the goals. A project is flagged when it has no next action, has overdue tasks, is past its due date, has not changed for the number of days set in Settings, or is on hold. Marking a project reviewed writes `reviewed:` with today's date.
@@ -107,9 +164,26 @@ The review walks through the inbox, the projects that need attention and the goa
 
 The Map draws what serves what: goals at the top, then areas and projects, then open tasks and resources. Notes without a goal and archived notes sit in dashed boxes. Click a box to highlight its connections and open the note.
 
-## Search
+### Exporting the map
 
-Search Everywhere (⇧⌘F) searches every note and task. Filters can be typed into the query:
+The **Export** button in the Map's toolbar offers:
+
+- **PDF** — vector, so it stays sharp however far you zoom or print it. The one to send to someone.
+- **PNG** — a picture, for pasting into a mail or a document.
+- **Copy image** — the same picture, straight to the clipboard.
+- **Copy as outline** — the same tree as an indented list of text, which is often easier to read than a diagram and can be pasted anywhere.
+
+On the Mac a save dialog asks where to put the file. On the iPhone the share sheet opens, so it can go to Files, Mail, Messages or anywhere else.
+
+## Finding things again
+
+- **Recent** in the sidebar lists what you opened last, newest first, whatever kind it was. It is remembered between launches; **Clear** empties it.
+- **Calendar › Notes** lists every daily and weekly note you have written, newest first, with the first line of each and its own search field. Day, Week and Month are for finding a date; Notes is for finding what you wrote.
+- **Search Everywhere** (⇧⌘F) looks inside every note and task; see below.
+
+### Search Everywhere
+
+Filters can be typed straight into the query:
 
 - `type:project`, `type:area`, `type:goal`
 - `status:active`, `status:done`
@@ -128,14 +202,6 @@ Search Everywhere (⇧⌘F) searches every note and task. Filters can be typed i
 
 Captures land in the Inbox, today's note or a project, and are filed the next time the app is active.
 
-## Apple Calendar and Time Blocks
-
-The app reads events from the calendars you choose in Settings › Apple Calendar. Events appear in Today and in daily notes. Double-click an event, or use its arrow button, to open it in the Calendar app.
-
-The Calendar section shows the day's schedule in the right-hand column: hours down the side, events in place, your time blocks on top, a red line for now, and a strip at the top for all-day events and tasks with no time. Press "Block time" or double-click an hour to reserve time; click a block to change or delete it; drag a task onto an hour to block that hour for it. The switch at the top of the column swaps between the schedule and the daily note.
-
-Time Blocks are the one thing the app writes to Calendar. They are blocks of time you reserve, separate from tasks. Add one in the Time Blocks section: it becomes an ordinary event in the calendar chosen under "Time blocks go to", and shows on all your devices. Click a block to edit it, right-click to open it in Calendar or delete it. Nothing else in your calendars is ever changed.
-
 ## Backups
 
 The app saves a copy of the whole vault before every sync and once a day, keeping the last ten. They live inside the vault, in a hidden folder called `.ams-para/Backups`, as ordinary folders of markdown files.
@@ -145,43 +211,6 @@ The app saves a copy of the whole vault before every sync and once a day, keepin
 - **Restore a copy** writes a whole backup back into the vault. What you have at that moment is saved as a backup first, and notes you created after the backup are left where they are.
 
 Time Machine covers the rest: these backups sit inside the vault folder, so they do not protect against losing that folder itself.
-
-## Seeing what a sync will do
-
-The sync button is a menu. **Show me what would change…** rehearses the entire sync on a copy of your vault and a copy of your reminders and shows the result. Nothing is touched. From that sheet you can press **Sync now** to do it for real. **Last sync report…** shows the same for the sync you ran.
-
-## Sub-areas
-
-**Making one.** Open the area note and click **Part of…** in the top row, then pick the area it belongs to. "Not part of another area" takes it back out. The same choices sit on the right-click menu of an area in the list, and **New note › Area** has a **Part of** picker for making one from the start.
-
-A sub-area is an ordinary area note with one extra line in its frontmatter, `parent: Health`. That means it behaves like any other area:
-
-- Its own tasks and its own list in Apple Reminders.
-- Its own box on the Map, drawn under the area it belongs to.
-- A destination of its own in the Inbox "File it" column and in a task's **Move to** menu, where it reads "Health › Mobility".
-
-In the Areas list a sub-area is indented under its area, and the chevron on the area folds its sub-areas away. Dragging to arrange works inside a family: a sub-area moves among its brothers and sisters, an area among the other areas. The note itself shows **Part of Health** at the top — click it to go there.
-
-Any area can be picked as the parent. Picking one that is already a sub-area lifts it up a level first, since areas nest one level only — asking for "Yoga under Mobility" means Mobility is the level above.
-
-## Getting back to a note
-
-- **Recent** in the sidebar lists what you opened last, newest first, whatever kind it was. It is remembered between launches; **Clear** empties it.
-- **Calendar › Notes** lists every daily and weekly note you have written, newest first, with the first line of each and its own search field. Day, Week and Month are for finding a date; Notes is for finding what you wrote.
-- **Search** (⇧⌘F) looks inside every note and task.
-
-## Renaming a note
-
-Right-click a note in the list (long-press on the phone) › **Rename…**, or press **Rename** in the toolbar of the note itself. The file is renamed with it, and every note that pointed at the old name — `goal:`, `area:`, `parent:`, `related:` or a `[[wikilink]]` — is updated, so no link comes loose. The note's own `# Heading` follows when it still said the old name.
-
-A name another note already uses is refused. In Apple Reminders the list follows on the next sync; the tasks keep their reminders. The Inbox and daily notes cannot be renamed.
-
-## Archive and Deleted
-
-- **Archive** moves a project, area, resource or goal to the Archive folder, marks it archived and stops syncing its tasks. Use it for finished work.
-- **Delete** (⌘⌫ or right-click) moves a note to the **Deleted** section in the sidebar. Nothing is lost: each entry has **Put back**, which returns it to the folder it came from (or beside it, if that name has been taken since), and **Delete for good**. **Empty** in the toolbar clears the lot.
-- Deleted notes are kept for **30 days**, then cleared out on their own. They live in a hidden folder inside the vault, so the phone and the Mac behave the same way and nothing there syncs to Reminders. The Inbox note cannot be deleted.
-- Only whole notes go here. A task you delete from a list is gone from the note straight away.
 
 ## On the iPhone
 

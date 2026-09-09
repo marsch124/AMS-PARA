@@ -2,6 +2,12 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 81 · 9 September 2026
+
+- **Export the Map.** A new **Export** button in the Map's toolbar: **PDF** (vector, so it prints and zooms without going fuzzy), **PNG**, **Copy image**, and **Copy as outline** — the same tree as indented text you can paste anywhere. The Mac asks where to save; the phone opens the share sheet.
+- **Help is now something you can navigate.** How it works and Version history are no longer one long scroll: every heading opens and closes, and a search box at the top filters the page down to the parts that mention what you typed, already opened. **Open all** / **Close all** in the same row.
+- **The manual has been reorganised** to match: related things sit together (renaming and deleting are under Notes, the sync preview under Reminders sync, Recent and Search under "Finding things again"), the Inbox has a section of its own, and long sections have sub-headings.
+
 ## Build 80 · 9 September 2026
 
 - **Deleted.** A new sidebar section holding the notes you have deleted, newest first. Each one has **Put back**, which returns it to the folder it came from, and **Delete for good**; **Empty** in the toolbar clears the lot.

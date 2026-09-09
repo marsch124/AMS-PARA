@@ -77,6 +77,20 @@ public struct MapNode: Identifiable, Equatable, Sendable {
     }
 }
 
+public extension LinkMap {
+    /// The same tree as an indented markdown list, for pasting into a document or an email.
+    /// Two spaces per level, the way a nested list is written.
+    func outline() -> String {
+        var lines: [String] = []
+        func walk(_ node: MapNode, depth: Int) {
+            lines.append(String(repeating: "  ", count: depth) + "- " + node.title)
+            for child in node.children { walk(child, depth: depth + 1) }
+        }
+        for root in roots { walk(root, depth: 0) }
+        return lines.joined(separator: "\n") + (lines.isEmpty ? "" : "\n")
+    }
+}
+
 /// A link that the tree cannot show as a parent: `from` also serves `to`.
 public struct MapLink: Hashable, Sendable {
     public var from: String
