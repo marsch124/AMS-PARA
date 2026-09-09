@@ -152,6 +152,7 @@ public final class Vault {
         }
         skippedFiles = []
         notesWaitingForCloud = []
+        cloudFetchesLeft = Vault.cloudFetchesPerLoad
         for kind in [ParaKind.project, .area, .resource, .archive, .daily, .goal] {
             result.append(contentsOf: try notes(kind: kind))
         }
@@ -172,6 +173,19 @@ public final class Vault {
             guard fileURL.pathExtension.lowercased() == "md",
                   (try? fileURL.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) == true,
                   let rel = relativePath(for: fileURL) else { continue }
+            // Reading a note whose contents are still in iCloud means waiting for the
+            // download, so only a few are waited for per load: the rest are asked for and
+            // reported as waiting, and the next load takes the next few. A vault that is all
+            // in the cloud therefore fills in over a handful of reloads instead of holding
+            // everything up at once — on a phone, long enough to be killed for it (build 102).
+            if CloudFiles.isMissing(fileURL) {
+                CloudFiles.startDownload(fileURL)
+                guard cloudFetchesLeft > 0 else {
+                    notesWaitingForCloud.append(rel)
+                    continue
+                }
+                cloudFetchesLeft -= 1
+            }
             // One unreadable file must not hide the whole vault; it is skipped and reported.
             do {
                 result.append(try loadNote(relativePath: rel))
@@ -244,6 +258,12 @@ public final class Vault {
         try save(note)
         return note
     }
+
+    /// How many notes one load will wait for iCloud to send. Each one is a download, so this
+    /// is the difference between an app that fills in over a few seconds and one that stops
+    /// dead until the whole vault has come down.
+    public static let cloudFetchesPerLoad = 15
+    private var cloudFetchesLeft = Vault.cloudFetchesPerLoad
 
     /// Notes `allNotes()` could not read because iCloud has not sent them to this device yet.
     /// They are not lost and not broken: a download has been asked for and they will appear.

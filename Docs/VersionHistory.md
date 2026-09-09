@@ -2,6 +2,10 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 102 · 9 September 2026
+
+- **A vault that is all in iCloud now fills in gradually instead of stopping the app.** Waiting for a note to come down takes time, so the app waits for a handful per load and asks for the rest, then picks up the next few seconds later. You see the count going down rather than a frozen app — and the phone cannot be killed for taking too long.
+
 ## Build 101 · 9 September 2026
 
 - **The app now reads a note the way TextEdit does.** This is the real cause of today's scare. When iCloud keeps a file's contents off the Mac, a plain read of it fails — so TextEdit could open a note while the app called it unreadable and drew an empty vault. The app now asks macOS for the file properly, which makes iCloud fetch it first and wait for it. Notes appear whether or not they happen to be downloaded.

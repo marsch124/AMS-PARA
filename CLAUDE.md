@@ -536,6 +536,10 @@ waits; `loadNote` goes through it. Also build 101: the whole-vault walk moved in
 `CloudFiles.downloadMissing(under:skipping:)` (no `Vault`, so it is Sendable-safe) and
 `AppModel.fetchCloudFiles` runs it in a `Task.detached` — done synchronously in `init` since
 build 95 it could hold up launch long enough for iOS to kill the app.
+Build 102 bounds that: a coordinated read waits for the download, so `notes(kind:)` spends at
+most `Vault.cloudFetchesPerLoad` (15) of them per `allNotes()` and reports the rest as waiting,
+and `checkForExternalChanges` reloads while anything is waiting — materialising a file does not
+change its modification date, so the vault signature would never notice them arriving.
 **Rule: never let a read failure look like an absence.** A count of what could not be read
 belongs in front of the user, not in the diagnostics log.
 

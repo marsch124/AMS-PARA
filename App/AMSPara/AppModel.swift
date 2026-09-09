@@ -80,7 +80,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 101
+    static let number = 102
 }
 
 @MainActor
@@ -564,6 +564,13 @@ final class AppModel: ObservableObject {
     func checkForExternalChanges() {
         guard vault != nil, !isSyncing else { return }
         fetchCloudFiles()
+        // Notes still coming from iCloud need another look even though nothing on disk has
+        // changed: materialising a file does not change its date, so the signature below would
+        // never notice them arriving (build 102).
+        if !notesWaitingForCloud.isEmpty {
+            reload()
+            return
+        }
         let signature = currentVaultSignature()
         if vaultSignature == nil { vaultSignature = signature; return }
         guard signature != vaultSignature else { return }
