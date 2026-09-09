@@ -4,11 +4,13 @@ AMS PARA is a plain-text project and life management app. Everything you write i
 
 Every heading below opens and closes, so this page is a contents list you drill into rather than a wall of text. The box at the top searches it: type a word and only the parts that mention it are shown, already opened.
 
+Throughout: **right-click** on the Mac is **long-press** on the iPhone. Where this page says one, the other works on the other device.
+
 ## The idea
 
 - **Goals** say what you want in life. They sit above everything else.
 - **Projects** are things with an end: a race, a move, a report. Each one should serve a goal.
-- **Areas** are things you keep up over time: health, home, a client. They also serve goals. An area can sit under another one as a **sub-area** — Mobility under Health, say, or Yoga, Pliability and Stretching under Mobility. Right-click an area › **Part of** to put it under another, or to take it back out. Areas nest one level, no deeper, so the list stays a list.
+- **Areas** are things you keep up over time: health, home, a client. They also serve goals. An area can sit under another one as a **sub-area** — Mobility under Health, say, or Yoga, Pliability and Stretching under Mobility. Right-click an area (long-press on the phone) › **Part of** to put it under another, or to take it back out. Areas nest one level, no deeper, so the list stays a list.
 - **Resources** are reference material: articles, checklists, ideas.
 - **Archive** is where finished projects and closed areas go. They stay searchable.
 - **Inbox** catches everything you have not sorted yet. It has a screen of its own; see **The Inbox** below.
@@ -56,13 +58,13 @@ A name another note already uses is refused. In Apple Reminders the list follows
 ### Archive and Deleted
 
 - **Archive** moves a project, area, resource or goal to the Archive folder, marks it archived and stops syncing its tasks. Use it for finished work.
-- **Delete** (⌘⌫ or right-click) moves a note to the **Deleted** section in the sidebar. Nothing is lost: each entry has **Put back**, which returns it to the folder it came from (or beside it, if that name has been taken since), and **Delete for good**. **Empty** in the toolbar clears the lot.
+- **Delete** (⌘⌫, or right-click the note; long-press on the phone) moves a note to the **Deleted** section in the sidebar. Nothing is lost: each entry has **Put back**, which returns it to the folder it came from (or beside it, if that name has been taken since), and **Delete for good**. **Empty** in the toolbar clears the lot.
 - Deleted notes are kept for **30 days**, then cleared out on their own. They live in a hidden folder inside the vault, so the phone and the Mac behave the same way and nothing there syncs to Reminders. The Inbox note cannot be deleted.
 - Only whole notes go here. A task you delete from a list is gone from the note straight away.
 
 ## Sub-areas
 
-**Making one.** Open the area note and click **Part of…** in the top row, then pick the area it belongs to. "Not part of another area" takes it back out. The same choices sit on the right-click menu of an area in the list, and **New note › Area** has a **Part of** picker for making one from the start.
+**Making one.** Open the area note and click **Part of…** in the top row, then pick the area it belongs to. "Not part of another area" takes it back out. The same choices sit on the right-click menu of an area in the list (long-press on the phone), and **New note › Area** has a **Part of** picker for making one from the start.
 
 A sub-area is an ordinary area note with one extra line in its frontmatter, `parent: Health`. That means it behaves like any other area:
 
@@ -91,7 +93,7 @@ While you type, the editor shows what the markdown means: headings grow, task bo
 
 The task box under the note header shows the same tasks as a checklist. Ticking there edits the line in the file. Its header row has a **Hide finished** switch (also in Settings › Tasks) that leaves out what is done or cancelled; a finished task with open subtasks always stays visible, and nothing is removed from the file.
 
-Right-click any task, anywhere in the app, for the task menu:
+Right-click any task, anywhere in the app — long-press on the phone — for the task menu:
 
 - **Reschedule**: Today, Tomorrow, Next Monday, In a week, Pick a date, Remove date.
 - **Repeat**: every day, week, 2 weeks, month, 3 months or year. When you tick a repeating task, the next one appears below it with the next date. In the file this is `@repeat(weekly)`.
@@ -154,7 +156,7 @@ The app reads events from the calendars you choose in Settings › Apple Calenda
 
 The Calendar section shows the day's schedule in the right-hand column: hours down the side, events in place, your time blocks on top, a red line for now, and a strip at the top for all-day events and tasks with no time. Press "Block time" or double-click an hour to reserve time; click a block to change or delete it; drag a task onto an hour to block that hour for it. The switch at the top of the column swaps between the schedule and the daily note.
 
-Time Blocks are the one thing the app writes to Calendar. They are blocks of time you reserve, separate from tasks. Add one in the Time Blocks section: it becomes an ordinary event in the calendar chosen under "Time blocks go to", and shows on all your devices. Click a block to edit it, right-click to open it in Calendar or delete it. Nothing else in your calendars is ever changed.
+Time Blocks are the one thing the app writes to Calendar. They are blocks of time you reserve, separate from tasks. Add one in the Time Blocks section: it becomes an ordinary event in the calendar chosen under "Time blocks go to", and shows on all your devices. Click a block to edit it, right-click (long-press on the phone) to open it in Calendar or delete it. Nothing else in your calendars is ever changed.
 
 ## Weekly review
 
@@ -294,7 +296,7 @@ A template says what it makes in its own `type:` line, so you can keep several s
 - **+** in the toolbar adds one. Give it a name and say what it makes; it starts as a copy of the one that kind uses now.
 - The template **named after its kind** — Project, Area, Resource, Goal — is the one used unless you choose another.
 - When a kind has more than one, **New note** grows a **Start from** picker.
-- Right-click a template to **Rename** or **Delete** it. Deleting the template only removes the template; notes already made from it are untouched.
+- Right-click a template — long-press on the phone — to **Rename** or **Delete** it. Deleting the template only removes the template; notes already made from it are untouched.
 
 ### Changing them
 

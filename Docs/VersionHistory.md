@@ -2,6 +2,10 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 91 · 9 September 2026
+
+- **The manual now says "long-press" where it meant it.** It said "right-click" throughout, which is a Mac instruction and no help on the iPhone. Every place that offers a menu now names both, and there is a line near the top saying that right-click on the Mac is long-press on the phone.
+
 ## Build 90 · 9 September 2026
 
 - **Templates are grouped and colour-coded** by the kind of note they make — Goals gold, Projects green, Areas pink, Resources blue — and each group folds.
