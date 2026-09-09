@@ -63,10 +63,13 @@ public extension Vault {
                 continue
             }
             if let real = CloudFiles.realName(ofPlaceholder: name) {
-                let target = fileURL.deletingLastPathComponent().appendingPathComponent(real)
-                CloudFiles.startDownload(target)
+                let parent = fileURL.deletingLastPathComponent()
+                CloudFiles.startDownload(parent.appendingPathComponent(real))
                 CloudFiles.startDownload(fileURL)
-                asked.append(relativePath(for: target) ?? real)
+                // From the folder, not the file: the file is not there yet, and a path that
+                // does not exist does not resolve to the same place as the vault's own.
+                let folder = relativePath(for: parent) ?? ""
+                asked.append(folder.isEmpty ? real : "\(folder)/\(real)")
             } else if CloudFiles.isMissing(fileURL) {
                 CloudFiles.startDownload(fileURL)
                 asked.append(relativePath(for: fileURL) ?? name)

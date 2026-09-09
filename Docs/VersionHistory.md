@@ -2,7 +2,7 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
-## Build 94 · 9 September 2026
+## Build 95 · 9 September 2026
 
 - **A new template made on the Mac now arrives on the iPhone.** iCloud does not send a file to the phone until something asks for it; until then there is only a hidden stub, which the app walked straight past — so the template looked as though it had never left the Mac. The app now asks iCloud for everything it is missing at launch, when you open a vault and once a minute after that. Templates still on their way are listed as "coming from iCloud".
 - **The same was true of notes**, not only templates: one written on the Mac could stay invisible on the phone. Fixed by the same change.

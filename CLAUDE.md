@@ -477,7 +477,7 @@ picker never appeared, so every new template came out a project; and
 `currentVaultSignature()` includes the Templates folder and its files, or a template edited
 on the other device is never noticed.
 
-## Files iCloud has not sent yet (build 94)
+## Files iCloud has not sent yet (build 95)
 
 A file written on the Mac reaches the iPhone as a hidden `.Name.md.icloud` stub until something
 asks for it; every listing here skips hidden files or filters on `.md`, so it was invisible —
