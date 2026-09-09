@@ -2,6 +2,14 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 88 · 9 September 2026
+
+- **Templates, in the app at last.** A new **Templates** section in the sidebar lists the files a new note starts from — Project, Area, Resource, Goal, Daily, Weekly — and lets you edit and save them without leaving AMS PARA. They were always there in your vault's `Templates` folder; now you can reach them.
+- **Snippets.** Ready-made blocks of tasks you drop into a note: press **Snippet** beside Add a task. The app starts with **Delegate**, **Waiting for**, **Meeting**, **Decision**, **Errand** and **Follow up**.
+- A snippet can ask for words. `{{who}}`, `{{what}}` and the like are filled in from a small form; `{{date}}`, `{{tomorrow}}` and `{{week}}` are worked out for you.
+- Snippets live in `Templates/Snippets.md`, one `##` heading each — add, rename or delete them by editing that file, in the app or anywhere else.
+- Help › How it works now lists every template and snippet and what is in them.
+
 ## Build 87 · 9 September 2026
 
 - **You can no longer be in Arrange mode without noticing.** A tinted strip runs across the top of the map while it is on, saying what a drag will do and how many boxes are marked, with **Reset all** and **Done** in it. Esc leaves the mode too.

@@ -136,6 +136,52 @@ public enum Templates {
 
     """
 
+    /// Blocks of task lines you can drop into a note. One `##` heading each; `{{date}}`,
+    /// `{{tomorrow}}` and `{{week}}` are filled in for you and anything else is asked for.
+    public static let snippets = """
+    # Snippets
+
+    Each `##` heading below is a snippet. Pick one from the Add a task bar in a note and its
+    lines are added to that note's Tasks.
+
+    `{{date}}` becomes today, `{{tomorrow}}` tomorrow, `{{week}}` a week from today. Anything
+    else in double braces is asked for when you use the snippet.
+
+    Change these, delete the ones you never use, add your own: it is an ordinary markdown file.
+
+    ## Delegate
+
+    - [ ] Ask {{who}} to {{what}} >{{tomorrow}}
+        - [ ] Check that {{who}} has it >{{week}}
+
+    ## Waiting for
+
+    - [ ] Waiting for {{who}}: {{what}} >{{week}} #waiting
+
+    ## Meeting
+
+    - [ ] Prepare {{meeting}} >{{date}}
+        - [ ] Agenda
+        - [ ] What do I need from them
+    - [ ] Write up {{meeting}} and send the notes >{{tomorrow}}
+
+    ## Decision
+
+    - [ ] Decide: {{what}} >{{week}} !!
+        - [ ] What are the options
+        - [ ] Who else has a say
+        - [ ] Tell the people it affects
+
+    ## Errand
+
+    - [ ] {{what}} #errand
+
+    ## Follow up
+
+    - [ ] Follow up on {{what}} >{{week}}
+
+    """
+
     public static let defaults: [(String, String)] = [
         ("Project", project),
         ("Area", area),
@@ -143,6 +189,7 @@ public enum Templates {
         ("Daily", daily),
         ("Weekly", weekly),
         ("Goal", goal),
+        (Snippets.fileName, snippets),
     ]
 
     public static func minimal(kind: ParaKind) -> String {

@@ -256,6 +256,47 @@ Filters can be typed straight into the query:
 - `is:open`, `is:done`, `is:task`
 - quotes for an exact phrase: `"race day"`
 
+## Templates and snippets
+
+Two kinds of ready-made text, both ordinary markdown files in the `Templates` folder inside your vault. **Templates** are what a new note starts as; **snippets** are blocks of tasks you drop into a note you are already in. The **Templates** section in the sidebar lists them all and lets you edit them without leaving the app.
+
+### The templates
+
+Every new note is a copy of the matching file, with `{{title}}` and `{{date}}` filled in.
+
+- **Project** — Outcome ("what does done look like?"), Tasks with a first step already written, Notes, and a Log with the day it was created. Frontmatter: `status: active`, empty `area:` and `due:`, `tags`, `related`.
+- **Area** — Standard ("what does good look like here?"), Tasks, Notes. Frontmatter: `status: active`, `tags`.
+- **Resource** — a plain note for reference material, with `related` ready to point at what it supports.
+- **Goal** — Why it matters, the measure, and a "Serving this goal" section reminding you that projects and areas link here with `goal:`. Frontmatter: `horizon`, `target`, `measure`.
+- **Daily** — the shape of a day's note.
+- **Weekly** — the shape of a week's plan.
+
+### The snippets
+
+Pick one from the **Snippet** button beside **Add a task** in any note, and its lines are added to that note's Tasks. The ones the app starts with:
+
+- **Delegate** — "Ask {{who}} to {{what}}" due tomorrow, with a subtask to check they have it in a week.
+- **Waiting for** — one line tagged `#waiting`, dated a week out, so it turns up in a review rather than being forgotten.
+- **Meeting** — prepare it today (with agenda and "what do I need from them" as subtasks) and write it up tomorrow.
+- **Decision** — "Decide: …" a week out at high priority, with the options, who else has a say, and telling the people it affects.
+- **Errand** — one line tagged `#errand`.
+- **Follow up** — one line a week out.
+
+### Filling in the blanks
+
+- `{{title}}` is the note's name and `{{date}}` is today; in snippets `{{tomorrow}}` and `{{week}}` (a week from today) work as well.
+- Anything **else** in double braces — `{{who}}`, `{{what}}`, `{{meeting}}` — is a question. The app asks for it when you use the snippet and puts your answer in everywhere that name appears. Leave one blank and the braces stay in the task, so you can see what is still missing.
+
+### Changing them
+
+Open **Templates** in the sidebar, pick a file, edit it, press **Save** (⌘S). Or edit the files in `Templates/` in any other editor — it is the same thing.
+
+- Add a snippet by writing a new `## Heading` with task lines under it. Delete one by deleting its heading and lines. Rename it by renaming the heading.
+- Add a template of your own by putting a file in the folder; the six named above are the ones the app looks for when it makes a note, so a new file is for your own use.
+- Delete a template and the app falls back to a bare note with just a title and a type.
+
+**This page describes the ones the app starts with.** Once you change them, the manual will not follow — the Templates section always shows what you actually have.
+
 ## Quick capture
 
 - ⇧⌘N opens the capture panel in the app. On the Mac there is also a panel in the menu bar.

@@ -17,6 +17,7 @@ enum SidebarSection: Hashable, Identifiable {
     case allActions
     case recent
     case deleted
+    case templates
     case search
     case kind(ParaKind)
 
@@ -34,6 +35,7 @@ enum SidebarSection: Hashable, Identifiable {
         case .allActions: return "All actions"
         case .recent: return "Recent"
         case .deleted: return "Deleted"
+        case .templates: return "Templates"
         case .search: return "Search"
         case .kind(let kind): return kind.displayName
         }
@@ -51,6 +53,7 @@ enum SidebarSection: Hashable, Identifiable {
         case .allActions: return "list.bullet"
         case .recent: return "clock.arrow.circlepath"
         case .deleted: return "trash"
+        case .templates: return "doc.badge.gearshape"
         case .search: return "magnifyingglass"
         case .kind(.daily): return "calendar"
         case .kind(.goal): return "star"
@@ -62,7 +65,7 @@ enum SidebarSection: Hashable, Identifiable {
         }
     }
 
-    static let all: [SidebarSection] = [.inbox, .today, .allActions, .recent, .calendar, .timeBlocks, .done, .review, .map, .deleted, .search, .kind(.goal), .kind(.project), .kind(.area), .kind(.resource), .kind(.archive)]
+    static let all: [SidebarSection] = [.inbox, .today, .allActions, .recent, .calendar, .timeBlocks, .done, .review, .map, .deleted, .templates, .search, .kind(.goal), .kind(.project), .kind(.area), .kind(.resource), .kind(.archive)]
 }
 
 /// The sheets the main window can present.
@@ -77,7 +80,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 87
+    static let number = 88
 }
 
 @MainActor
@@ -382,7 +385,7 @@ final class AppModel: ObservableObject {
         case .kind(let kind)?: base = notes.filter { $0.kind == kind }
         case .calendar?: base = index.dailyNotes
         case .recent?: base = recentNotes
-        case .deleted?: base = []
+        case .deleted?, .templates?: base = []
         case .today?, .review?, .map?, .timeBlocks?, .done?, .allActions?, .search?, nil: base = notes
         }
         let query = searchText.trimmingCharacters(in: .whitespaces)
@@ -397,6 +400,7 @@ final class AppModel: ObservableObject {
         case .calendar, .map, .search: return 0
         case .recent: return recentNotes.count
         case .deleted: return deletedNotes.count
+        case .templates: return 0
         case .allActions: return index.openTasks(includeArchived: false).count
         case .timeBlocks: return timeBlocks.filter { $0.day == .today() }.count
         case .done: return index.tasksCompleted(on: .today()).count
@@ -539,6 +543,7 @@ final class AppModel: ObservableObject {
         }
         vaultSignature = currentVaultSignature()
         refreshDeleted()
+        refreshSnippets()
     }
 
     // MARK: Editing
@@ -856,6 +861,45 @@ final class AppModel: ObservableObject {
             _ = save(updated)
         }
         reload()
+    }
+
+    // MARK: Templates and snippets
+
+    /// The blocks of task lines from `Templates/Snippets.md`.
+    @Published private(set) var snippets: [Snippet] = []
+    /// Which template the Templates section is showing, shared by its two columns.
+    @Published var templateSelection: String?
+
+    var templateNames: [String] { vault?.templateNames() ?? [] }
+
+    func templateText(named name: String) -> String {
+        vault?.templateText(named: name) ?? ""
+    }
+
+    func saveTemplate(named name: String, text: String) {
+        guard let vault else { return }
+        do {
+            try vault.saveTemplate(named: name, text: text)
+            refreshSnippets()
+            flash("Saved the \(name) template")
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func refreshSnippets() {
+        snippets = vault?.snippets() ?? []
+    }
+
+    /// Drops a snippet's lines into a note's Tasks, dates and answers filled in.
+    func insert(_ snippet: Snippet, answers: [String: String], into path: String) {
+        flushPendingEdits()
+        guard var note = note(at: path) else { return }
+        let lines = Snippets.filled(snippet, answers: answers)
+        guard !lines.isEmpty else { return }
+        note.appendTaskBlock(lines)
+        guard save(note) else { return }
+        flash("Added \u{201C}\(snippet.name)\u{201D}")
     }
 
     // MARK: The map's hand-placed boxes

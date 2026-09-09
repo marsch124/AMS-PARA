@@ -188,6 +188,7 @@ struct SidebarView: View {
                 row(.review)
                 row(.map)
                 row(.deleted)
+                row(.templates)
                 row(.search)
             }
             Section("Goals") {
@@ -347,6 +348,8 @@ struct NoteListView: View {
                 AllActionsView()
             } else if model.section == .deleted {
                 DeletedView()
+            } else if model.section == .templates {
+                TemplatesView()
             } else if model.section == .search {
                 SearchView()
             } else {
@@ -609,6 +612,15 @@ struct DetailView: View {
         if model.section == .calendar {
             // The Calendar section gets the day's schedule here, with the note one click away.
             CalendarDetailView()
+        } else if model.section == .templates {
+            if let name = model.templateSelection {
+                TemplateEditorView(name: name).id(name)
+            } else {
+                EmptyStateView(title: "Pick a template",
+                               systemImage: SidebarSection.templates.systemImage,
+                               message: "On the left are the files a new note starts from, and the snippets you can drop into one. Choose one to edit it.",
+                               tint: SidebarSection.templates.tint)
+            }
         } else if model.section == .inbox, !model.inboxShowsNote {
             // Sorting happens in the middle column; this is where the lines can go.
             InboxFileItView()
@@ -692,6 +704,7 @@ extension SidebarSection {
         case .allActions: return Color("ProjectTint")
         case .recent: return Color("ResourceTint")
         case .deleted: return Color("ArchiveTint")
+        case .templates: return Color("ResourceTint")
         case .review: return Color("ReviewTint")
         case .map: return Color("GoalTint")
         case .search: return Color("ResourceTint")

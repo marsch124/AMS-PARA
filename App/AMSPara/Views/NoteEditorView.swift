@@ -13,6 +13,7 @@ struct NoteEditorView: View {
     @AppStorage("hideFinishedTasks") private var hideFinishedTasks = false
     @State private var showLinks = false
     @State private var confirmTrash = false
+    @State private var snippetToFill: Snippet?
     @State private var renamingNote = false
     @State private var noteTitleDraft = ""
     @State private var vaultPath: String?
@@ -92,6 +93,11 @@ struct NoteEditorView: View {
             }
         } message: {
             Text("The file is renamed too, and every note that links to it is pointed at the new name.")
+        }
+        .sheet(item: $snippetToFill) { snippet in
+            SnippetSheet(snippet: snippet) { answers in
+                model.insert(snippet, answers: answers, into: path)
+            }
         }
         .navigationTitle(note?.title ?? path)
         .toolbar {
@@ -269,8 +275,29 @@ struct NoteEditorView: View {
                 .onSubmit(addTask)
             Button("Add", action: addTask)
                 .disabled(newTask.trimmingCharacters(in: .whitespaces).isEmpty)
+            Menu {
+                ForEach(model.snippets) { snippet in
+                    Button(snippet.name) { start(snippet) }
+                }
+            } label: {
+                Label("Snippet", systemImage: "text.append")
+            }
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .disabled(model.snippets.isEmpty)
+            .help("Add a ready-made block of tasks. Edit them in Templates › Snippets.")
         }
         .padding(8)
+    }
+
+    /// A snippet with nothing to ask goes straight in; otherwise the sheet collects the
+    /// words it wants first.
+    private func start(_ snippet: Snippet) {
+        guard !snippet.questions.isEmpty else {
+            model.insert(snippet, answers: [:], into: path)
+            return
+        }
+        snippetToFill = snippet
     }
 
     private func linkedNotes(for note: Note) -> [Note] {

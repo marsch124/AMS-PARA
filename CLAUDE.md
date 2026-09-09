@@ -446,6 +446,19 @@ rubber band: a `DragGesture` on the Canvas (gated by `including:` to macOS while
 on iOS that drag scrolls the map) fills `band`, and on end unions the intersecting items into
 `marked`, so sweeping and tapping compose.
 
+## Templates and snippets (build 88)
+
+`Core/Vault/Snippets.swift`: `Snippets.parse` splits `Templates/Snippets.md` at its `##`
+headings into `Snippet`s (prose above the first heading is the file's own explanation),
+`filled(_:answers:today:)` substitutes `{{date}}/{{today}}/{{tomorrow}}/{{week}}` itself and
+asks for the rest through `Snippet.questions`; an unanswered placeholder is left in place
+rather than emptied. The same file adds `Vault.templateNames/templateText(named:)/
+saveTemplate`. `Templates.snippets` ships six blocks and is written by `bootstrap`.
+App: `SidebarSection.templates` → `TemplatesView` (list) + `TemplateEditorView` (plain
+TextEditor, ⌘S), sharing `AppModel.templateSelection`; `AppModel.snippets` is refreshed from
+`reload()`, and the note's add-task bar has a Snippet menu that opens `SnippetSheet` when the
+block has questions and otherwise inserts straight away through `AppModel.insert`.
+
 ## Not built (by choice)
 
 Saved searches. Roadmap stopped there on his request.
