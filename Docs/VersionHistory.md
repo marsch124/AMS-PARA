@@ -2,6 +2,17 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 97 · 9 September 2026
+
+Hardening, first part: the things the app does that touch several notes at once.
+
+- **Moving an action between notes can no longer lose it.** It used to be taken out of the first note and then written to the second; if that second write failed — the note had just changed on the other device — the action was gone from both. The order is turned round: the receiving note is written first, so the worst case is the action appearing twice, and the app says so and tells you which one to delete.
+- **Making a note out of an Inbox line can no longer lose the line.** The line was removed first and the note made afterwards, so a name already in use meant the line vanished and no note appeared. The note is made first now.
+- **Renaming tells you when it could not follow every link.** A rename rewrites `goal:`, `area:`, `parent:` and `[[links]]` in every note that named the old title. Failures were silently ignored, leaving links pointing at a title that no longer existed. Now you are told how many notes still name the old title, so you can search for it.
+- **A rename makes a backup first.** It is the one action that can touch every note in the vault.
+- **Rearranging a list reports once, not once per note.** And a note whose file changed while you were dragging is written again rather than skipped.
+- Underneath all of these: when a note has changed on disk in the moment between reading and writing, the app now re-reads it and makes the same change to what is actually there, instead of giving up. Nothing of the other device's work is overwritten.
+
 ## Build 96 · 9 September 2026
 
 - **The manual explains iCloud.** "Mac and iPhone together" now says how the files actually move between the two devices, why a new note or template can take a moment to appear on the phone, what the "coming from iCloud" line means, and what to do if something looks stuck.

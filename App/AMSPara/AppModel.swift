@@ -80,7 +80,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 96
+    static let number = 97
 }
 
 @MainActor
@@ -660,17 +660,29 @@ final class AppModel: ObservableObject {
         let clean = title.trimmingCharacters(in: .whitespacesAndNewlines)
         let oldTitle = note.displayTitle
         guard !clean.isEmpty, clean != oldTitle else { return }
+        // A rename can touch every note in the vault, so there is a copy to fall back on.
+        _ = backUp(reason: "rename")
         do {
-            let renamed = try vault.rename(note, to: clean)
-            for other in notes where other.relativePath != note.relativePath {
-                guard let updated = other.retargeting(oldTitle, to: clean) else { continue }
-                _ = try? vault.save(updated)
-            }
+            let result = try vault.rename(note, to: clean, updating: notes)
             reload()
-            if selectedNotePath == note.relativePath { selectedNotePath = renamed.relativePath }
+            if selectedNotePath == note.relativePath { selectedNotePath = result.renamed.relativePath }
+            if result.staleLinks.isEmpty {
+                log("renamed \(note.relativePath) -> \(result.renamed.relativePath)")
+            } else {
+                // Saying nothing would leave links pointing at a title that no longer exists.
+                log("renamed \(note.relativePath); still naming the old title: \(result.staleLinks)")
+                errorMessage = staleLinkMessage(count: result.staleLinks.count, oldTitle: oldTitle, newTitle: clean)
+            }
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    /// Told to the user when a rename could not reach every note that named the old title.
+    private func staleLinkMessage(count: Int, oldTitle: String, newTitle: String) -> String {
+        let notes = count == 1 ? "One note" : "\(count) notes"
+        return "\(notes) could not be written, so they still say \u{201C}\(oldTitle)\u{201D} instead of "
+             + "\u{201C}\(newTitle)\u{201D}. Search for the old name to put them right."
     }
 
     func archive(_ note: Note) {
@@ -811,13 +823,21 @@ final class AppModel: ObservableObject {
     func moveTask(_ ref: TaskRef, to path: String) {
         guard path != ref.notePath else { return }
         flushPendingEdits()
-        guard var source = note(at: ref.notePath), var target = note(at: path) else { return }
-        guard let block = source.removeTaskBlock(for: ref.task) else { return }
-        target.appendTaskBlock(block)
-        guard save(source) else { return }
-        if save(target) {
+        guard let vault, let source = note(at: ref.notePath), let target = note(at: path) else { return }
+        do {
+            // The target is written first, so a failure can leave the task in two places but
+            // never in none. See Vault.move.
+            let move = try vault.move(task: ref.task, from: source, to: target)
+            reload()
             log("moved task \"\(ref.task.title)\" \(ref.notePath) -> \(path)")
-            flash("Moved to \(target.displayTitle)")
+            if move.leftInSource {
+                errorMessage = "\u{201C}\(ref.task.title)\u{201D} was added to \(move.target.displayTitle), but "
+                    + "\(source.displayTitle) changed at the same moment and still has it. Delete the one you do not want."
+            } else {
+                flash("Moved to \(move.target.displayTitle)")
+            }
+        } catch {
+            errorMessage = error.localizedDescription
         }
     }
 
@@ -880,9 +900,19 @@ final class AppModel: ObservableObject {
     func makeNote(from ref: TaskRef, kind: ParaKind) {
         flushPendingEdits()
         let title = Note.removingTag(Note.nextActionTag, from: ref.task.title)
-        guard var source = note(at: ref.notePath), source.removeTaskBlock(for: ref.task) != nil else { return }
-        guard save(source) else { return }
-        createNote(kind: kind, title: title)
+        guard let vault, var source = note(at: ref.notePath) else { return }
+        // The note is made first. If the title is already taken, or the write fails, the line
+        // is still in the list it came from; the other order would lose it.
+        let made: Note
+        do {
+            made = try vault.createNote(kind: kind, title: title)
+        } catch {
+            errorMessage = error.localizedDescription
+            return
+        }
+        if source.removeTaskBlock(for: ref.task) != nil { _ = save(source) }
+        reload()
+        show(section: .kind(kind), notePath: made.relativePath)
     }
 
     /// Writes `order:` into the notes of one kind so the list keeps the arrangement.
@@ -895,15 +925,28 @@ final class AppModel: ObservableObject {
     /// so arranging a family never disturbs the areas around it.
     func reorder(_ listed: [Note], from source: IndexSet, to destination: Int) {
         flushPendingEdits()
+        guard let vault else { return }
         var listed = listed
         listed.move(fromOffsets: source, toOffset: destination)
-        for (index, note) in listed.enumerated() {
-            let wanted = (index + 1) * 10
-            guard note.sortOrder != wanted, var updated = self.note(at: note.relativePath) else { continue }
-            updated.frontmatter.set("order", "\(wanted)")
-            _ = save(updated)
+        var wanted: [String: Int] = [:]
+        for (index, note) in listed.enumerated() where note.sortOrder != (index + 1) * 10 {
+            wanted[note.relativePath] = (index + 1) * 10
+        }
+        let result = vault.saveEach(listed) { note in
+            guard let order = wanted[note.relativePath] else { return nil }
+            var updated = note
+            updated.frontmatter.set("order", "\(order)")
+            return updated
         }
         reload()
+        // One message for the lot: a failed save used to raise its own, so a shaky folder
+        // meant a stack of identical alerts.
+        if !result.isComplete {
+            log("could not renumber: \(result.failed)")
+            errorMessage = result.failed.count == 1
+                ? "One note could not be written, so the order is not quite as you left it."
+                : "\(result.failed.count) notes could not be written, so the order is not quite as you left it."
+        }
     }
 
     // MARK: Templates and snippets

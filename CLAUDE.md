@@ -492,6 +492,21 @@ on `openVault` and from the 10 s poll at most once a minute; `templatesFromCloud
 `CloudFiles.exists`, or a note still on its way would be replaced by a fresh empty one and the
 two would collide in iCloud; `loadNote` throws `VaultError.notDownloadedYet` for a placeholder.
 
+## Multi-note writes (build 97)
+
+Hardening, part one: everything that writes more than one file goes through
+`Core/Vault/VaultWrites.swift`, where the order and the failure handling live and can be
+tested. `Vault.saveEach(_:change:)` applies one change to many notes and, on
+`modifiedOnDisk`, re-reads that note and applies the change again before giving up;
+`MultiSaveResult.failed` is what could not be written. `Vault.move(task:from:to:)` writes the
+**target first** — a failure then means the task is in both notes, never in neither — and
+reports `leftInSource`. `Vault.rename(_:to:updating:)` renames the note first (a throw leaves
+every link untouched) and returns `staleLinks`, the notes that still name the old title.
+`VaultError.taskNotFound` is new. `AppModel.moveTask/makeNote(from:)/renameNote/reorder` use
+them and now *say* when something did not happen: `makeNote` creates the note before removing
+the line, and `renameNote` backs the vault up first. `VaultWriteTests` forces each failure by
+writing the file behind the app's back or by putting a folder where the file was.
+
 ## Not built (by choice)
 
 Saved searches. Roadmap stopped there on his request.
