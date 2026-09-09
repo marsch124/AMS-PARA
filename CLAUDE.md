@@ -60,6 +60,10 @@ the phone and on the Mac. Xcode is no longer part of his routine.
   beside `.gesture(DragGesture…)` on the same view argues over a click and the tap loses
   (build 85). Use a single `DragGesture(minimumDistance: 0)` and decide in `onEnded`: no
   movement is a tap.
+- **The phone's navigation bar fits a back button, a title and one control.** Anything more
+  collides: build 88 put a segmented Picker plus three buttons there and it rendered as
+  overlapping letters. Branch the `.toolbar` on `isPhone` and give the phone one `Menu`
+  (`ToolbarContentBuilder` takes `if`/`else`).
 - A helper type that touches `AppModel` needs `@MainActor` on it (the model is main-actor
   bound), or the build fails with "main actor-isolated property … can not be referenced from
   a nonisolated context" (build 67).

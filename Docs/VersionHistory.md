@@ -2,6 +2,11 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 89 · 9 September 2026
+
+- **Fix: the note screen's top bar on the iPhone.** Edit / Split / Preview, Archive, Rename and Delete were all separate buttons up there, and on a phone they collided — the three-way switch was squeezed into a few overlapping letters next to the title.
+- They are one **⋯** menu now: the view mode at the top, then Rename, Archive and Delete. The Mac keeps the row of buttons, which it has room for.
+
 ## Build 88 · 9 September 2026
 
 - **Templates, in the app at last.** A new **Templates** section in the sidebar lists the files a new note starts from — Project, Area, Resource, Goal, Daily, Weekly — and lets you edit and save them without leaving AMS PARA. They were always there in your vault's `Templates` folder; now you can reach them.

@@ -101,6 +101,46 @@ struct NoteEditorView: View {
         }
         .navigationTitle(note?.title ?? path)
         .toolbar {
+            // The phone's navigation bar has room for a back button, a title and one control.
+            // Everything went in as separate items and the segmented picker was squeezed to
+            // three overlapping letters, so on a phone it is all one menu.
+            if isPhone {
+                ToolbarItem(placement: .primaryAction) {
+                    Menu {
+                        Picker("Mode", selection: $mode) {
+                            ForEach(EditorMode.allCases) { m in
+                                Text(m.label).tag(m)
+                            }
+                        }
+                        Divider()
+                        if let note, note.kind != .inbox, note.kind != .daily {
+                            Button {
+                                noteTitleDraft = note.displayTitle
+                                renamingNote = true
+                            } label: {
+                                Label("Rename", systemImage: "pencil")
+                            }
+                        }
+                        if let note, model.canArchive(note) {
+                            Button {
+                                flushSave()
+                                model.archive(note)
+                            } label: {
+                                Label("Archive", systemImage: "archivebox")
+                            }
+                        }
+                        if let note, note.kind != .inbox {
+                            Button(role: .destructive) {
+                                confirmTrash = true
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                        }
+                    } label: {
+                        Label("More", systemImage: "ellipsis.circle")
+                    }
+                }
+            } else {
             ToolbarItemGroup {
                 Picker("Mode", selection: $mode) {
                     ForEach(EditorMode.allCases) { m in
@@ -136,6 +176,7 @@ struct NoteEditorView: View {
                     .help("Delete this note; it waits in Deleted (⌘⌫)")
                     .keyboardShortcut(.delete, modifiers: [.command])
                 }
+            }
             }
         }
     }
