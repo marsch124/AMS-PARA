@@ -101,8 +101,85 @@ public enum Snippets {
     }
 }
 
+/// One file in the vault's `Templates` folder. Its `type:` line says what kind of note it
+/// makes, so you can keep several project templates side by side; the one named after the
+/// kind ("Project") is the one used unless another is chosen.
+public struct TemplateFile: Identifiable, Equatable, Sendable {
+    public let name: String
+    /// The kind of note it makes, from its own `type:` line. Nil for Snippets and for
+    /// anything that does not say.
+    public let kind: ParaKind?
+
+    public var id: String { name }
+    public var isSnippets: Bool { name == Snippets.fileName }
+    /// True for the file a new note of that kind uses unless you pick another.
+    public var isDefault: Bool { kind.map { name == TemplateFile.defaultName(for: $0) } ?? false }
+
+    public init(name: String, kind: ParaKind?) {
+        self.name = name
+        self.kind = kind
+    }
+
+    /// The file a kind falls back to: "Project", "Area", and so on.
+    public static func defaultName(for kind: ParaKind) -> String {
+        switch kind {
+        case .project: return "Project"
+        case .area: return "Area"
+        case .resource: return "Resource"
+        case .daily: return "Daily"
+        case .goal: return "Goal"
+        case .archive: return "Archive"
+        case .inbox: return "Inbox"
+        }
+    }
+}
+
 public extension Vault {
     var snippetsURL: URL { templatesURL.appendingPathComponent("\(Snippets.fileName).md") }
+
+    /// Every template in the folder with the kind it makes, defaults first and then by name.
+    func templates() -> [TemplateFile] {
+        templateNames().map { name in
+            let type = templateText(named: name).map { Frontmatter.parse($0).frontmatter.string("type") ?? "" } ?? ""
+            return TemplateFile(name: name, kind: ParaKind(rawValue: type))
+        }
+    }
+
+    /// The templates that make one kind of note, the default one first.
+    func templates(for kind: ParaKind) -> [TemplateFile] {
+        templates().filter { $0.kind == kind }.sorted { a, b in
+            a.isDefault == b.isDefault ? a.name < b.name : a.isDefault
+        }
+    }
+
+    /// Starts a new template from the default for its kind, so it opens with something in it.
+    @discardableResult
+    func createTemplate(named name: String, kind: ParaKind) throws -> TemplateFile {
+        let clean = Self.sanitizeFileName(name.trimmingCharacters(in: .whitespacesAndNewlines))
+        guard !clean.isEmpty else { throw VaultError.invalidTitle }
+        let target = templatesURL.appendingPathComponent("\(clean).md")
+        guard !FileManager.default.fileExists(atPath: target.path) else {
+            throw VaultError.noteAlreadyExists("Templates/\(clean).md")
+        }
+        let seed = templateText(named: TemplateFile.defaultName(for: kind))
+            ?? Templates.minimal(kind: kind)
+        try saveTemplate(named: clean, text: seed)
+        return TemplateFile(name: clean, kind: kind)
+    }
+
+    func renameTemplate(named name: String, to newName: String) throws {
+        let clean = Self.sanitizeFileName(newName.trimmingCharacters(in: .whitespacesAndNewlines))
+        guard !clean.isEmpty, clean != name else { throw VaultError.invalidTitle }
+        let target = templatesURL.appendingPathComponent("\(clean).md")
+        guard !FileManager.default.fileExists(atPath: target.path) else {
+            throw VaultError.noteAlreadyExists("Templates/\(clean).md")
+        }
+        try FileManager.default.moveItem(at: templatesURL.appendingPathComponent("\(name).md"), to: target)
+    }
+
+    func deleteTemplate(named name: String) throws {
+        try FileManager.default.removeItem(at: templatesURL.appendingPathComponent("\(name).md"))
+    }
 
     func snippets() -> [Snippet] {
         guard let text = try? String(contentsOf: snippetsURL, encoding: .utf8) else { return [] }

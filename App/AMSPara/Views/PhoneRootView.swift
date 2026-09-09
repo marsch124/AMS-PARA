@@ -89,6 +89,10 @@ struct PhoneStack<Content: View>: View {
                             .navigationBarTitleDisplayMode(.inline)
                     case .section(let section):
                         PhoneSectionScreen(section: section)
+                    case .template(let name):
+                        TemplateEditorView(name: name)
+                            .id(name)
+                            .navigationBarTitleDisplayMode(.inline)
                     case .settings:
                         SettingsView()
                             .navigationTitle("Settings")
@@ -102,6 +106,15 @@ struct PhoneStack<Content: View>: View {
             if active, let section, model.section != section { model.section = section }
             if active, let selected = model.selectedNotePath, path.last != .note(selected) { path.append(.note(selected)) }
         }
+        // A template opens the same way a note does: the middle column picks one, this pushes it.
+        .onChange(of: model.templateSelection) { _, selected in
+            guard isActive, model.section == .templates else { return }
+            if let selected {
+                if path.last != .template(selected) { path.append(.template(selected)) }
+            } else if case .template = path.last {
+                path.removeLast()
+            }
+        }
         .onChange(of: model.selectedNotePath) { _, selected in
             guard isActive else { return }
             if let selected {
@@ -114,6 +127,8 @@ struct PhoneStack<Content: View>: View {
             guard isActive else { return }
             let showsNote = newPath.contains { if case .note = $0 { return true } else { return false } }
             if !showsNote, model.selectedNotePath != nil { model.selectedNotePath = nil }
+            let showsTemplate = newPath.contains { if case .template = $0 { return true } else { return false } }
+            if !showsTemplate, model.templateSelection != nil { model.templateSelection = nil }
             if case .section(let section)? = newPath.last, model.section != section { model.section = section }
         }
     }
@@ -121,6 +136,7 @@ struct PhoneStack<Content: View>: View {
 
 enum PhoneRoute: Hashable {
     case note(String)
+    case template(String)
     case section(SidebarSection)
     case settings
 }

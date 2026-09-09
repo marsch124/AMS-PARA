@@ -462,6 +462,11 @@ App: `SidebarSection.templates` → `TemplatesView` (list) + `TemplateEditorView
 TextEditor, ⌘S), sharing `AppModel.templateSelection`; `AppModel.snippets` is refreshed from
 `reload()`, and the note's add-task bar has a Snippet menu that opens `SnippetSheet` when the
 block has questions and otherwise inserts straight away through `AppModel.insert`.
+Build 90: a template's own `type:` line says what it makes (`Vault.templates()` →
+`TemplateFile`), so a kind can have several and `createNote(kind:title:extraFrontmatter:
+template:)` takes the chosen one; `TemplateFile.defaultName(for:)` is the one used otherwise.
+`TemplatesView` groups by kind in the kind's tint with folds, and has new/rename/delete.
+`PhoneRoute.template` pushes the editor on the phone, where tapping a template did nothing.
 
 ## Not built (by choice)
 

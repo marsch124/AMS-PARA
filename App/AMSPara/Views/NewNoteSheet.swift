@@ -10,6 +10,7 @@ struct NewNoteSheet: View {
     @State private var target = ""
     @State private var parentGoal = ""
     @State private var parentArea = ""
+    @State private var template = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -39,6 +40,13 @@ struct NewNoteSheet: View {
                             Text("None").tag("")
                             ForEach(lifeGoals) { g in Text(g.title).tag(g.title) }
                         }
+                    }
+                }
+            }
+            if choices.count > 1 {
+                Picker("Start from", selection: $template) {
+                    ForEach(choices) { file in
+                        Text(file.isDefault ? "\(file.name) (default)" : file.name).tag(file.name)
                     }
                 }
             }
@@ -75,8 +83,14 @@ struct NewNoteSheet: View {
             if case .kind(let current)? = model.section, current == .area || current == .resource || current == .goal {
                 kind = current
             }
+            template = choices.first?.name ?? ""
         }
+        // Each kind has its own templates, so the choice starts again at its default.
+        .onChange(of: kind) { _, _ in template = choices.first?.name ?? "" }
     }
+
+    /// The templates that make this kind of note. More than one and you get to choose.
+    private var choices: [TemplateFile] { model.templates(for: kind) }
 
     /// Areas a new one can be made under. One level, so only the areas that are not
     /// already sub-areas themselves.
@@ -108,7 +122,8 @@ struct NewNoteSheet: View {
             if horizon != .life, DateOnly(t) != nil { extra.append(("target", t)) }
             if horizon != .life, !parentGoal.isEmpty { extra.append(("goal", parentGoal)) }
         }
-        model.createNote(kind: kind, title: trimmed, extraFrontmatter: extra)
+        let chosen = choices.contains { $0.name == template } ? template : nil
+        model.createNote(kind: kind, title: trimmed, extraFrontmatter: extra, template: chosen)
         dismiss()
     }
 }

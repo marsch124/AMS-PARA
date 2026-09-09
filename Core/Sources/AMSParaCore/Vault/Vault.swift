@@ -289,14 +289,15 @@ public final class Vault {
     }
 
     /// Creates a note from the kind's template (if present) or a minimal frontmatter block.
-    public func createNote(kind: ParaKind, title: String, extraFrontmatter: [(String, String)] = []) throws -> Note {
+    public func createNote(kind: ParaKind, title: String, extraFrontmatter: [(String, String)] = [],
+                           template: String? = nil) throws -> Note {
         let cleanTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
         let fileName = Self.sanitizeFileName(cleanTitle)
         guard !fileName.isEmpty, kind != .daily, let folder = config.folder(for: kind) else { throw VaultError.invalidTitle }
         let relativePath = "\(folder)/\(fileName).md"
         guard !fm.fileExists(atPath: url(for: relativePath).path) else { throw VaultError.noteAlreadyExists(relativePath) }
 
-        var text = templateText(for: kind) ?? Templates.minimal(kind: kind)
+        var text = template.flatMap { templateText(named: $0) } ?? templateText(for: kind) ?? Templates.minimal(kind: kind)
         text = Templates.fill(text, title: cleanTitle, date: DateOnly.today())
         if !text.hasSuffix("\n") { text += "\n" }
         var note = Note(relativePath: relativePath, kind: kind, text: text, modifiedAt: Date())

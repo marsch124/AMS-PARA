@@ -287,6 +287,15 @@ Pick one from the **Snippet** button beside **Add a task** in any note, and its 
 - `{{title}}` is the note's name and `{{date}}` is today; in snippets `{{tomorrow}}` and `{{week}}` (a week from today) work as well.
 - Anything **else** in double braces — `{{who}}`, `{{what}}`, `{{meeting}}` — is a question. The app asks for it when you use the snippet and puts your answer in everywhere that name appears. Leave one blank and the braces stay in the task, so you can see what is still missing.
 
+### More than one template for the same thing
+
+A template says what it makes in its own `type:` line, so you can keep several side by side — a plain **Project** and a **Client project**, say. The Templates section groups them under the kind of note they make, in that kind's colour, and each group folds.
+
+- **+** in the toolbar adds one. Give it a name and say what it makes; it starts as a copy of the one that kind uses now.
+- The template **named after its kind** — Project, Area, Resource, Goal — is the one used unless you choose another.
+- When a kind has more than one, **New note** grows a **Start from** picker.
+- Right-click a template to **Rename** or **Delete** it. Deleting the template only removes the template; notes already made from it are untouched.
+
 ### Changing them
 
 Open **Templates** in the sidebar, pick a file, edit it, press **Save** (⌘S). Or edit the files in `Templates/` in any other editor — it is the same thing.

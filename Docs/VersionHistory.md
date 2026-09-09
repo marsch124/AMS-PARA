@@ -2,6 +2,13 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 90 · 9 September 2026
+
+- **Templates are grouped and colour-coded** by the kind of note they make — Goals gold, Projects green, Areas pink, Resources blue — and each group folds.
+- **You can have more than one template for the same kind.** Press **+** to add, say, a "Client project" beside the plain Project one; it starts as a copy of the current one. When a kind has more than one, **New note** grows a **Start from** picker. The template named after its kind stays the default.
+- **Rename** and **Delete** a template by right-clicking it. Deleting removes only the template; notes made from it are untouched.
+- **Fix: templates can be opened and edited on the iPhone.** Tapping one did nothing there — the phone had no way to push the editor. It opens like a note now.
+
 ## Build 89 · 9 September 2026
 
 - **Fix: the note screen's top bar on the iPhone.** Edit / Split / Preview, Archive, Rename and Delete were all separate buttons up there, and on a phone they collided — the three-way switch was squeezed into a few overlapping letters next to the title.

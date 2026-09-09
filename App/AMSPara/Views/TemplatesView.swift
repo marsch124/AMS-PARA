@@ -6,39 +6,128 @@ import AMSParaCore
 /// edit them without leaving the app.
 struct TemplatesView: View {
     @EnvironmentObject private var model: AppModel
+    @State private var folded: Set<String> = []
+    @State private var making = false
+    @State private var newName = ""
+    @State private var newKind: ParaKind = .project
+    @State private var renaming: String?
+    @State private var renameDraft = ""
+    @State private var deleting: String?
 
-    private var names: [String] { model.templateNames }
+    /// The templates gathered under the kind of note they make, in the app's own order,
+    /// with anything that does not say what it makes at the end.
+    private var groups: [TemplateGroup] {
+        let kinds: [ParaKind] = [.goal, .project, .area, .resource, .archive, .daily]
+        var groups = kinds.compactMap { kind -> TemplateGroup? in
+            let files = model.templates.filter { $0.kind == kind }
+                .sorted { a, b in a.isDefault == b.isDefault ? a.name < b.name : a.isDefault }
+            return files.isEmpty ? nil : TemplateGroup(title: kind.displayName, tint: kind.tint, files: files)
+        }
+        let rest = model.templates.filter { $0.kind == nil && !$0.isSnippets }
+        if !rest.isEmpty {
+            groups.append(TemplateGroup(title: "Other", tint: .secondary, files: rest))
+        }
+        if let snippets = model.templates.first(where: \.isSnippets) {
+            groups.append(TemplateGroup(title: "Snippets", tint: SidebarSection.inbox.tint, files: [snippets]))
+        }
+        return groups
+    }
 
     var body: some View {
         Group {
-            if names.isEmpty {
+            if model.templates.isEmpty {
                 EmptyStateView(title: "No templates",
                                systemImage: SidebarSection.templates.systemImage,
                                message: "They live in the Templates folder inside your vault. Open a vault to see them.")
             } else {
                 List(selection: $model.templateSelection) {
-                    Section("A new note starts from") {
-                        ForEach(names.filter { $0 != Snippets.fileName }, id: \.self) { name in
-                            TemplateRow(name: name, detail: Self.explains[name] ?? "Template")
-                                .tag(name)
-                        }
-                    }
-                    if names.contains(Snippets.fileName) {
-                        Section("Blocks you can drop into a note") {
-                            TemplateRow(name: Snippets.fileName,
-                                        detail: model.snippets.isEmpty ? "None yet"
-                                              : model.snippets.map(\.name).joined(separator: ", "))
-                                .tag(Snippets.fileName)
+                    ForEach(groups) { group in
+                        DisclosureGroup(isExpanded: fold(group.title)) {
+                            ForEach(group.files) { file in
+                                TemplateRow(file: file, tint: group.tint, detail: detail(for: file))
+                                    .tag(file.name)
+                                    .contextMenu {
+                                        Button("Rename\u{2026}") {
+                                            renameDraft = file.name
+                                            renaming = file.name
+                                        }
+                                        Button("Delete\u{2026}", role: .destructive) { deleting = file.name }
+                                    }
+                            }
+                        } label: {
+                            Text(group.title.uppercased())
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(group.tint)
                         }
                     }
                 }
             }
         }
         .navigationTitle("Templates")
-        .onAppear { if model.templateSelection == nil { model.templateSelection = names.first } }
+        .toolbar {
+            ToolbarItem {
+                Button {
+                    newName = ""
+                    making = true
+                } label: {
+                    Label("New template", systemImage: "plus")
+                }
+                .help("Add another template, so a kind of note can start in more than one way")
+            }
+        }
+        .alert("New template", isPresented: $making) {
+            TextField("Name", text: $newName)
+            Picker("Makes a", selection: $newKind) {
+                ForEach([ParaKind.project, .area, .resource, .goal], id: \.self) { kind in
+                    Text(kind.displayName).tag(kind)
+                }
+            }
+            Button("Cancel", role: .cancel) { }
+            Button("Create") { model.createTemplate(named: newName, kind: newKind) }
+        } message: {
+            Text("It starts as a copy of the one that kind uses now. Give it a name you will recognise, like \u{201C}Client project\u{201D}.")
+        }
+        .alert("Rename \u{201C}\(renaming ?? "")\u{201D}",
+               isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {
+            TextField("Name", text: $renameDraft)
+            Button("Cancel", role: .cancel) { renaming = nil }
+            Button("Rename") {
+                if let renaming { model.renameTemplate(named: renaming, to: renameDraft) }
+                renaming = nil
+            }
+        }
+        .confirmationDialog("Delete the \u{201C}\(deleting ?? "")\u{201D} template?",
+                            isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } })) {
+            Button("Delete", role: .destructive) {
+                if let deleting { model.deleteTemplate(named: deleting) }
+                deleting = nil
+            }
+        } message: {
+            Text("Only the template goes; notes already made from it are untouched. Delete the one a kind uses by default and new notes get a bare note instead.")
+        }
+        #if os(macOS)
+        .onAppear { if model.templateSelection == nil { model.templateSelection = model.templates.first?.name } }
+        #endif
     }
 
-    /// One line saying what each template is for, so the list explains itself.
+    private func fold(_ title: String) -> Binding<Bool> {
+        Binding(get: { !folded.contains(title) },
+                set: { open in
+                    if open { folded.remove(title) } else { folded.insert(title) }
+                })
+    }
+
+    private func detail(for file: TemplateFile) -> String {
+        if file.isSnippets {
+            return model.snippets.isEmpty ? "None yet" : model.snippets.map(\.name).joined(separator: ", ")
+        }
+        if let explained = Self.explains[file.name] {
+            return file.isDefault ? "Used by default \u{00B7} \(explained)" : explained
+        }
+        return file.isDefault ? "Used by default" : "One way to start"
+    }
+
+    /// One line saying what each template the app ships with is for.
     static let explains: [String: String] = [
         "Project": "Outcome, tasks, notes, log",
         "Area": "The standard to keep, tasks, notes",
@@ -49,15 +138,24 @@ struct TemplatesView: View {
     ]
 }
 
+struct TemplateGroup: Identifiable {
+    let title: String
+    let tint: Color
+    let files: [TemplateFile]
+
+    var id: String { title }
+}
+
 struct TemplateRow: View {
-    let name: String
+    let file: TemplateFile
+    let tint: Color
     let detail: String
 
     var body: some View {
         HStack(spacing: 10) {
-            TintStripe(color: name == Snippets.fileName ? ParaKind.project.tint : ParaKind.resource.tint, height: 30)
+            TintStripe(color: tint, height: 30)
             VStack(alignment: .leading, spacing: 2) {
-                Text(name).font(.headline)
+                Text(file.name).font(.headline)
                 Text(detail)
                     .font(.caption)
                     .foregroundStyle(.secondary)

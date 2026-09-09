@@ -80,7 +80,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 89
+    static let number = 90
 }
 
 @MainActor
@@ -597,10 +597,12 @@ final class AppModel: ObservableObject {
         }
     }
 
-    func createNote(kind: ParaKind, title: String, extraFrontmatter: [(String, String)] = []) {
+    func createNote(kind: ParaKind, title: String, extraFrontmatter: [(String, String)] = [],
+                    template: String? = nil) {
         guard let vault else { return }
         do {
-            let note = try vault.createNote(kind: kind, title: title, extraFrontmatter: extraFrontmatter)
+            let note = try vault.createNote(kind: kind, title: title, extraFrontmatter: extraFrontmatter,
+                                            template: template)
             reload()
             show(section: .kind(kind), notePath: note.relativePath)
         } catch {
@@ -870,7 +872,50 @@ final class AppModel: ObservableObject {
     /// Which template the Templates section is showing, shared by its two columns.
     @Published var templateSelection: String?
 
-    var templateNames: [String] { vault?.templateNames() ?? [] }
+    /// Every template file with the kind of note it makes.
+    @Published private(set) var templates: [TemplateFile] = []
+
+    var templateNames: [String] { templates.map(\.name) }
+
+    /// The templates that make one kind of note, the default first.
+    func templates(for kind: ParaKind) -> [TemplateFile] {
+        vault?.templates(for: kind) ?? []
+    }
+
+    func createTemplate(named name: String, kind: ParaKind) {
+        guard let vault else { return }
+        do {
+            let made = try vault.createTemplate(named: name, kind: kind)
+            refreshSnippets()
+            templateSelection = made.name
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func renameTemplate(named name: String, to newName: String) {
+        guard let vault else { return }
+        do {
+            try vault.renameTemplate(named: name, to: newName)
+            refreshSnippets()
+            if templateSelection == name {
+                templateSelection = Vault.sanitizeFileName(newName.trimmingCharacters(in: .whitespaces))
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func deleteTemplate(named name: String) {
+        guard let vault else { return }
+        do {
+            try vault.deleteTemplate(named: name)
+            refreshSnippets()
+            if templateSelection == name { templateSelection = templates.first?.name }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
 
     func templateText(named name: String) -> String {
         vault?.templateText(named: name) ?? ""
@@ -889,6 +934,7 @@ final class AppModel: ObservableObject {
 
     func refreshSnippets() {
         snippets = vault?.snippets() ?? []
+        templates = vault?.templates() ?? []
     }
 
     /// Drops a snippet's lines into a note's Tasks, dates and answers filled in.
