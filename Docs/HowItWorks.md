@@ -338,11 +338,33 @@ The phone shows four tabs. **Today** and **Inbox** are the same lists as on the 
 
 Keep the vault in iCloud Drive and pick the same folder on both devices. iCloud carries the files across. Each device syncs with Reminders on its own.
 
-The app checks every few seconds whether files changed outside it and reloads them. It never writes over a newer file. If you were typing in a note that changed elsewhere at the same time, your text is saved as a copy named "… (conflict date time).md" next to the note, and the note shows the other version. Merge the two by hand when that happens; it is rare.
+### How iCloud moves the files
+
+There is no AMS PARA server. Everything the app knows lives in the markdown files in your vault folder, and iCloud is what copies those files between the Mac and the phone — the same way it does for any other folder in iCloud Drive.
+
+That has one consequence worth knowing. iCloud does not push every file to every device the moment it is written. It tells the other device that a file exists and leaves the contents behind until something asks for them. Until then there is only a marker where the file should be: the name is reserved, but the note is not really on the phone yet. This is normal iCloud behaviour, and it is why "Optimise storage" on a phone with little space left can leave a lot of your vault as markers.
+
+The app therefore asks. When it starts, when you open a vault, and once a minute while it runs, it looks through the vault for anything that has not arrived and asks iCloud to fetch it. A few seconds later the file is there and the app reloads by itself. You do not have to do anything.
 
 ### When something takes a moment to arrive
 
-iCloud does not send every file to every device straight away. A note or template written on the Mac may sit on the phone as a marker rather than a file until something asks for it. The app asks: when it starts, when you open a vault, and once a minute while it runs. So a new template can take a few seconds and a moment of Wi-Fi to appear on the phone; while it is on its way the Templates list says "coming from iCloud". If it does not turn up, open the phone's Files app, find the file in your vault folder and tap it once — that fetches it too.
+Make a note or a template on the Mac and it usually appears on the phone within seconds of opening the app. If it does not, it is nearly always one of these:
+
+- The phone has no connection, or is on a network that is being slow. iCloud is doing nothing until it can.
+- The Mac has not finished uploading. Look at the file in Finder: a small cloud with an arrow means it is still on its way up.
+- The phone app has been open the whole time and is between checks. Switch away and back, and it looks again.
+
+While a template is on its way, the Templates list names it and says "coming from iCloud" instead of pretending it is not there.
+
+### If a file seems stuck
+
+Open the Files app on the iPhone, find your vault folder, and tap the file once. That is the same request the app makes, and it usually settles it. If a whole folder looks empty on the phone but is full on the Mac, check that both devices point at the same folder under Settings › Vault, and that iCloud Drive is switched on in iOS Settings.
+
+### Editing the same note on both devices
+
+The app checks every few seconds whether files changed outside it and reloads them. It never writes over a newer file. If you were typing in a note that changed elsewhere at the same time, your text is saved as a copy named "… (conflict date time).md" next to the note, and the note shows the other version. Merge the two by hand when that happens; it is rare.
+
+A note that has not arrived yet is treated as a note that exists. The app will not make a fresh empty one in its place, which would leave you with two versions of the same note for iCloud to argue about. If you open one before it has landed, it says so and you can try again a moment later.
 
 ## Getting new versions
 

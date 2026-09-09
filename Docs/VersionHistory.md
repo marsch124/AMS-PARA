@@ -2,6 +2,10 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 96 · 9 September 2026
+
+- **The manual explains iCloud.** "Mac and iPhone together" now says how the files actually move between the two devices, why a new note or template can take a moment to appear on the phone, what the "coming from iCloud" line means, and what to do if something looks stuck.
+
 ## Build 95 · 9 September 2026
 
 - **A new template made on the Mac now arrives on the iPhone.** iCloud does not send a file to the phone until something asks for it; until then there is only a hidden stub, which the app walked straight past — so the template looked as though it had never left the Mac. The app now asks iCloud for everything it is missing at launch, when you open a vault and once a minute after that. Templates still on their way are listed as "coming from iCloud".
