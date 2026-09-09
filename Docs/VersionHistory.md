@@ -2,6 +2,12 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 75 · 9 September 2026
+
+- **Fix, properly this time: picking an inbox line works again.** Build 71 made the rows draggable and double-clickable, and on the Mac either of those takes the click the list needs to select a row — so no line could be marked, and nothing could be filed. Both are gone. Click a line, then click where it should go, exactly as before build 71.
+- Renaming a line is on its **⋯ menu** (and the right-click menu): **Rename…**. Double-click is not back yet; I would rather leave it out than break selecting again.
+- Dragging a line from the Inbox onto a destination is gone with it. Clicking a destination does the same thing in one click.
+
 ## Build 74 · 8 September 2026
 
 - **Fix: you can pick an inbox line again.** Build 71's double-click-to-rename was swallowing the click the list needs to select a row, so marking a line and then pressing a destination stopped working. Sorry — selecting, the single keys and "click a destination" all work as before, and double-click still renames.

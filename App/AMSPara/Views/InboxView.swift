@@ -124,7 +124,7 @@ struct InboxTriageView: View {
             SectionLabel(title: items.count == 1 ? "1 to sort" : "\(items.count) to sort",
                          count: nil, systemImage: "tray.full", tint: SidebarSection.inbox.tint)
             Spacer()
-            Text("T today · M tomorrow · D done · ⌫ delete")
+            Text("T today · M tomorrow · D done · ⌫ delete · ⋯ rename")
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }
@@ -204,11 +204,9 @@ struct InboxRow: View {
         }
         .padding(.vertical, 2)
         .contentShape(Rectangle())
-        // Drag it straight onto a destination in the right-hand column.
-        .draggable(TaskTransfer(ref))
-        // Simultaneous, not `.onTapGesture`: a tap gesture of its own swallows the click the
-        // list needs to select the row, which is what broke picking a line in build 71.
-        .simultaneousGesture(TapGesture(count: 2).onEnded { startEditing() })
+        // Nothing here may take the row's click: `.draggable` and `.onTapGesture` both do, and
+        // between them they cost builds 71 to 74 — a line could no longer be picked at all.
+        // Renaming is on the menu instead, and a line is filed by clicking a destination.
         .contextMenu { menuItems }
     }
 
@@ -312,7 +310,7 @@ struct InboxFileItView: View {
     }
 
     private var destinationsTitle: String {
-        selected == nil ? "Where things go" : "Drop it on a destination, or click one"
+        selected == nil ? "Where things go" : "Click where it should go"
     }
 
     @ViewBuilder
@@ -332,7 +330,7 @@ struct InboxFileItView: View {
             .padding(12)
             .background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 10))
         } else {
-            Text("Pick a line on the left, or drag one straight onto a destination.")
+            Text("Pick a line on the left, then click where it should go.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)

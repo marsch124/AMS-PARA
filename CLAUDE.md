@@ -45,9 +45,11 @@ TestFlight on the phone and on the Mac. Xcode is no longer part of his routine.
   arrays and conditions in a plain function or a computed property and let the view read
   the result. There is no Swift compiler in this container, so CI is the only check and a
   slip like this costs a whole build.
-- **A tap gesture on a List row swallows the click that selects it** (build 71 broke picking
-  an inbox line; fixed in 74). Use `.simultaneousGesture(TapGesture(count: 2)…)` for
-  double-click actions on rows, never `.onTapGesture`.
+- **Nothing may be attached to a row in a `List(selection:)` that takes its click.**
+  `.draggable` and `.onTapGesture` both do on macOS, and `.simultaneousGesture` did not save it
+  either: builds 71 to 74 left the Inbox unusable because no line could be selected, and CI
+  cannot catch it. Row actions belong on the context menu or the row's own buttons. Whatever
+  the fix looks like, changing one thing per build is the only way to know which one it was.
 - A helper type that touches `AppModel` needs `@MainActor` on it (the model is main-actor
   bound), or the build fails with "main actor-isolated property … can not be referenced from
   a nonisolated context" (build 67).
