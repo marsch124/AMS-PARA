@@ -16,6 +16,7 @@ enum SidebarSection: Hashable, Identifiable {
     case done
     case allActions
     case recent
+    case deleted
     case search
     case kind(ParaKind)
 
@@ -32,6 +33,7 @@ enum SidebarSection: Hashable, Identifiable {
         case .done: return "Done"
         case .allActions: return "All actions"
         case .recent: return "Recent"
+        case .deleted: return "Deleted"
         case .search: return "Search"
         case .kind(let kind): return kind.displayName
         }
@@ -48,6 +50,7 @@ enum SidebarSection: Hashable, Identifiable {
         case .done: return "checkmark.circle"
         case .allActions: return "list.bullet"
         case .recent: return "clock.arrow.circlepath"
+        case .deleted: return "trash"
         case .search: return "magnifyingglass"
         case .kind(.daily): return "calendar"
         case .kind(.goal): return "star"
@@ -59,7 +62,7 @@ enum SidebarSection: Hashable, Identifiable {
         }
     }
 
-    static let all: [SidebarSection] = [.inbox, .today, .allActions, .recent, .calendar, .timeBlocks, .done, .review, .map, .search, .kind(.goal), .kind(.project), .kind(.area), .kind(.resource), .kind(.archive)]
+    static let all: [SidebarSection] = [.inbox, .today, .allActions, .recent, .calendar, .timeBlocks, .done, .review, .map, .deleted, .search, .kind(.goal), .kind(.project), .kind(.area), .kind(.resource), .kind(.archive)]
 }
 
 /// The sheets the main window can present.
@@ -74,7 +77,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 79
+    static let number = 80
 }
 
 @MainActor
@@ -211,6 +214,7 @@ final class AppModel: ObservableObject {
         #endif
         watchForExternalChanges()
         backUpDaily()
+        purgeOldDeleted()
         calendarStore.onChange = { [weak self] in
             Task { await self?.refreshEvents() }
         }
@@ -378,6 +382,7 @@ final class AppModel: ObservableObject {
         case .kind(let kind)?: base = notes.filter { $0.kind == kind }
         case .calendar?: base = index.dailyNotes
         case .recent?: base = recentNotes
+        case .deleted?: base = []
         case .today?, .review?, .map?, .timeBlocks?, .done?, .allActions?, .search?, nil: base = notes
         }
         let query = searchText.trimmingCharacters(in: .whitespaces)
@@ -391,6 +396,7 @@ final class AppModel: ObservableObject {
         case .today: return index.openTasks(dueOnOrBefore: .today()).count + (todayNote?.openTasks.count ?? 0)
         case .calendar, .map, .search: return 0
         case .recent: return recentNotes.count
+        case .deleted: return deletedNotes.count
         case .allActions: return index.openTasks(includeArchived: false).count
         case .timeBlocks: return timeBlocks.filter { $0.day == .today() }.count
         case .done: return index.tasksCompleted(on: .today()).count
@@ -425,6 +431,7 @@ final class AppModel: ObservableObject {
         vault = opened
         reload()
         backUpDaily()
+        purgeOldDeleted()
         scheduleAutoSync()
     }
 
@@ -531,6 +538,7 @@ final class AppModel: ObservableObject {
             errorMessage = error.localizedDescription
         }
         vaultSignature = currentVaultSignature()
+        refreshDeleted()
     }
 
     // MARK: Editing
@@ -629,19 +637,65 @@ final class AppModel: ObservableObject {
         }
     }
 
-    /// Moves a note to the Trash. The Inbox note stays; empty it instead.
+    /// Deletes a note: it moves to the vault's Deleted list, where it can be put back.
+    /// The Inbox note stays; empty it instead.
     func trash(_ note: Note) {
         flushPendingEdits()
         guard let vault, note.kind != .inbox else { return }
         do {
             try vault.trash(note)
-            log("trashed \(note.relativePath)")
+            log("deleted \(note.relativePath)")
             if selectedNotePath == note.relativePath { selectedNotePath = nil }
             reload()
-            flash("Moved \u{201C}\(note.displayTitle)\u{201D} to the Trash")
+            flash("\u{201C}\(note.displayTitle)\u{201D} is in Deleted")
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    // MARK: Deleted notes
+
+    /// What is in the Deleted list, most recently deleted first.
+    @Published private(set) var deletedNotes: [DeletedNote] = []
+
+    func refreshDeleted() {
+        deletedNotes = vault?.deletedNotes() ?? []
+    }
+
+    /// Clears out what has been deleted for more than a month. Runs at launch and on open.
+    func purgeOldDeleted() {
+        vault?.purgeDeleted(olderThan: Self.deletedKeptForDays)
+        refreshDeleted()
+    }
+
+    static let deletedKeptForDays = 30
+
+    func putBack(_ deleted: DeletedNote) {
+        guard let vault else { return }
+        do {
+            let restored = try vault.restore(deleted)
+            reload()
+            flash("\u{201C}\(restored.displayTitle)\u{201D} is back")
+            show(restored)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func deleteForGood(_ deleted: DeletedNote) {
+        guard let vault else { return }
+        do {
+            try vault.purge(deleted)
+            refreshDeleted()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func emptyDeleted() {
+        guard let vault else { return }
+        for deleted in deletedNotes { try? vault.purge(deleted) }
+        refreshDeleted()
     }
 
     /// Notes that can be archived: the working PARA kinds and goals.

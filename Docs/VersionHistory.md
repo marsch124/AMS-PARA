@@ -2,6 +2,14 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 80 · 9 September 2026
+
+- **Deleted.** A new sidebar section holding the notes you have deleted, newest first. Each one has **Put back**, which returns it to the folder it came from, and **Delete for good**; **Empty** in the toolbar clears the lot.
+- **This closes a real hole on the iPhone.** Deleting used to put the file in the Mac's Trash, which the phone has no equivalent of — there the note was simply removed, and iCloud then took it off the Mac too. Now both behave the same way.
+- Deleted notes are kept for **30 days** and then cleared out on their own. They sit in a hidden folder inside the vault, so they cost you nothing and never sync to Reminders.
+- The wording follows: the button is now **Delete**, and it says where the note is going.
+- Only whole notes are kept. A task deleted from a list is still gone straight away.
+
 ## Build 79 · 9 September 2026
 
 - **The Inbox "File it" column now shows the shape of your vault.** Two headings — **Projects** in green, **Areas** in pink — instead of one long run of cards.

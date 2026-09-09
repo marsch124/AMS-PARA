@@ -176,10 +176,12 @@ Right-click a note in the list (long-press on the phone) › **Rename…**, or p
 
 A name another note already uses is refused. In Apple Reminders the list follows on the next sync; the tasks keep their reminders. The Inbox and daily notes cannot be renamed.
 
-## Archive and Trash
+## Archive and Deleted
 
 - **Archive** moves a project, area, resource or goal to the Archive folder, marks it archived and stops syncing its tasks. Use it for finished work.
-- **Move to Trash** (⌘⌫ or right-click) puts the file in the Mac's Trash, so you can get it back from Finder. The Inbox note cannot be trashed.
+- **Delete** (⌘⌫ or right-click) moves a note to the **Deleted** section in the sidebar. Nothing is lost: each entry has **Put back**, which returns it to the folder it came from (or beside it, if that name has been taken since), and **Delete for good**. **Empty** in the toolbar clears the lot.
+- Deleted notes are kept for **30 days**, then cleared out on their own. They live in a hidden folder inside the vault, so the phone and the Mac behave the same way and nothing there syncs to Reminders. The Inbox note cannot be deleted.
+- Only whole notes go here. A task you delete from a list is gone from the note straight away.
 
 ## On the iPhone
 
@@ -202,7 +204,7 @@ lives in your Applications folder like any other app.
 ## Keyboard shortcuts
 
 - ⌘N new note, ⇧⌘N quick capture, ⇧⌘F search everywhere, ⇧⌘R sync with Reminders
-- ⌘⌫ move the open note to the Trash
+- ⌘⌫ delete the open note (it waits in Deleted)
 - ⌥⌘D copy diagnostics, a log you can paste when reporting a problem
 - The sync button's menu holds the sync preview and the last report
 

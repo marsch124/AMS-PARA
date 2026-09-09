@@ -187,6 +187,7 @@ struct SidebarView: View {
                 row(.done)
                 row(.review)
                 row(.map)
+                row(.deleted)
                 row(.search)
             }
             Section("Goals") {
@@ -344,6 +345,8 @@ struct NoteListView: View {
                 DoneView()
             } else if model.section == .allActions {
                 AllActionsView()
+            } else if model.section == .deleted {
+                DeletedView()
             } else if model.section == .search {
                 SearchView()
             } else {
@@ -364,12 +367,12 @@ struct NoteListView: View {
                 }
                 .searchable(text: $searchText, prompt: "Search notes")
                 .onChange(of: model.section) { _, _ in searchText = "" }
-                .confirmationDialog("Move \u{201C}\(noteToTrash?.displayTitle ?? "")\u{201D} to the Trash?",
+                .confirmationDialog("Delete \u{201C}\(noteToTrash?.displayTitle ?? "")\u{201D}?",
                                     isPresented: Binding(get: { noteToTrash != nil }, set: { if !$0 { noteToTrash = nil } }),
                                     presenting: noteToTrash) { note in
-                    Button("Move to Trash", role: .destructive) { model.trash(note) }
+                    Button("Delete", role: .destructive) { model.trash(note) }
                 } message: { _ in
-                    Text("You can put it back from the Trash in Finder.")
+                    Text("It goes to the Deleted list, where you can put it back.")
                 }
                 }
             }
@@ -688,6 +691,7 @@ extension SidebarSection {
         case .done: return Color("ReviewTint")
         case .allActions: return Color("ProjectTint")
         case .recent: return Color("ResourceTint")
+        case .deleted: return Color("ArchiveTint")
         case .review: return Color("ReviewTint")
         case .map: return Color("GoalTint")
         case .search: return Color("ResourceTint")

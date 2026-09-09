@@ -71,8 +71,8 @@ struct NoteEditorView: View {
             let shown = TaskIDMasking.hidden(in: newValue)
             if shown != text { text = shown }
         }
-        .confirmationDialog("Move \u{201C}\(note?.displayTitle ?? "")\u{201D} to the Trash?", isPresented: $confirmTrash) {
-            Button("Move to Trash", role: .destructive) {
+        .confirmationDialog("Delete \u{201C}\(note?.displayTitle ?? "")\u{201D}?", isPresented: $confirmTrash) {
+            Button("Delete", role: .destructive) {
                 guard let note else { return }
                 pendingSave?.cancel()
                 pendingSave = nil
@@ -80,7 +80,7 @@ struct NoteEditorView: View {
                 model.trash(note)
             }
         } message: {
-            Text("You can put it back from the Trash in Finder.")
+            Text("It goes to the Deleted list, where you can put it back.")
         }
         .alert("Rename \u{201C}\(note?.displayTitle ?? "")\u{201D}", isPresented: $renamingNote) {
             TextField("Title", text: $noteTitleDraft)
@@ -125,9 +125,9 @@ struct NoteEditorView: View {
                     Button {
                         confirmTrash = true
                     } label: {
-                        Label("Move to Trash", systemImage: "trash")
+                        Label("Delete", systemImage: "trash")
                     }
-                    .help("Move this note's file to the Trash (⌘⌫)")
+                    .help("Delete this note; it waits in Deleted (⌘⌫)")
                     .keyboardShortcut(.delete, modifiers: [.command])
                 }
             }

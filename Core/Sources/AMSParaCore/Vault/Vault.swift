@@ -380,13 +380,11 @@ public final class Vault {
 
     /// Moves the note's file to the system Trash, so a mistake can be undone in Finder.
     /// Falls back to deleting where the Trash is not available.
+    /// Puts a note in the vault's own Deleted folder, from where it can be put back.
+    /// It used to go to the system Trash, which the phone has no equivalent of: there the
+    /// file was simply removed, and iCloud then took it off the Mac as well.
     public func trash(_ note: Note) throws {
-        let fileURL = url(for: note.relativePath)
-        do {
-            try fm.trashItem(at: fileURL, resultingItemURL: nil)
-        } catch {
-            try fm.removeItem(at: fileURL)
-        }
+        try moveToDeleted(note)
     }
 
     public static func sanitizeFileName(_ title: String) -> String {

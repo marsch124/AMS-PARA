@@ -385,6 +385,17 @@ chevron writing to the view's `foldedAreas`. The chevron sits beside `Destinatio
 inside it: the row is itself a Button. `DestinationRow` no longer indents itself; it tints a
 sub-area's card instead.
 
+## Deleted notes (build 80)
+
+`Vault.trash` no longer uses `trashItem`: on iOS that fails and it fell through to
+`removeItem`, so a delete on the phone was permanent and iCloud carried it to the Mac.
+`Core/Vault/DeletedNotes.swift` moves the file into `.ams-para/Deleted/` instead, stamped
+`deleted:` and `deleted-from:` in its frontmatter (nothing scans that folder, so it never
+syncs), and offers `deletedNotes()`, `restore` (back to `deleted-from`, or "(restored)"
+beside it), `purge` and `purgeDeleted(olderThan:)`. `AppModel` keeps `deletedNotes`
+refreshed from `reload()`, runs `purgeOldDeleted()` (30 days) at launch and on open, and
+`DeletedView` is the sidebar section.
+
 ## Not built (by choice)
 
 Saved searches. Roadmap stopped there on his request.
