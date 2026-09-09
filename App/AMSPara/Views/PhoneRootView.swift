@@ -131,7 +131,7 @@ struct PhoneBrowseView: View {
 
     private let groups: [(String, [SidebarSection])] = [
         ("Goals and PARA", [.kind(.goal), .kind(.project), .kind(.area), .kind(.resource), .kind(.archive)]),
-        ("Plan", [.calendar, .timeBlocks, .done, .review, .map, .search]),
+        ("Plan", [.allActions, .recent, .calendar, .timeBlocks, .done, .review, .map, .search]),
     ]
 
     var body: some View {

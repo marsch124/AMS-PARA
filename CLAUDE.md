@@ -367,6 +367,15 @@ use) and calls `Note.headingRenamed` for the first `# Heading`. Links are the ca
 menu (`NoteListView`, an `.alert` with a TextField — not an inline field, which would take the
 row's click) and a toolbar button in `NoteEditorView`. Inbox and daily notes are excluded.
 
+## Recent and the daily notes list (build 78)
+
+`SidebarSection.recent` lists `AppModel.recentNotes`: `selectedNotePath`'s `didSet` pushes the
+path onto `recentNotePaths` (newest first, 40 kept, in UserDefaults under `recentNotePaths`),
+and `recentNotes` drops the ones whose file is gone. `notes(in:)` returns them in that order,
+so the ordinary note list draws it. `CalendarMode.notes` adds a fourth Calendar view,
+`DailyNotesListView`, over `index.dailyNotes` with its own `.searchable`; `DailyNoteRow` takes
+`preview: true` there to show the first line of prose.
+
 ## Not built (by choice)
 
 Saved searches. Roadmap stopped there on his request.

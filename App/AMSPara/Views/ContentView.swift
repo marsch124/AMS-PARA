@@ -181,6 +181,7 @@ struct SidebarView: View {
                     .acceptsTaskDrop { ref in model.moveTask(ref, to: model.vault?.config.inboxFile ?? "Inbox.md") }
                 row(.today)
                 row(.allActions)
+                row(.recent)
                 row(.calendar)
                 row(.timeBlocks)
                 row(.done)
@@ -375,6 +376,12 @@ struct NoteListView: View {
         }
         .navigationTitle(model.section?.title ?? "Notes")
         .toolbar {
+            if model.section == .recent {
+                ToolbarItem {
+                    Button("Clear") { model.clearRecentNotes() }
+                        .help("Empty the Recent list")
+                }
+            }
             // Over the list it adds to, rather than away at the right by the search field.
             ToolbarItem(placement: .navigation) {
                 Button {
@@ -438,6 +445,9 @@ struct NoteListView: View {
                 EmptyStateView(title: "The archive is empty", systemImage: "archivebox",
                                message: "Finished projects and closed areas land here. They stay searchable and stop syncing to Reminders.",
                                tint: ParaKind.archive.tint)
+            case .recent?:
+                EmptyStateView(title: "Nothing opened yet", systemImage: "clock.arrow.circlepath",
+                               message: "The notes you open show up here, newest first, so you can get back to what you were on.")
             default:
                 EmptyStateView(title: "Nothing here yet", systemImage: "doc.text",
                                message: "Notes you add to this section show up in this list.")
@@ -677,6 +687,7 @@ extension SidebarSection {
         case .timeBlocks: return Color("CalendarTint")
         case .done: return Color("ReviewTint")
         case .allActions: return Color("ProjectTint")
+        case .recent: return Color("ResourceTint")
         case .review: return Color("ReviewTint")
         case .map: return Color("GoalTint")
         case .search: return Color("ResourceTint")

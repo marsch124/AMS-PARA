@@ -20,6 +20,7 @@ struct CalendarView: View {
             case .day: DayCalendarView()
             case .week: WeekOverviewView()
             case .month: MonthOverviewView()
+            case .notes: DailyNotesListView()
             }
         }
     }
@@ -297,8 +298,55 @@ struct MonthGridCell: View {
     }
 }
 
+/// Every daily and weekly note that exists, newest first: the month grid is for finding a
+/// date, this is for finding what you wrote.
+struct DailyNotesListView: View {
+    @EnvironmentObject private var model: AppModel
+    @State private var searchText = ""
+
+    private var listed: [Note] {
+        let query = searchText.trimmingCharacters(in: .whitespaces)
+        guard !query.isEmpty else { return model.index.dailyNotes }
+        return model.index.dailyNotes.filter {
+            $0.displayTitle.localizedCaseInsensitiveContains(query) || $0.body.localizedCaseInsensitiveContains(query)
+        }
+    }
+
+    var body: some View {
+        Group {
+            if listed.isEmpty {
+                EmptyStateView(title: searchText.isEmpty ? "No daily notes yet" : "Nothing found",
+                               systemImage: "calendar",
+                               message: searchText.isEmpty
+                                   ? "A daily note is made the first time you write in a day. Pick a day in the month grid to start one."
+                                   : "No daily or weekly note matches what you typed.",
+                               tint: ParaKind.daily.tint)
+            } else {
+                List(selection: model.noteSelection) {
+                    ForEach(listed) { note in
+                        DailyNoteRow(note: note, preview: true)
+                            .tag(note.relativePath)
+                    }
+                }
+            }
+        }
+        .searchable(text: $searchText, prompt: "Search the daily notes")
+    }
+}
+
 struct DailyNoteRow: View {
     let note: Note
+    /// The list of past notes shows the first line of prose, so a day is recognisable.
+    var preview = false
+
+    /// The first line that is not the heading, the frontmatter or a task.
+    private var firstLine: String? {
+        note.body.components(separatedBy: "\n")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .first { line in
+                !line.isEmpty && !line.hasPrefix("#") && !line.hasPrefix("-") && !line.hasPrefix(">")
+            }
+    }
 
     var body: some View {
         HStack(spacing: 10) {
@@ -320,6 +368,12 @@ struct DailyNoteRow: View {
             Text(total == 0 ? "No tasks" : "\(open) open of \(total)")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            if preview, let firstLine {
+                Text(firstLine)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
             }
         }
         .padding(.vertical, 2)

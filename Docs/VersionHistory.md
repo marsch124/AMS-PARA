@@ -2,6 +2,12 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 78 · 9 September 2026
+
+- **Recent.** A new sidebar section listing the notes you opened most recently, newest first, of any kind. It survives quitting the app, and **Clear** in the toolbar empties it. On the phone it is under Browse › Plan.
+- **Calendar › Notes.** A fourth view next to Day, Week and Month: every daily and weekly note you have written, newest first, with the first line of what you wrote so a day is recognisable. It has its own search field.
+- **All actions** is now on the phone too, under Browse › Plan.
+
 ## Build 77 · 9 September 2026
 
 - **Rename a note.** Right-click it in the list on the Mac, or long-press it on the phone → **Rename…**. Works for projects, areas, sub-areas, resources, goals and archived notes. The note screen also has a **Rename** button in its toolbar.

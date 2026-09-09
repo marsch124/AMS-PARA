@@ -15,6 +15,7 @@ enum SidebarSection: Hashable, Identifiable {
     case timeBlocks
     case done
     case allActions
+    case recent
     case search
     case kind(ParaKind)
 
@@ -30,6 +31,7 @@ enum SidebarSection: Hashable, Identifiable {
         case .timeBlocks: return "Time Blocks"
         case .done: return "Done"
         case .allActions: return "All actions"
+        case .recent: return "Recent"
         case .search: return "Search"
         case .kind(let kind): return kind.displayName
         }
@@ -45,6 +47,7 @@ enum SidebarSection: Hashable, Identifiable {
         case .timeBlocks: return "calendar.badge.clock"
         case .done: return "checkmark.circle"
         case .allActions: return "list.bullet"
+        case .recent: return "clock.arrow.circlepath"
         case .search: return "magnifyingglass"
         case .kind(.daily): return "calendar"
         case .kind(.goal): return "star"
@@ -56,7 +59,7 @@ enum SidebarSection: Hashable, Identifiable {
         }
     }
 
-    static let all: [SidebarSection] = [.inbox, .today, .allActions, .calendar, .timeBlocks, .done, .review, .map, .search, .kind(.goal), .kind(.project), .kind(.area), .kind(.resource), .kind(.archive)]
+    static let all: [SidebarSection] = [.inbox, .today, .allActions, .recent, .calendar, .timeBlocks, .done, .review, .map, .search, .kind(.goal), .kind(.project), .kind(.area), .kind(.resource), .kind(.archive)]
 }
 
 /// The sheets the main window can present.
@@ -71,7 +74,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 77
+    static let number = 78
 }
 
 @MainActor
@@ -86,7 +89,33 @@ final class AppModel: ObservableObject {
         didSet { if section != oldValue { log("section -> \(section.map(\.title) ?? "nil")"); tameSoon() } }
     }
     @Published var selectedNotePath: String? {
-        didSet { if selectedNotePath != oldValue { log("note -> \(selectedNotePath ?? "nil")"); tameSoon() } }
+        didSet {
+            guard selectedNotePath != oldValue else { return }
+            log("note -> \(selectedNotePath ?? "nil")")
+            if let selectedNotePath { rememberOpened(selectedNotePath) }
+            tameSoon()
+        }
+    }
+
+    /// The notes opened most recently, newest first, kept across launches so "Recent" is
+    /// useful the moment the app starts. Paths, not notes: the files move and are renamed.
+    @Published private(set) var recentNotePaths: [String] = UserDefaults.standard.stringArray(forKey: AppModel.recentKey) ?? []
+    private static let recentKey = "recentNotePaths"
+    private static let recentLimit = 40
+
+    /// The recent paths that still lead to a note, in the order they were opened.
+    var recentNotes: [Note] { recentNotePaths.compactMap { note(at: $0) } }
+
+    private func rememberOpened(_ path: String) {
+        var listed = recentNotePaths.filter { $0 != path }
+        listed.insert(path, at: 0)
+        recentNotePaths = Array(listed.prefix(Self.recentLimit))
+        UserDefaults.standard.set(recentNotePaths, forKey: Self.recentKey)
+    }
+
+    func clearRecentNotes() {
+        recentNotePaths = []
+        UserDefaults.standard.removeObject(forKey: Self.recentKey)
     }
 
     /// Columns are re-created when the section changes; tame the new ones once they exist.
@@ -112,9 +141,9 @@ final class AppModel: ObservableObject {
     @Published var calendarMode: CalendarMode = .day
 
     enum CalendarMode: String, CaseIterable, Identifiable {
-        case day, week, month
+        case day, week, month, notes
         var id: String { rawValue }
-        var label: String { rawValue.capitalized }
+        var label: String { self == .notes ? "Notes" : rawValue.capitalized }
     }
 
     let remindersStore = EventKitRemindersStore()
@@ -348,6 +377,7 @@ final class AppModel: ObservableObject {
         case .inbox?: base = notes.filter { $0.kind == .inbox }
         case .kind(let kind)?: base = notes.filter { $0.kind == kind }
         case .calendar?: base = index.dailyNotes
+        case .recent?: base = recentNotes
         case .today?, .review?, .map?, .timeBlocks?, .done?, .allActions?, .search?, nil: base = notes
         }
         let query = searchText.trimmingCharacters(in: .whitespaces)
@@ -360,6 +390,7 @@ final class AppModel: ObservableObject {
         case .inbox: return note(at: vault?.config.inboxFile)?.openTasks.count ?? 0
         case .today: return index.openTasks(dueOnOrBefore: .today()).count + (todayNote?.openTasks.count ?? 0)
         case .calendar, .map, .search: return 0
+        case .recent: return recentNotes.count
         case .allActions: return index.openTasks(includeArchived: false).count
         case .timeBlocks: return timeBlocks.filter { $0.day == .today() }.count
         case .done: return index.tasksCompleted(on: .today()).count

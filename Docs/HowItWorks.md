@@ -164,6 +164,12 @@ In the Areas list a sub-area is indented under its area, and the chevron on the 
 
 Any area can be picked as the parent. Picking one that is already a sub-area lifts it up a level first, since areas nest one level only — asking for "Yoga under Mobility" means Mobility is the level above.
 
+## Getting back to a note
+
+- **Recent** in the sidebar lists what you opened last, newest first, whatever kind it was. It is remembered between launches; **Clear** empties it.
+- **Calendar › Notes** lists every daily and weekly note you have written, newest first, with the first line of each and its own search field. Day, Week and Month are for finding a date; Notes is for finding what you wrote.
+- **Search** (⇧⌘F) looks inside every note and task.
+
 ## Renaming a note
 
 Right-click a note in the list (long-press on the phone) › **Rename…**, or press **Rename** in the toolbar of the note itself. The file is renamed with it, and every note that pointed at the old name — `goal:`, `area:`, `parent:`, `related:` or a `[[wikilink]]` — is updated, so no link comes loose. The note's own `# Heading` follows when it still said the old name.
