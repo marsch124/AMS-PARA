@@ -419,8 +419,19 @@ drags as one, and `AppModel.task(for:)` returns nil for those, so every existing
 target ignores them. `MapCanvas` keeps `targetedID` for the outline. The tap gesture and the
 drag live on the same wrapper, which is fine here because the tap is ours, not a List's.
 
+## Hand-placed map boxes (build 83)
+
+`Note.mapPosition` reads `map: x,y` (unzoomed points, top left). `MapLayout.init` takes
+`pinned: [String: CGPoint]` (`AppModel.pinnedMapPositions`) and overrides the computed frame of
+any node whose `note.relativePath` is in it — after the automatic pass, so unpinned boxes keep
+their places and the edges, drawn from the final frames, follow. `size` is the maximum
+`maxX`/`maxY` rather than the column walk, or a parked box could fall outside the scroll area.
+`MapNodeBox` is its own view because a live drag needs `@GestureState`: while `arranging` it
+carries a `DragGesture` and a context menu, otherwise the `.draggable`/`.dropDestination` pair
+from build 82 — an `if`, never both at once, so one gesture never means two things.
+`AppModel.setMapPosition`/`clearMapPositions` write and remove the line.
+
 ## Not built (by choice)
 
 Saved searches. Roadmap stopped there on his request.
-Free positioning of map boxes: the layout is computed from the links, so saved coordinates
-would fight it (told him so in build 82; he may still ask for it).
+

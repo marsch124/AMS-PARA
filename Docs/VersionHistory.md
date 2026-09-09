@@ -2,6 +2,14 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 83 · 9 September 2026
+
+- **Park the map's boxes where you want them.** A new **Arrange** button in the Map's toolbar. While it is on, dragging a box moves it and it stays where you let go; while it is off, dragging links things as before. One drag never means two things.
+- **The position lives in the note**, as a `map: 320,180` line in its frontmatter — so it travels with the note when you rename or move it, it is the same on the Mac and the iPhone, it is in your backups, and zooming does not disturb it. Delete the line in any editor and the app places the box again.
+- Notes you have not placed are still arranged by the app, around the ones you have. A brand new note can therefore land on top of a box you parked; move either one.
+- **Right-click a box while arranging › Place this one automatically**, or **Reset all** in the toolbar, hands them back to the layout.
+- Only proper notes can be parked; task chips and the dashed group boxes always follow the layout.
+
 ## Build 82 · 9 September 2026
 
 - **The Map is now something you work in, not only look at.** Drag a box onto another and the link is written into the notes:

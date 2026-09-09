@@ -9,6 +9,9 @@ struct MapView: View {
     @State private var map = LinkMap(roots: [])
     @State private var selectedID: String?
     @State private var zoom: CGFloat = 1
+    /// While on, dragging a box moves it instead of linking it.
+    @State private var arranging = false
+    @State private var confirmResetAll = false
     #if !os(macOS)
     @State private var shared: SharedFile?
     #endif
@@ -21,12 +24,15 @@ struct MapView: View {
                 ContentUnavailableView("Nothing to map yet", systemImage: SidebarSection.map.systemImage,
                                        description: Text("Create a goal, then give your projects and areas a goal: line. They show up here, top down."))
             } else {
-                let layout = MapLayout(map: map, zoom: zoom)
+                let layout = MapLayout(map: map, zoom: zoom, pinned: model.pinnedMapPositions)
                 let lit = selectedID.map { map.neighbourhood(of: $0) }
                 ScrollView([.horizontal, .vertical]) {
                     MapCanvas(layout: layout, lit: lit, selectedID: selectedID,
                               select: { node in select(node) },
-                              onDrop: { transfer, node in link(transfer, onto: node) })
+                              onDrop: { transfer, node in link(transfer, onto: node) },
+                              arranging: arranging,
+                              onMove: { node, point in park(node, at: point) },
+                              onUnpin: { node in park(node, at: nil) })
                     .frame(width: layout.size.width, height: layout.size.height)
                     .padding(28)
                 }
@@ -40,6 +46,17 @@ struct MapView: View {
                     .disabled(zoom <= Self.zoomSteps.first!)
                 Button { step(1) } label: { Label("Zoom in", systemImage: "plus.magnifyingglass") }
                     .disabled(zoom >= Self.zoomSteps.last!)
+                Toggle(isOn: $arranging) {
+                    Label("Arrange", systemImage: "hand.draw")
+                }
+                .toggleStyle(.button)
+                .help(arranging ? "Dragging moves a box. Turn off to go back to linking."
+                                : "Turn on to drag boxes where you want them")
+                if arranging {
+                    Button("Reset all") { confirmResetAll = true }
+                        .help("Let the app place every box again")
+                        .disabled(model.pinnedMapPositions.isEmpty)
+                }
                 Menu {
                     Button("PDF\u{2026}") { export(MapExport.pdfData(for: map), extension: "pdf") }
                     Button("PNG\u{2026}") { export(MapExport.pngData(for: map), extension: "png") }
@@ -58,6 +75,11 @@ struct MapView: View {
             ShareSheet(url: file.url)
         }
         #endif
+        .confirmationDialog("Place every box automatically again?", isPresented: $confirmResetAll) {
+            Button("Reset all", role: .destructive) { model.clearMapPositions() }
+        } message: {
+            Text("The `map:` line is taken out of every note. Nothing else changes.")
+        }
         .onAppear { rebuild() }
         .onChange(of: model.notes) { _, _ in rebuild() }
         .onChange(of: model.selectedNotePath) { _, path in
@@ -96,6 +118,12 @@ struct MapView: View {
             return false
         }
         return true
+    }
+
+    /// Remembers where a box was let go, or hands it back to the automatic layout with nil.
+    private func park(_ node: MapNode, at point: CGPoint?) {
+        guard let note = node.note else { return }
+        model.setMapPosition(note, to: point)
     }
 
     /// The Mac asks where to put the file; the phone hands it to the share sheet.
@@ -157,7 +185,7 @@ struct MapLayout {
     let edges: [Edge]
     let size: CGSize
 
-    init(map: LinkMap, zoom: CGFloat) {
+    init(map: LinkMap, zoom: CGFloat, pinned: [String: CGPoint] = [:]) {
         self.zoom = zoom
         let card = CGSize(width: 180 * zoom, height: 50 * zoom)
         let chip = CGSize(width: 180 * zoom, height: 26 * zoom)
@@ -219,12 +247,21 @@ struct MapLayout {
             rowY[row] = y
             y += (rowHeights[row] ?? card.height) + rowGap
         }
+        // A box that has been parked keeps its own place; everything else stays where the
+        // layout put it. Positions are stored unzoomed, so they hold at every zoom level.
         let placed = pending.map { p in
-            Item(node: p.node, frame: CGRect(x: p.x, y: (rowY[p.row] ?? 0) + p.offsetY,
-                                             width: card.width, height: p.node.isChip ? chip.height : card.height))
+            let automatic = CGRect(x: p.x, y: (rowY[p.row] ?? 0) + p.offsetY,
+                                   width: card.width, height: p.node.isChip ? chip.height : card.height)
+            guard let path = p.node.note?.relativePath, let point = pinned[path] else {
+                return Item(node: p.node, frame: automatic)
+            }
+            return Item(node: p.node,
+                        frame: CGRect(x: point.x * zoom, y: point.y * zoom,
+                                      width: automatic.width, height: automatic.height))
         }
         items = placed
-        size = CGSize(width: max(x - rootGap, card.width), height: max(y - rowGap, card.height))
+        size = CGSize(width: max(placed.map(\.frame.maxX).max() ?? 0, card.width),
+                      height: max(placed.map(\.frame.maxY).max() ?? 0, card.height))
 
         let frames = Dictionary(placed.map { ($0.id, $0.frame) }, uniquingKeysWith: { a, _ in a })
         var lines: [Edge] = []
@@ -256,6 +293,11 @@ struct MapCanvas: View {
     let select: (MapNode) -> Void
     /// Dropping one box on another links them. Nil while the map is only being drawn.
     var onDrop: ((TaskTransfer, MapNode) -> Bool)? = nil
+    /// While arranging, a drag moves the box instead of linking it.
+    var arranging = false
+    /// Where a box was let go, in unzoomed points from the top left.
+    var onMove: ((MapNode, CGPoint) -> Void)? = nil
+    var onUnpin: ((MapNode) -> Void)? = nil
     @State private var targetedID: String?
 
     var body: some View {
@@ -277,25 +319,74 @@ struct MapCanvas: View {
                 }
             }
             ForEach(layout.items) { item in
-                MapNodeView(node: item.node, zoom: layout.zoom,
-                            dimmed: lit.map { !$0.contains(item.id) } ?? false,
-                            selected: item.id == selectedID,
-                            targeted: targetedID == item.id)
-                    .frame(width: item.frame.width, height: item.frame.height)
-                    .position(x: item.frame.midX, y: item.frame.midY)
-                    .onTapGesture { select(item.node) }
-                    .draggable(Self.transfer(for: item.node))
-                    .dropDestination(for: TaskTransfer.self) { dropped, _ in
-                        guard let first = dropped.first else { return false }
-                        return onDrop?(first, item.node) ?? false
-                    } isTargeted: { over in
-                        if over {
-                            targetedID = item.id
-                        } else if targetedID == item.id {
-                            targetedID = nil
-                        }
-                    }
+                MapNodeBox(item: item, zoom: layout.zoom,
+                           dimmed: lit.map { !$0.contains(item.id) } ?? false,
+                           selected: item.id == selectedID,
+                           targeted: targetedID == item.id,
+                           arranging: arranging,
+                           select: { select(item.node) },
+                           drop: { transfer in onDrop?(transfer, item.node) ?? false },
+                           targeting: { over in
+                               if over {
+                                   targetedID = item.id
+                               } else if targetedID == item.id {
+                                   targetedID = nil
+                               }
+                           },
+                           moved: { point in onMove?(item.node, point) },
+                           unpin: { onUnpin?(item.node) })
             }
+        }
+    }
+}
+
+/// One box: it either links things by being dragged onto another, or — while arranging —
+/// moves to wherever it is let go. Its own view, because a live drag needs gesture state.
+struct MapNodeBox: View {
+    let item: MapLayout.Item
+    let zoom: CGFloat
+    let dimmed: Bool
+    let selected: Bool
+    let targeted: Bool
+    let arranging: Bool
+    let select: () -> Void
+    let drop: (TaskTransfer) -> Bool
+    let targeting: (Bool) -> Void
+    let moved: (CGPoint) -> Void
+    let unpin: () -> Void
+    @GestureState private var shift: CGSize = .zero
+
+    private var canMove: Bool { item.node.note != nil }
+
+    private var placed: some View {
+        MapNodeView(node: item.node, zoom: zoom, dimmed: dimmed, selected: selected, targeted: targeted)
+            .frame(width: item.frame.width, height: item.frame.height)
+            .position(x: item.frame.midX, y: item.frame.midY)
+    }
+
+    var body: some View {
+        if arranging, canMove {
+            placed
+                .offset(shift)
+                .gesture(
+                    DragGesture(minimumDistance: 2)
+                        .updating($shift) { value, state, _ in state = value.translation }
+                        .onEnded { value in
+                            moved(CGPoint(x: (item.frame.minX + value.translation.width) / zoom,
+                                          y: (item.frame.minY + value.translation.height) / zoom))
+                        }
+                )
+                .contextMenu {
+                    Button("Place this one automatically", action: unpin)
+                }
+        } else {
+            placed
+                .onTapGesture(perform: select)
+                .draggable(MapCanvas.transfer(for: item.node))
+                .dropDestination(for: TaskTransfer.self) { dropped, _ in
+                    guard let first = dropped.first else { return false }
+                    return drop(first)
+                } isTargeted: { targeting($0) }
         }
     }
 }

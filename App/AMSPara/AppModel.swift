@@ -77,7 +77,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 82
+    static let number = 83
 }
 
 @MainActor
@@ -853,6 +853,43 @@ final class AppModel: ObservableObject {
             let wanted = (index + 1) * 10
             guard note.sortOrder != wanted, var updated = self.note(at: note.relativePath) else { continue }
             updated.frontmatter.set("order", "\(wanted)")
+            _ = save(updated)
+        }
+        reload()
+    }
+
+    // MARK: The map's hand-placed boxes
+
+    /// Where boxes have been parked, by note path. Unzoomed points from the top left.
+    var pinnedMapPositions: [String: CGPoint] {
+        var pinned: [String: CGPoint] = [:]
+        for note in notes {
+            guard let point = note.mapPosition else { continue }
+            pinned[note.relativePath] = CGPoint(x: point.x, y: point.y)
+        }
+        return pinned
+    }
+
+    /// Parks a box, or takes the `map:` line out so the app places it again.
+    func setMapPosition(_ note: Note, to point: CGPoint?) {
+        flushPendingEdits()
+        guard var updated = self.note(at: note.relativePath) else { return }
+        if let point {
+            updated.frontmatter.set("map", "\(Int(point.x.rounded())),\(Int(point.y.rounded()))")
+        } else {
+            guard updated.mapPosition != nil else { return }
+            updated.frontmatter.remove("map")
+        }
+        guard save(updated) else { return }
+        reload()
+    }
+
+    /// Hands the whole map back to the automatic layout.
+    func clearMapPositions() {
+        flushPendingEdits()
+        for note in notes where note.mapPosition != nil {
+            guard var updated = self.note(at: note.relativePath) else { continue }
+            updated.frontmatter.remove("map")
             _ = save(updated)
         }
         reload()

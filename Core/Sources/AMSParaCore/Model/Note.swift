@@ -73,6 +73,15 @@ public struct Note: Equatable, Identifiable, Sendable {
     public var tags: [String] { frontmatter.list("tags") }
     public var related: [String] { frontmatter.list("related") }
     public var area: String? { frontmatter.string("area") }
+    /// Where this note's box has been parked on the Map, written as `map: 320,180`: points
+    /// from the top left at normal zoom. Nil means the app places it, which is the default.
+    public var mapPosition: (x: Double, y: Double)? {
+        guard let value = frontmatter.string("map") else { return nil }
+        let parts = value.split(separator: ",").map { Double($0.trimmingCharacters(in: .whitespaces)) }
+        guard parts.count == 2, let x = parts[0], let y = parts[1] else { return nil }
+        return (x, y)
+    }
+
     /// The area a sub-area sits under, written as `parent: Title`. Areas only, one level deep.
     public var parent: String? {
         guard kind == .area else { return nil }

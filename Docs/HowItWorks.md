@@ -178,6 +178,47 @@ The box you are over is outlined while it would accept the drop; anything that d
 
 The boxes themselves are placed by the app, worked out from your links — there is no way to drag a box to a position of its own, because the next change would move it again.
 
+### Arranging it by hand
+
+The boxes are placed by the app, worked out from your links. If you would rather put some of them where you want them, press **Arrange** in the Map's toolbar.
+
+**While Arrange is on**, dragging a box moves it. Let go and it stays there. Dragging no longer links things — that is the whole point of the switch, so one drag never means two things.
+
+**While Arrange is off** (the normal state), dragging links things as described above and nothing moves.
+
+#### Where the position is kept
+
+In the note itself, as one line in its frontmatter:
+
+```
+---
+title: Mobility
+type: area
+map: 320,180
+---
+```
+
+Two numbers: how far from the left and how far from the top, in points, measured at normal zoom. That has some useful consequences:
+
+- **It travels with the note.** Rename the note, move it between folders, open the vault on the iPhone — the box stays where you put it, because the position is part of the file.
+- **Both devices agree**, through iCloud, like everything else in the vault.
+- **It is in your backups**, and in any other editor you open the file in.
+- **Zoom does not disturb it.** The numbers are stored as if the map were at normal zoom, so zooming in and out moves the box on screen without changing what is written down.
+- **If it is ever wrong**, the worst that happens is a box in an odd place. Delete the `map:` line in any editor and the app places it again.
+
+#### Placed and unplaced boxes together
+
+A note with no `map:` line is placed by the app as before. So the two live side by side: the boxes you have parked stay put, everything else is arranged around them by the layout.
+
+That means a **new note appears wherever the layout puts it**, which can be on top of a box you placed. Move either one and they sort themselves out. Task chips and the dashed group boxes are never parked — only proper notes are.
+
+#### Putting a box back
+
+- **Right-click a box while arranging › Place this one automatically** takes its `map:` line out.
+- **Reset all** in the toolbar (also only while arranging) does the same for every note at once, after asking.
+
+Nothing else in the note changes either way.
+
 ### Exporting the map
 
 The **Export** button in the Map's toolbar offers:
