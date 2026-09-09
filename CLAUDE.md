@@ -409,6 +409,18 @@ headings into `HelpSection`s drawn as `DisclosureGroup`s, `###` parses to `.subh
 search field filters the sections (a match forces them open). `Docs/HowItWorks.md` is written
 for that shape — one subject per `##`, `###` inside the long ones.
 
+## Dragging on the Map (build 82)
+
+Boxes are `.draggable` and `.dropDestination(for: TaskTransfer.self)`; `MapCanvas.onDrop`
+hands the pair to `MapView.link(_:onto:)`, which is the only place the rules live (project→area
+`setArea`, project/area/goal→goal `setGoal`, area→area `setParent`, task chip→project/area
+`moveTask`). Rather than a second UTType, `TaskTransfer` gained `isNote: Bool?`: a whole note
+drags as one, and `AppModel.task(for:)` returns nil for those, so every existing task drop
+target ignores them. `MapCanvas` keeps `targetedID` for the outline. The tap gesture and the
+drag live on the same wrapper, which is fine here because the tap is ours, not a List's.
+
 ## Not built (by choice)
 
 Saved searches. Roadmap stopped there on his request.
+Free positioning of map boxes: the layout is computed from the links, so saved coordinates
+would fight it (told him so in build 82; he may still ask for it).

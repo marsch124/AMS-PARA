@@ -164,6 +164,20 @@ The review walks through the inbox, the projects that need attention and the goa
 
 The Map draws what serves what: goals at the top, then areas and projects, then open tasks and resources. Notes without a goal and archived notes sit in dashed boxes. Click a box to highlight its connections and open the note.
 
+### Wiring it up by dragging
+
+The Map is not only something to look at. Drag one box onto another and the link is written into the notes:
+
+- A **project onto an area** — the project now belongs to that area.
+- A **project or area onto a goal** — it now serves that goal.
+- An **area onto another area** — it becomes a sub-area of it.
+- A **goal onto a goal** — the first becomes a subgoal of the second.
+- A **task chip onto a project or area** — the task moves into that note, subtasks and all.
+
+The box you are over is outlined while it would accept the drop; anything that does not go together is refused and the drag springs back. The map redraws itself afterwards, so the new arrangement is on screen at once.
+
+The boxes themselves are placed by the app, worked out from your links — there is no way to drag a box to a position of its own, because the next change would move it again.
+
 ### Exporting the map
 
 The **Export** button in the Map's toolbar offers:

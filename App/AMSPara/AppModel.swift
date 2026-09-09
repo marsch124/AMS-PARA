@@ -77,7 +77,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 81
+    static let number = 82
 }
 
 @MainActor
@@ -718,7 +718,7 @@ final class AppModel: ObservableObject {
 
     /// Finds a dragged task again in its note (by line, then by title).
     func task(for transfer: TaskTransfer) -> TaskRef? {
-        guard let note = note(at: transfer.notePath) else { return nil }
+        guard transfer.isNote != true, let note = note(at: transfer.notePath) else { return nil }
         let task = note.tasks.first { $0.lineIndex == transfer.lineIndex && $0.title == transfer.title }
             ?? note.tasks.first { $0.title == transfer.title }
         return task.map { TaskRef(notePath: note.relativePath, noteTitle: note.displayTitle, task: $0) }
@@ -855,6 +855,29 @@ final class AppModel: ObservableObject {
             updated.frontmatter.set("order", "\(wanted)")
             _ = save(updated)
         }
+        reload()
+    }
+
+    /// Points a note at the goal it serves (`goal:`), or clears the line.
+    func setGoal(_ note: Note, to goal: Note?) {
+        setLink("goal", on: note, to: goal)
+    }
+
+    /// Puts a project in an area (`area:`), or takes it out.
+    func setArea(_ note: Note, to area: Note?) {
+        setLink("area", on: note, to: area)
+    }
+
+    private func setLink(_ key: String, on note: Note, to target: Note?) {
+        flushPendingEdits()
+        guard var updated = self.note(at: note.relativePath),
+              target?.relativePath != note.relativePath else { return }
+        if let target {
+            updated.frontmatter.set(key, target.displayTitle)
+        } else {
+            updated.frontmatter.remove(key)
+        }
+        guard save(updated) else { return }
         reload()
     }
 

@@ -2,6 +2,18 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 82 · 9 September 2026
+
+- **The Map is now something you work in, not only look at.** Drag a box onto another and the link is written into the notes:
+  - a **project onto an area** puts the project in that area;
+  - a **project or area onto a goal** makes it serve that goal;
+  - an **area onto another area** makes it a sub-area;
+  - a **goal onto a goal** makes it a subgoal;
+  - a **task chip onto a project or area** moves the task there.
+- The box under the pointer is outlined while it would take the drop. A pair that means nothing is refused and the drag springs back.
+- The map redraws straight away, so you see the new shape immediately.
+- Boxes still can't be dragged to a position of your own choosing: the layout is worked out from your links, so a hand-placed box would be moved again by the next change.
+
 ## Build 81 · 9 September 2026
 
 - **Export the Map.** A new **Export** button in the Map's toolbar: **PDF** (vector, so it prints and zooms without going fuzzy), **PNG**, **Copy image**, and **Copy as outline** — the same tree as indented text you can paste anywhere. The Mac asks where to save; the phone opens the share sheet.

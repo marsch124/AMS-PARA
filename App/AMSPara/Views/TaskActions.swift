@@ -12,12 +12,25 @@ struct TaskTransfer: Codable, Transferable {
     var notePath: String
     var lineIndex: Int
     var title: String
+    /// Set when a whole note was dragged rather than a task in it: the Map drags its boxes,
+    /// and every task drop target ignores those instead of guessing at a task.
+    var isNote: Bool?
 
     init(_ ref: TaskRef) {
         notePath = ref.notePath
         lineIndex = ref.task.lineIndex
         title = ref.task.title
     }
+
+    init(note: Note) {
+        notePath = note.relativePath
+        lineIndex = -1
+        title = note.displayTitle
+        isNote = true
+    }
+
+    /// A drag that means nothing, for boxes on the Map that are not notes.
+    static let nothing = TaskTransfer(note: Note(relativePath: "", kind: .resource))
 
     static var transferRepresentation: some TransferRepresentation {
         CodableRepresentation(contentType: .amsParaTask)

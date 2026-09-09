@@ -24,9 +24,9 @@ struct MapView: View {
                 let layout = MapLayout(map: map, zoom: zoom)
                 let lit = selectedID.map { map.neighbourhood(of: $0) }
                 ScrollView([.horizontal, .vertical]) {
-                    MapCanvas(layout: layout, lit: lit, selectedID: selectedID) { node in
-                        select(node)
-                    }
+                    MapCanvas(layout: layout, lit: lit, selectedID: selectedID,
+                              select: { node in select(node) },
+                              onDrop: { transfer, node in link(transfer, onto: node) })
                     .frame(width: layout.size.width, height: layout.size.height)
                     .padding(28)
                 }
@@ -70,6 +70,32 @@ struct MapView: View {
     private func rebuild() {
         map = model.index.linkMap()
         if let selectedID, map.node(selectedID) == nil { self.selectedID = nil }
+    }
+
+    /// Dropping one box on another is how the map is wired up. Only the pairs that mean
+    /// something are taken; anything else is refused and the drag springs back.
+    private func link(_ transfer: TaskTransfer, onto node: MapNode) -> Bool {
+        guard let target = node.note else { return false }
+        guard transfer.isNote == true else {
+            guard let ref = model.task(for: transfer),
+                  [.project, .area, .inbox].contains(target.kind),
+                  ref.notePath != target.relativePath else { return false }
+            model.moveTask(ref, to: target.relativePath)
+            return true
+        }
+        guard let dragged = model.note(at: transfer.notePath),
+              dragged.relativePath != target.relativePath else { return false }
+        switch (dragged.kind, target.kind) {
+        case (.project, .goal), (.area, .goal), (.goal, .goal):
+            model.setGoal(dragged, to: target)
+        case (.project, .area):
+            model.setArea(dragged, to: target)
+        case (.area, .area):
+            model.setParent(dragged, to: target)
+        default:
+            return false
+        }
+        return true
     }
 
     /// The Mac asks where to put the file; the phone hands it to the share sheet.
@@ -228,6 +254,9 @@ struct MapCanvas: View {
     let lit: Set<String>?
     let selectedID: String?
     let select: (MapNode) -> Void
+    /// Dropping one box on another links them. Nil while the map is only being drawn.
+    var onDrop: ((TaskTransfer, MapNode) -> Bool)? = nil
+    @State private var targetedID: String?
 
     var body: some View {
         let tints = Dictionary(layout.items.map { ($0.id, $0.node.tint) }, uniquingKeysWith: { a, _ in a })
@@ -250,11 +279,34 @@ struct MapCanvas: View {
             ForEach(layout.items) { item in
                 MapNodeView(node: item.node, zoom: layout.zoom,
                             dimmed: lit.map { !$0.contains(item.id) } ?? false,
-                            selected: item.id == selectedID)
+                            selected: item.id == selectedID,
+                            targeted: targetedID == item.id)
                     .frame(width: item.frame.width, height: item.frame.height)
                     .position(x: item.frame.midX, y: item.frame.midY)
                     .onTapGesture { select(item.node) }
+                    .draggable(Self.transfer(for: item.node))
+                    .dropDestination(for: TaskTransfer.self) { dropped, _ in
+                        guard let first = dropped.first else { return false }
+                        return onDrop?(first, item.node) ?? false
+                    } isTargeted: { over in
+                        if over {
+                            targetedID = item.id
+                        } else if targetedID == item.id {
+                            targetedID = nil
+                        }
+                    }
             }
+        }
+    }
+}
+
+extension MapCanvas {
+    /// What a box carries when it is dragged: its note, or the task on a chip.
+    static func transfer(for node: MapNode) -> TaskTransfer {
+        switch node.content {
+        case .note(let note): return TaskTransfer(note: note)
+        case .task(let ref, _): return TaskTransfer(ref)
+        case .more, .group: return .nothing
         }
     }
 }
@@ -283,6 +335,8 @@ struct MapNodeView: View {
     let zoom: CGFloat
     let dimmed: Bool
     let selected: Bool
+    /// Something is being dragged over this box and it would take it.
+    var targeted = false
 
     var body: some View {
         Group {
@@ -302,8 +356,13 @@ struct MapNodeView: View {
         }
         .opacity(dimmed ? 0.28 : 1)
         .contentShape(Rectangle())
+        .overlay {
+            RoundedRectangle(cornerRadius: 10 * zoom)
+                .strokeBorder(Color.accentColor, lineWidth: targeted ? 2.5 : 0)
+        }
         .help(node.title)
         .animation(.easeInOut(duration: 0.15), value: dimmed)
+        .animation(.easeInOut(duration: 0.12), value: targeted)
     }
 
     private func card(_ note: Note) -> some View {
