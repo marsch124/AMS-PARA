@@ -54,6 +54,7 @@ struct TaskContextMenu: View {
     let showNote: Bool
     @Binding var pickingDate: Bool
     var onAddSubtask: (() -> Void)?
+    var onRename: (() -> Void)?
 
     private var note: Note? { model.note(at: ref.notePath) }
     private var inboxPath: String { model.vault?.config.inboxFile ?? "Inbox.md" }
@@ -122,6 +123,9 @@ struct TaskContextMenu: View {
                     Button(label(for: note)) { model.moveTask(ref, to: note.relativePath) }
                 }
             }
+        }
+        if let onRename {
+            Button("Rename…", action: onRename)
         }
         if let onAddSubtask {
             Button("Add subtask…", action: onAddSubtask)

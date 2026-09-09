@@ -71,7 +71,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 75
+    static let number = 76
 }
 
 @MainActor
@@ -696,8 +696,15 @@ final class AppModel: ObservableObject {
     /// Renames a task in place, keeping its id, date, tags and subtasks.
     func renameTask(_ ref: TaskRef, to title: String) {
         flushPendingEdits()
-        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty, trimmed != ref.task.title, var note = note(at: ref.notePath) else { return }
+        var trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        // The #next marker lives in the title but is shown as a badge, so it is never in the
+        // field being edited. Put it back rather than let a rename clear the next action.
+        if ref.task.tags.contains(Note.nextActionTag),
+           !trimmed.localizedCaseInsensitiveContains("#" + Note.nextActionTag) {
+            trimmed += " #" + Note.nextActionTag
+        }
+        guard trimmed != ref.task.title, var note = note(at: ref.notePath) else { return }
         var task = ref.task
         task.title = trimmed
         guard note.replace(task: task) else { return }

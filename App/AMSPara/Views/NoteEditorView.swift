@@ -418,6 +418,9 @@ struct TaskRow: View {
     var onAddSubtask: (() -> Void)? = nil
     let toggle: () -> Void
     @State private var pickingDate = false
+    @State private var renaming = false
+    @State private var draft = ""
+    @FocusState private var fieldFocused: Bool
 
     /// Tasks take the colour of the note they live in.
     private var tint: Color {
@@ -434,17 +437,24 @@ struct TaskRow: View {
             }
             .buttonStyle(.plain)
             VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 6) {
-                    Text(isNext ? Note.removingTag(Note.nextActionTag, from: ref.task.title) : ref.task.title)
-                        .strikethrough(ref.task.isDone)
-                        .foregroundStyle(ref.task.isDone ? .secondary : .primary)
-                    if isNext && !ref.task.isDone {
-                        Text("next")
-                            .font(.caption2.weight(.semibold))
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 1)
-                            .background(tint.opacity(0.2), in: Capsule())
-                            .foregroundStyle(tint)
+                if renaming {
+                    TextField("Task", text: $draft)
+                        .textFieldStyle(.roundedBorder)
+                        .focused($fieldFocused)
+                        .onSubmit(commitRename)
+                } else {
+                    HStack(spacing: 6) {
+                        Text(isNext ? Note.removingTag(Note.nextActionTag, from: ref.task.title) : ref.task.title)
+                            .strikethrough(ref.task.isDone)
+                            .foregroundStyle(ref.task.isDone ? .secondary : .primary)
+                        if isNext && !ref.task.isDone {
+                            Text("next")
+                                .font(.caption2.weight(.semibold))
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 1)
+                                .background(tint.opacity(0.2), in: Capsule())
+                                .foregroundStyle(tint)
+                        }
                     }
                 }
                 HStack(spacing: 8) {
@@ -473,11 +483,25 @@ struct TaskRow: View {
         .contentShape(Rectangle())
         .draggable(TaskTransfer(ref))
         .contextMenu {
-            TaskContextMenu(ref: ref, showNote: showNote, pickingDate: $pickingDate, onAddSubtask: onAddSubtask)
+            TaskContextMenu(ref: ref, showNote: showNote, pickingDate: $pickingDate,
+                            onAddSubtask: onAddSubtask, onRename: startRenaming)
         }
         .popover(isPresented: $pickingDate) {
             TaskDatePicker(ref: ref, isPresented: $pickingDate)
         }
+    }
+
+    /// The field shows the task the way the row does: without the #next marker, which
+    /// `AppModel.renameTask` puts back so a rename never clears the next action.
+    private func startRenaming() {
+        draft = isNext ? Note.removingTag(Note.nextActionTag, from: ref.task.title) : ref.task.title
+        renaming = true
+        fieldFocused = true
+    }
+
+    private func commitRename() {
+        renaming = false
+        model.renameTask(ref, to: draft)
     }
 }
 

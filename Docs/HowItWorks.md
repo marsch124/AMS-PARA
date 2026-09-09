@@ -68,6 +68,7 @@ Right-click any task, anywhere in the app, for the task menu:
 - **Repeat**: every day, week, 2 weeks, month, 3 months or year. When you tick a repeating task, the next one appears below it with the next date. In the file this is `@repeat(weekly)`.
 - **Make this the next action** (in a project): the task gets a `#next` tag and a badge, and Today lists it under "Next actions". One per project.
 - **Block time for this…**: opens Time Blocks with the title filled in.
+- **Rename…**: turns the line into a field. Type and press Return. The date, repeat, tags and subtasks stay, and so does the reminder it is linked to.
 - **Move to**: the Inbox, any active project or any active area. Subtasks move along. The reminder follows on the next sync. You can also drag the task onto another note in the middle column.
 
 You can also **drag** a task: onto a note in the middle column or onto Inbox to move it, onto a day in the Calendar's month grid or week list to set its date, or onto a day in the weekly note.

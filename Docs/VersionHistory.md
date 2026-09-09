@@ -2,6 +2,12 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 76 · 9 September 2026
+
+- **Rename a task anywhere.** Right-click a task on the Mac, or long-press it on the phone, and the menu now has **Rename…**. The line turns into a field; type and press Return. Works in a note's task list, in Today, in All actions, in Done and in the calendar day.
+- The date, repeat rule, tags, subtasks and the task's identity in Apple Reminders all stay as they were — only the wording changes.
+- Renaming a **next action** no longer loses the marker: the badge is put back after the rename.
+
 ## Build 75 · 9 September 2026
 
 - **Fix, properly this time: picking an inbox line works again.** Build 71 made the rows draggable and double-clickable, and on the Mac either of those takes the click the list needs to select a row — so no line could be marked, and nothing could be filed. Both are gone. Click a line, then click where it should go, exactly as before build 71.
