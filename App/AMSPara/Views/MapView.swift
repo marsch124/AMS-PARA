@@ -22,6 +22,10 @@ struct MapView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            if arranging {
+                arrangingBanner
+                Divider()
+            }
             if map.isEmpty {
                 ContentUnavailableView("Nothing to map yet", systemImage: SidebarSection.map.systemImage,
                                        description: Text("Create a goal, then give your projects and areas a goal: line. They show up here, top down."))
@@ -48,7 +52,8 @@ struct MapView: View {
             }
         }
         .toolbar {
-            ToolbarItemGroup {
+            // On the left, where the eye starts: how the map is shown and how it behaves.
+            ToolbarItemGroup(placement: .navigation) {
                 Button { step(-1) } label: { Label("Zoom out", systemImage: "minus.magnifyingglass") }
                     .disabled(zoom <= Self.zoomSteps.first!)
                 Button { step(1) } label: { Label("Zoom in", systemImage: "plus.magnifyingglass") }
@@ -60,14 +65,8 @@ struct MapView: View {
                 .onChange(of: arranging) { _, on in if !on { marked = [] } }
                 .help(arranging ? "Tap boxes to mark them, then drag any one to move them all."
                                 : "Turn on to drag boxes where you want them")
-                if arranging {
-                    Text(marked.isEmpty ? "Tap boxes to mark them" : "\(marked.count) marked")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Button("Reset all") { confirmResetAll = true }
-                        .help("Let the app place every box again")
-                        .disabled(model.pinnedMapPositions.isEmpty)
-                }
+            }
+            ToolbarItemGroup {
                 Menu {
                     Button("PDF\u{2026}") { export(MapExport.pdfData(for: map), extension: "pdf") }
                     Button("PNG\u{2026}") { export(MapExport.pngData(for: map), extension: "png") }
@@ -129,6 +128,33 @@ struct MapView: View {
             return false
         }
         return true
+    }
+
+    /// Impossible to be in this mode without noticing: a strip across the top says so, says
+    /// what a drag will do, and offers the way out.
+    private var arrangingBanner: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "hand.draw")
+            Text(arrangingHint)
+            Spacer(minLength: 8)
+            Button("Reset all") { confirmResetAll = true }
+                .disabled(model.pinnedMapPositions.isEmpty)
+                .help("Let the app place every box again")
+            Button("Done") { arranging = false }
+                .keyboardShortcut(.escape, modifiers: [])
+        }
+        .font(.callout)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(Color.accentColor.opacity(0.12))
+    }
+
+    private var arrangingHint: String {
+        if marked.isEmpty {
+            return "Arranging — drag a box to move it, or tap boxes to mark several."
+        }
+        return marked.count == 1 ? "Arranging — 1 marked. Drag it, or mark more."
+                                 : "Arranging — \(marked.count) marked. Drag any one to move them all."
     }
 
     /// Remembers where a box was let go, or hands it back to the automatic layout with nil.

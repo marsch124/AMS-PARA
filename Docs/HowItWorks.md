@@ -180,7 +180,7 @@ The boxes themselves are placed by the app, worked out from your links — there
 
 ### Arranging it by hand
 
-The boxes are placed by the app, worked out from your links. If you would rather put some of them where you want them, press **Arrange** in the Map's toolbar.
+The boxes are placed by the app, worked out from your links. If you would rather put some of them where you want them, press **Arrange** — the hand button at the **left** of the Map's toolbar, next to the zoom buttons. While it is on, a tinted strip across the top of the map says so, says what a drag will do, and has **Done** to leave the mode (Esc also works).
 
 **While Arrange is on**, dragging a box moves it. Let go and it stays there. Dragging no longer links things — that is the whole point of the switch, so one drag never means two things.
 

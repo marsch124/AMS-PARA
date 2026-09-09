@@ -2,6 +2,11 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 87 · 9 September 2026
+
+- **You can no longer be in Arrange mode without noticing.** A tinted strip runs across the top of the map while it is on, saying what a drag will do and how many boxes are marked, with **Reset all** and **Done** in it. Esc leaves the mode too.
+- **The zoom and Arrange buttons moved to the left** of the Map's toolbar, where the eye starts. Export stays on the right.
+
 ## Build 86 · 9 September 2026
 
 - **Fix: tapping a box and sweeping a rectangle work again.** In build 85 neither did, and it was my mistake twice over.
