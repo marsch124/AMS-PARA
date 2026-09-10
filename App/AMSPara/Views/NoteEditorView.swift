@@ -364,11 +364,22 @@ struct NoteEditorView: View {
     @ViewBuilder
     private var linkSuggestions: some View {
         if let linkDraft, !linkTitles.isEmpty {
-            WikiLinkList(titles: linkTitles, choice: $linkChoice, tint: note?.tint ?? .accentColor,
-                         kindFor: { model.index.note(matching: $0)?.kind ?? model.note(at: path)?.kind ?? .resource },
-                         pick: { title in linkCompletion = LinkCompletion(draft: linkDraft.draft, title: title) })
-                .offset(x: max(linkDraft.caret.x - 6, 6),
-                        y: linkDraft.caret.y + linkDraft.lineHeight + 4)
+            // Inside the editor, whatever the cursor is doing: below the line when there is
+            // room, above it when the cursor is near the bottom, and never off the right edge.
+            // Build 114 put it under the caret and let it fall off the bottom (build 115).
+            GeometryReader { geo in
+                let height = min(CGFloat(linkTitles.count) * 30 + 10, 250)
+                let below = linkDraft.caret.y + linkDraft.lineHeight + 4
+                let fits = below + height <= geo.size.height
+                let y = fits ? below : max(linkDraft.caret.y - height - 4, 0)
+                WikiLinkList(titles: linkTitles, choice: $linkChoice, tint: note?.tint ?? .accentColor,
+                             kindFor: { model.index.note(matching: $0)?.kind ?? model.note(at: path)?.kind ?? .resource },
+                             pick: { title in linkCompletion = LinkCompletion(draft: linkDraft.draft, title: title) })
+                    .frame(width: min(320, max(geo.size.width - 24, 160)))
+                    .offset(x: min(max(linkDraft.caret.x - 6, 8), max(geo.size.width - 328, 8)),
+                            y: min(max(y, 0), max(geo.size.height - height, 0)))
+            }
+            .zIndex(10)
         }
     }
 
@@ -905,7 +916,8 @@ struct WikiLinkList: View {
             }
         }
         .padding(4)
-        .frame(maxWidth: 320, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .foregroundStyle(.primary)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: Theme.radius))
         .overlay(RoundedRectangle(cornerRadius: Theme.radius).strokeBorder(tint.opacity(0.35)))
         .shadow(radius: 12, y: 4)

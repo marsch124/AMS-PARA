@@ -2,6 +2,10 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 115 · 10 September 2026
+
+- **Fix: the `[[` list was cut off at the bottom of the editor.** When the cursor is near the foot of the note there is no room under it, so the list now opens upwards instead — and it always stays inside the editor rather than sliding off an edge.
+
 ## Build 114 · 10 September 2026
 
 Linking notes with `[[ ]]`.
