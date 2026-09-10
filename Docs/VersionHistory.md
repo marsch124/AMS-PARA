@@ -2,6 +2,12 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 112 · 10 September 2026
+
+- **A separate place for work notes.** Plain notes in a `Work` folder in your vault, kept out of Today, All actions, the Map, the weekly review, the main search — and out of Reminders. No projects, no goals, no dates: notes and a list of them, with its own search box.
+- **It is not in the sidebar.** To open it: **long-press the PARA heading** in the sidebar on the Mac (or ⌃⌘W), and **long-press the Browse title** on the iPhone. The row appears until you press **Hide** or quit the app.
+- The Work folder is only created when you make the first note there, so a vault without work notes shows no sign of it.
+
 ## Build 111 · 10 September 2026
 
 - **The iPhone gets the section's colour too.** The phone has no right-hand panel, so the note screen itself carries the tint of the section you came in through.

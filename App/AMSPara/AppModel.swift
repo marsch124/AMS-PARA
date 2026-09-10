@@ -19,6 +19,8 @@ enum SidebarSection: Hashable, Identifiable {
     case deleted
     case templates
     case search
+    /// Only in the sidebar once it has been asked for; see AppModel.workRevealed.
+    case work
     case kind(ParaKind)
 
     var id: String { title }
@@ -37,6 +39,7 @@ enum SidebarSection: Hashable, Identifiable {
         case .deleted: return "Deleted"
         case .templates: return "Templates"
         case .search: return "Search"
+        case .work: return "Work"
         case .kind(let kind): return kind.displayName
         }
     }
@@ -55,6 +58,7 @@ enum SidebarSection: Hashable, Identifiable {
         case .deleted: return "trash"
         case .templates: return "doc.badge.gearshape"
         case .search: return "magnifyingglass"
+        case .work: return "briefcase"
         case .kind(.daily): return "calendar"
         case .kind(.goal): return "star"
         case .kind(.project): return "flag"
@@ -80,7 +84,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 111
+    static let number = 112
 }
 
 @MainActor
@@ -359,7 +363,44 @@ final class AppModel: ObservableObject {
 
     func note(at path: String?) -> Note? {
         guard let path else { return nil }
-        return notes.first { $0.relativePath == path }
+        // Work notes are not in `notes` — that is what keeps them out of Today, the Map, the
+        // search and Reminders — but the editor and the row actions look a note up by path,
+        // so they are found here and nowhere else.
+        return notes.first { $0.relativePath == path } ?? workNotes.first { $0.relativePath == path }
+    }
+
+    // MARK: Work notes
+
+    /// Notes in the vault's Work folder: a separate set, deliberately outside everything else.
+    @Published private(set) var workNotes: [Note] = []
+    /// Whether the Work row is in the sidebar. Not stored anywhere: it goes when the app does.
+    @Published var workRevealed = false
+    func refreshWorkNotes() {
+        workNotes = vault?.workNotes() ?? []
+    }
+
+    /// The hidden way in: a long press, or the keyboard shortcut. Reveals the row and goes there.
+    func revealWork() {
+        refreshWorkNotes()
+        workRevealed = true
+        show(section: .work, notePath: nil)
+    }
+
+    /// Puts it away again. The notes stay where they are; only the row goes.
+    func hideWork() {
+        workRevealed = false
+        if section == .work { show(section: .inbox, notePath: nil) }
+    }
+
+    func createWorkNote(title: String) {
+        guard let vault else { return }
+        do {
+            let note = try vault.createWorkNote(title: title)
+            refreshWorkNotes()
+            show(section: .work, notePath: note.relativePath)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 
     /// Lists bind their selection through these so SwiftUI's own selection resets, which
@@ -393,6 +434,7 @@ final class AppModel: ObservableObject {
         case .calendar?: base = index.dailyNotes
         case .recent?: base = recentNotes
         case .deleted?, .templates?: base = []
+        case .work?: base = workNotes
         case .today?, .review?, .map?, .timeBlocks?, .done?, .allActions?, .search?, nil: base = notes
         }
         let query = searchText.trimmingCharacters(in: .whitespaces)
@@ -408,6 +450,7 @@ final class AppModel: ObservableObject {
         case .recent: return recentNotes.count
         case .deleted: return deletedNotes.count
         case .templates: return 0
+        case .work: return workNotes.count
         case .allActions: return index.openTasks(includeArchived: false).count
         case .timeBlocks: return timeBlocks.filter { $0.day == .today() }.count
         case .done: return index.tasksCompleted(on: .today()).count
@@ -657,6 +700,7 @@ final class AppModel: ObservableObject {
         vaultSignature = currentVaultSignature()
         refreshDeleted()
         refreshSnippets()
+        refreshWorkNotes()
     }
 
     // MARK: Editing
@@ -670,6 +714,8 @@ final class AppModel: ObservableObject {
             let saved = try vault.save(note)
             if let i = notes.firstIndex(where: { $0.relativePath == note.relativePath }) {
                 notes[i] = saved
+            } else if let i = workNotes.firstIndex(where: { $0.relativePath == note.relativePath }) {
+                workNotes[i] = saved
             } else {
                 reload()
             }
@@ -694,7 +740,13 @@ final class AppModel: ObservableObject {
         note.modifiedAt = note.modifiedAt ?? Date()
         do {
             let saved = try vault.save(note)
-            if let i = notes.firstIndex(where: { $0.relativePath == path }) { notes[i] = saved } else { reload() }
+            if let i = notes.firstIndex(where: { $0.relativePath == path }) {
+                notes[i] = saved
+            } else if let i = workNotes.firstIndex(where: { $0.relativePath == path }) {
+                workNotes[i] = saved
+            } else {
+                reload()
+            }
             vaultSignature = currentVaultSignature()
         } catch VaultError.modifiedOnDisk {
             do {
@@ -832,7 +884,15 @@ final class AppModel: ObservableObject {
 
     /// Notes that can be archived: the working PARA kinds and goals.
     func canArchive(_ note: Note) -> Bool {
-        [.project, .area, .resource, .goal].contains(note.kind)
+        // Never a work note: archiving would move it into the Archive folder, which is part of
+        // the vault everything else can see.
+        guard !isWorkNote(note) else { return false }
+        return [.project, .area, .resource, .goal].contains(note.kind)
+    }
+
+    /// True for a note living in the Work folder.
+    func isWorkNote(_ note: Note) -> Bool {
+        vault?.isWorkPath(note.relativePath) ?? false
     }
 
     func toggle(_ ref: TaskRef) {

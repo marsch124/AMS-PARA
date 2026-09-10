@@ -16,6 +16,8 @@ public struct VaultConfig: Codable, Equatable, Sendable {
     public var templatesFolder = "Templates"
     public var calendarFolder = "Calendar"
     public var goalsFolder = "Goals"
+    /// Notes kept apart from PARA: see WorkNotes.swift. Nothing else in the app looks here.
+    public var workFolder = "Work"
     public var inboxFile = "Inbox.md"
     /// Reminders list that mirrors the Inbox note.
     public var inboxListName = "Inbox"
@@ -38,7 +40,7 @@ public struct VaultConfig: Codable, Equatable, Sendable {
     public init() {}
 
     private enum CodingKeys: String, CodingKey {
-        case projectsFolder, areasFolder, resourcesFolder, archiveFolder, templatesFolder, calendarFolder, goalsFolder, inboxFile, inboxListName
+        case projectsFolder, areasFolder, resourcesFolder, archiveFolder, templatesFolder, calendarFolder, goalsFolder, workFolder, inboxFile, inboxListName
         case dailyNotesListName, syncDailyNotes, staleProjectDays, reviewIntervalDays
         case conflictPolicy, syncAreas, createMissingLists, importCompletedReminders
     }
@@ -55,6 +57,7 @@ public struct VaultConfig: Codable, Equatable, Sendable {
         inboxListName = try c.decodeIfPresent(String.self, forKey: .inboxListName) ?? d.inboxListName
         calendarFolder = try c.decodeIfPresent(String.self, forKey: .calendarFolder) ?? d.calendarFolder
         goalsFolder = try c.decodeIfPresent(String.self, forKey: .goalsFolder) ?? d.goalsFolder
+        workFolder = try c.decodeIfPresent(String.self, forKey: .workFolder) ?? d.workFolder
         dailyNotesListName = try c.decodeIfPresent(String.self, forKey: .dailyNotesListName) ?? d.dailyNotesListName
         syncDailyNotes = try c.decodeIfPresent(Bool.self, forKey: .syncDailyNotes) ?? d.syncDailyNotes
         staleProjectDays = try c.decodeIfPresent(Int.self, forKey: .staleProjectDays) ?? d.staleProjectDays

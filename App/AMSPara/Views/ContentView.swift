@@ -194,11 +194,21 @@ struct SidebarView: View {
             Section("Goals") {
                 row(.kind(.goal))
             }
-            Section("PARA") {
+            Section {
                 row(.kind(.project))
                 row(.kind(.area))
                 row(.kind(.resource))
                 row(.kind(.archive))
+            } header: {
+                // The way in on the Mac: a long press on this heading. A Section header is not
+                // a selectable row, so a gesture here takes nothing away from the list.
+                Text("PARA")
+                    .onLongPressGesture(minimumDuration: 1.2) { model.revealWork() }
+            }
+            if model.workRevealed {
+                Section {
+                    row(.work)
+                }
             }
         }
         .navigationTitle("AMS PARA")
@@ -240,6 +250,8 @@ struct NoteListView: View {
     @State private var renameDraft = ""
     /// Areas folded shut by their chevron, by relative path. Sub-areas are shown by default.
     @State private var foldedAreas: Set<String> = []
+    @State private var makingWorkNote = false
+    @State private var workNoteTitle = ""
 
     private var searching: Bool { !searchText.trimmingCharacters(in: .whitespaces).isEmpty }
 
@@ -396,12 +408,29 @@ struct NoteListView: View {
             // Over the list it adds to, rather than away at the right by the search field.
             ToolbarItem(placement: .navigation) {
                 Button {
-                    model.activeSheet = .newNote
+                    if model.section == .work { makingWorkNote = true } else { model.activeSheet = .newNote }
                 } label: {
                     Label("New note", systemImage: "square.and.pencil")
                 }
                 .help("New note in this section (⌘N)")
             }
+            if model.section == .work {
+                ToolbarItem {
+                    Button("Hide") { model.hideWork() }
+                        .help("Put the Work section away until you ask for it again")
+                }
+            }
+        }
+        .alert("New work note", isPresented: $makingWorkNote) {
+            TextField("Title", text: $workNoteTitle)
+            Button("Cancel", role: .cancel) { workNoteTitle = "" }
+            Button("Create") {
+                let title = workNoteTitle
+                workNoteTitle = ""
+                model.createWorkNote(title: title)
+            }
+        } message: {
+            Text("It is kept in the vault's Work folder, out of the rest of the app.")
         }
         .alert("Rename \u{201C}\(noteToRename?.displayTitle ?? "")\u{201D}",
                isPresented: Binding(get: { noteToRename != nil }, set: { if !$0 { noteToRename = nil } })) {
@@ -465,6 +494,10 @@ struct NoteListView: View {
                 EmptyStateView(title: "The archive is empty", systemImage: "archivebox",
                                message: "Finished projects and closed areas land here. They stay searchable and stop syncing to Reminders.",
                                tint: ParaKind.archive.tint)
+            case .work?:
+                EmptyStateView(title: "No work notes yet", systemImage: SidebarSection.work.systemImage,
+                               message: "A separate set of notes, kept out of Today, the map, the weekly review, the main search and Reminders. Nothing here is planned or synced.",
+                               tint: SidebarSection.work.tint, actionTitle: "New work note…") { makingWorkNote = true }
             case .recent?:
                 EmptyStateView(title: "Nothing opened yet", systemImage: "clock.arrow.circlepath",
                                message: "The notes you open show up here, newest first, so you can get back to what you were on.")
@@ -729,6 +762,8 @@ extension SidebarSection {
         case .review: return Color("ReviewTint")
         case .map: return Color("GoalTint")
         case .search: return Color("ResourceTint")
+        // Its own colour, belonging to none of the PARA buckets — it is not one of them.
+        case .work: return Color("ArchiveTint")
         case .kind(let kind): return kind.tint
         }
     }

@@ -24,6 +24,13 @@ struct AMSParaApp: App {
                 Button("Sync with Reminders") { Task { await model.syncNow() } }
                     .keyboardShortcut("r", modifiers: [.command, .shift])
                     .disabled(model.vault == nil || model.isSyncing)
+                // The Work section's shortcut. Deliberately not ⌥⌘W, which macOS keeps for
+                // closing every window, and deliberately not named in the manual.
+                Button(model.workRevealed ? "Hide Work" : "Work") {
+                    if model.workRevealed { model.hideWork() } else { model.revealWork() }
+                }
+                .keyboardShortcut("w", modifiers: [.command, .control])
+                .disabled(model.vault == nil)
             }
             CommandGroup(replacing: .help) {
                 #if os(macOS)

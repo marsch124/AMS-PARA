@@ -572,6 +572,25 @@ builds 30/34 were about. The tint follows the *section*, so it does not flicker 
 clicked. The phone has no such column, so `NoteEditorView.phoneBody` carries the same `.modeAccent`
 (build 111).
 
+## Work notes, kept apart (build 112)
+
+A second set of notes he asked for: business notes with no planning and no Reminders, and no
+sidebar row unless asked for. `Core/Vault/WorkNotes.swift` + `VaultConfig.workFolder` ("Work"):
+`workNotes()`, `createWorkNote(title:)` (creates the folder only then, so an unused vault shows
+no sign of it), `isWorkPath`, `searchWorkNotes`. **The exclusion is structural, not a filter:**
+`allNotes()` walks the PARA folders and the Inbox and never goes there, so Today, All actions,
+the Map, the review, the main search and — since `SyncEngine` starts from `allNotes()` — 
+Reminders cannot see them, and nothing has to remember to exclude them. `AppModel.note(at:)`
+falls back to `workNotes` so `NoteEditorView` and the row actions work unchanged; `save`/
+`saveText` update whichever list holds the note; `canArchive` refuses them (archiving would
+move one into the visible vault). `SidebarSection.work` is drawn only while
+`AppModel.workRevealed`, which is session-only and never stored. In: a 1.2 s long press on the
+sidebar's **PARA** header (a Section header, so it takes no click off a row), on the phone the
+**Browse** title drawn as a `.principal` toolbar item, or ⌃⌘W (not ⌥⌘W — macOS closes all
+windows with that). Out: the Hide button in the section's toolbar, or quitting.
+Deliberately **not** in `Docs/HowItWorks.md`: the manual is bundled and visible to anyone
+looking over his shoulder, so the gestures live in VersionHistory and here only.
+
 ## Not built (by choice)
 
 Saved searches. Roadmap stopped there on his request.

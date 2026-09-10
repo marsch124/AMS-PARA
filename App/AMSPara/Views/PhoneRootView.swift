@@ -183,8 +183,34 @@ struct PhoneBrowseView: View {
                     .font(.caption)
                     .foregroundStyle(.tertiary)
             }
+            // Only there once it has been asked for; see the long press below.
+            if model.workRevealed {
+                Section {
+                    NavigationLink(value: PhoneRoute.section(.work)) {
+                        Label {
+                            HStack {
+                                Text(SidebarSection.work.title)
+                                Spacer()
+                                Text("\(model.workNotes.count)").foregroundStyle(.secondary)
+                            }
+                        } icon: {
+                            Image(systemName: SidebarSection.work.systemImage)
+                                .foregroundStyle(SidebarSection.work.tint)
+                        }
+                    }
+                }
+            }
         }
         .navigationTitle("Browse")
+        .toolbar {
+            // The way in: a long press on the title. A plain navigation title cannot take a
+            // gesture, so the title is drawn here instead (build 112).
+            ToolbarItem(placement: .principal) {
+                Text("Browse")
+                    .font(.headline)
+                    .onLongPressGesture(minimumDuration: 1.2) { model.revealWork() }
+            }
+        }
     }
 }
 
