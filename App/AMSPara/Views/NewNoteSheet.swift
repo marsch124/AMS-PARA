@@ -18,7 +18,6 @@ struct NewNoteSheet: View {
     @State private var servesGoal = ""
     @State private var parentArea = ""
     @State private var template = ""
-    @State private var showMore = false
     @FocusState private var nameFocused: Bool
 
     private static let offered: [ParaKind] = [.goal, .project, .area, .resource]
@@ -50,22 +49,11 @@ struct NewNoteSheet: View {
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
 
-            // Only when there is something in it. A vault with no goals and one project
-            // template has nothing to fold away, and an empty box is worse than no button.
+            // No fold. He tried build 119's "More" toggle and asked for everything to be
+            // on screen at once, so the settings are simply here, under a divider.
             if hasMoreToOffer {
-                Button {
-                    showMore.toggle()
-                } label: {
-                    Label(moreLabel, systemImage: showMore ? "chevron.down" : "chevron.right")
-                        .font(.caption)
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(Color.accentColor)
-                .help("Templates, and what this note sits under")
-            }
-
-            if showMore, hasMoreToOffer {
-                moreFields
+                Divider()
+                settingsFields
             }
 
             HStack {
@@ -92,10 +80,11 @@ struct NewNoteSheet: View {
         .onChange(of: kind) { _, _ in template = choices.first?.name ?? "" }
     }
 
-    /// Everything the common case does not need. Whether it is open is never remembered:
-    /// on the day you want one of these you know you want it, and every other day it is noise.
+    /// The rest of what a note can be given as it is made. All of it visible: he asked for
+    /// nothing hidden behind a disclosure (build 121). Only the rows that apply to the
+    /// chosen kind are drawn, so it stays short without anything being folded away.
     @ViewBuilder
-    private var moreFields: some View {
+    private var settingsFields: some View {
         VStack(alignment: .leading, spacing: 10) {
             if kind == .goal {
                 Picker("Horizon", selection: $horizon) {
@@ -134,12 +123,7 @@ struct NewNoteSheet: View {
                 }
             }
         }
-        .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(Color.secondary.opacity(0.3), style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
-        )
     }
 
     /// Switching kind starts the extras again: a goal picked for a project must not follow
@@ -186,16 +170,6 @@ struct NewNoteSheet: View {
             ? "A direction, not a task list. Never synced to Reminders; the work lives in projects that point at it."
             : "A goal with a date and a measure. Not synced to Reminders; its work lives in projects."
         default: return "Reference material. No dates, no Reminders \u{2014} link it from wherever it is useful with [[brackets]]."
-        }
-    }
-
-    /// Naming what is inside is what makes a folded section worth opening.
-    private var moreLabel: String {
-        switch kind {
-        case .goal: return "More \u{2014} horizon, target date, life goal\u{2026}"
-        case .project: return "More \u{2014} template, goal it serves\u{2026}"
-        case .area: return "More \u{2014} part of, template\u{2026}"
-        default: return "More \u{2014} template\u{2026}"
         }
     }
 

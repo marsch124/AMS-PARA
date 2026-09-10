@@ -676,10 +676,12 @@ He called the old sheet "long and a bit crude" and picked this shape from a prev
 before anything was built. `NewNoteSheet` is now: name field first with `@FocusState`
 (`DispatchQueue.main.async { nameFocused = true }` in `onAppear` — focus does not always take
 in the appearing turn), the four kinds as `KindChoice` buttons in `ParaKind.tint` rather than
-a segmented Picker, one line of `hint`, and `moreFields` behind a plain Button + `if showMore`
-— **not** a `DisclosureGroup`, and `showMore` is never persisted. `moreLabel` names what is
-inside, `hasMoreToOffer` keeps it from opening onto an empty box, and `pick(_:)` clears
-`servesGoal`/`parentArea`/`target` on a change of kind so a choice never follows you across.
+a segmented Picker, one line of `hint`, then `settingsFields`. **Build 121 removed the fold**:
+119 put those fields behind a "More" button and he asked for everything on screen at once, so
+they sit under a `Divider()` with no toggle — the win was the *order* (name first) and the
+one-line hint, not the hiding. `hasMoreToOffer` now only decides whether there is a divider at
+all, and `pick(_:)` clears `servesGoal`/`parentArea`/`target` on a change of kind so a choice
+never follows you across.
 New: a project can set `goal:` at creation. `ParaKind.singularName` (extension in
 `NewNoteSheet.swift`) exists because `displayName` is the plural name of the list a note lands
 in — wrong for the one note being made, which is how the old sheet came to label a new project

@@ -2,6 +2,10 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 121 · 10 September 2026
+
+- **The "More" fold in the new-note sheet is gone.** Everything is on screen at once: name, kind, and whatever settings apply to that kind. Nothing to open.
+
 ## Build 120 · 10 September 2026
 
 - **Fix: ⌘N opened an empty second window instead of the new-note sheet.** macOS puts its own **New Window** on ⌘N and it was winning; the app's New Note had the same shortcut and never got a look in. ⌘N is now New Note, and New Window is gone from the File menu — one window is what this app is for.
