@@ -69,6 +69,13 @@ the phone and on the Mac. Xcode is no longer part of his routine.
   on, so build 112's long press on the phone's "Browse" title did nothing until build 117 added
   `.navigationBarTitleDisplayMode(.inline)`. A hidden gesture also needs a second, findable
   target: the "Build N" row at the foot of the Browse list carries the same long press.
+- **Shortcuts are the thing this project keeps getting wrong — check three things before
+  choosing one.** Does macOS already own it (⌥⌘D hides the Dock, ⌥⌘W closes every window)?
+  Does the *app's own* menu already carry it — a `WindowGroup` puts **New Window** on ⌘N, and
+  `CommandGroup(after: .newItem)` leaves that in place and loses, so it must be
+  `replacing:` (build 120)? And does the key exist on a Swedish keyboard — `[` and `]` are
+  ⌥8 and ⌥9 there, which is why Back and Forward are ⌃⌘← / ⌃⌘→ and not the browsers' ⌘[ / ⌘]
+  (build 118)? CI compiles the menu but never presses it, so none of this is caught here.
 - A helper type that touches `AppModel` needs `@MainActor` on it (the model is main-actor
   bound), or the build fails with "main actor-isolated property … can not be referenced from
   a nonisolated context" (build 67).

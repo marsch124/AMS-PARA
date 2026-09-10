@@ -2,6 +2,10 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 120 · 10 September 2026
+
+- **Fix: ⌘N opened an empty second window instead of the new-note sheet.** macOS puts its own **New Window** on ⌘N and it was winning; the app's New Note had the same shortcut and never got a look in. ⌘N is now New Note, and New Window is gone from the File menu — one window is what this app is for.
+
 ## Build 119 · 10 September 2026
 
 - **New note (⌘N) asks one thing, not nine.** The name field is first with the cursor already in it, so a note is a name and Return. Under it, the four kinds as coloured buttons — the same gold, green, pink and blue as the sidebar — and one line saying what that kind is for.

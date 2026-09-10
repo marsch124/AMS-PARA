@@ -12,7 +12,11 @@ struct AMSParaApp: App {
                 .environmentObject(model)
         }
         .commands {
-            CommandGroup(after: .newItem) {
+            // `replacing:`, not `after:`. A WindowGroup puts its own "New Window" in this
+            // group with ⌘N already on it, and the system item wins: adding a second ⌘N
+            // after it meant ⌘N opened an empty second window and never the sheet
+            // (build 120). Replacing the group takes New Window out and gives ⌘N back.
+            CommandGroup(replacing: .newItem) {
                 Button("New Note…") { model.activeSheet = .newNote }
                     .keyboardShortcut("n", modifiers: [.command])
                     .disabled(model.vault == nil)
