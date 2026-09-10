@@ -621,6 +621,48 @@ exists for.
 ordinary notes from seeing each other in both directions. `NoteEditorView` splits the old mixed
 list into **Links to** and **Linked from**.
 
+## Back, Forward, and a link to a note that is not there (build 118)
+
+`AppModel.Visit` (section + path) with `backStack`/`forwardStack` (both `@Published`, so the
+buttons enable themselves) and `currentVisit`. `recordVisit` is called from
+`selectedNotePath`'s `didSet`, so *every* route to a note is history, not only links; the
+section stored is the one already set, because `show(section:notePath:)` sets it a turn
+earlier. `expectedVisit` is the one arrival a Back or Forward will cause and is skipped once,
+which is what keeps `goBack` from pushing what it just left straight back on. It is armed
+**only when the target is not already on screen** and cleared again three `afterUpdate` hops
+later (guarded by `expectedVisitToken`, so a second Back does not clear the first's): both
+routes into `show` are no-ops when the path is unchanged, so an unconditional guard would
+never be cleared and would eat the next genuine visit to that note — an adversarial review
+found this before CI did. `goBack`/`goForward` step over notes that are gone (`note(at:)` nil)
+*and* over the note already displayed, so a press never consumes a step without moving.
+`clearHistory()` runs on `openVault`/`closeVault` (the same relative path is a different note
+in another vault) and `hideWork()` calls `forgetWorkVisits()` — hidden has to mean hidden, or
+Forward would put a work note back on screen with the section behind it.
+Reached from a `ToolbarItemGroup(placement: .navigation)` in `NoteEditorView`'s desk branch,
+and from `CommandMenu("Go")` so the shortcut works when no note is open. **⌃⌘← / ⌃⌘→, not the
+browsers' ⌘[ / ⌘]:** on his Swedish keyboard those brackets are ⌥8 and ⌥9, so the menu would
+advertise a key he does not have — the third time this project has paid for a shortcut chosen
+from a US layout (⌥⌘D, ⌥⌘W). The phone is untouched: `PhoneStack` already pushes a route per
+note, so the system back arrow is the same thing.
+
+`openWikiLink` no longer only complains: with no match it sets `AppModel.LinkToCreate`
+(title, source path, `isWork`) and opens `AppSheet.noteFromLink` — both **inside
+`afterUpdate`**, since the ⌘-click lands in the text view's delegate (build 116's rule).
+`NoteFromLinkSheet` (in `NewNoteSheet.swift`, so no new file and no `project.yml` change)
+asks only for the kind; the title is the link's words and is not editable, or the link would
+still point at nothing. `createNoteFromLink` routes a work note's link to `createWorkNote`.
+`NoteEditorView.missingLinks(from:)` + `MissingLinksList` draw them as **Not made yet** under
+Linked notes — the context of build 74: an action only reachable by a modifier-click is an
+action nobody finds. `AppModel.open(reference:)` (the Preview's links) goes through
+`openWikiLink` too; it used to make a Resource silently, so Preview and the editor answered
+the same link differently.
+**Neither offers to create while `notesWaitingForCloud` is not empty**: "there is no such
+note" is not something this app may say with half a vault unread (build 100's rule), and
+saying it would make a duplicate of a note already in iCloud.
+`WikiLinks.target(of:)` (Core) is new: `[[Note|shown as this]]` and `[[Note#a heading]]` name
+"Note". `matches(in:)` goes through it, so clicking, backlinks and **Not made yet** all agree
+with the preview, which had always parsed them that way.
+
 ## Not built (by choice)
 
 Saved searches. Roadmap stopped there on his request.

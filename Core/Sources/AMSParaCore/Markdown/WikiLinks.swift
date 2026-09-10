@@ -94,12 +94,24 @@ public enum WikiLinks {
         return nil
     }
 
-    /// Every `[[link]]` in the text, with the title inside it.
+    /// The note a link's contents name. `[[Note|what to call it here]]` and
+    /// `[[Note#a heading]]` both point at "Note": the part after `|` is only how the link
+    /// reads, and the part after `#` is a place inside it. The preview has always rendered
+    /// them that way; everything else used to take the whole string and so found no note.
+    public static func target(of contents: String) -> String {
+        var body = contents
+        if let bar = body.firstIndex(of: "|") { body = String(body[body.startIndex..<bar]) }
+        if let hash = body.firstIndex(of: "#") { body = String(body[body.startIndex..<hash]) }
+        return body.trimmingCharacters(in: .whitespaces)
+    }
+
+    /// Every `[[link]]` in the text, with the note it points at.
     public static func matches(in text: String) -> [(range: NSRange, title: String)] {
         let ns = text as NSString
         guard let regex = try? NSRegularExpression(pattern: #"\[\[([^\]\n]+)\]\]"#) else { return [] }
-        return regex.matches(in: text, range: NSRange(location: 0, length: ns.length)).map {
-            (range: $0.range, title: ns.substring(with: $0.range(at: 1)).trimmingCharacters(in: .whitespaces))
+        return regex.matches(in: text, range: NSRange(location: 0, length: ns.length)).compactMap {
+            let title = target(of: ns.substring(with: $0.range(at: 1)))
+            return title.isEmpty ? nil : (range: $0.range, title: title)
         }
     }
 

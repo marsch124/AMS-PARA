@@ -147,6 +147,24 @@ struct NoteEditorView: View {
                     }
                 }
             } else {
+            // Where a browser keeps them, at the leading edge. Not on the phone: its
+            // navigation bar has its own back button and no room besides (build 88).
+            ToolbarItemGroup(placement: .navigation) {
+                Button {
+                    model.goBack()
+                } label: {
+                    Label("Back", systemImage: "chevron.backward")
+                }
+                .disabled(!model.canGoBack)
+                .help("Back to the note you came from (\u{2303}\u{2318}\u{2190})")
+                Button {
+                    model.goForward()
+                } label: {
+                    Label("Forward", systemImage: "chevron.forward")
+                }
+                .disabled(!model.canGoForward)
+                .help("Forward again (\u{2303}\u{2318}\u{2192})")
+            }
             ToolbarItemGroup {
                 Picker("Mode", selection: $mode) {
                     ForEach(EditorMode.allCases) { m in
@@ -286,13 +304,19 @@ struct NoteEditorView: View {
             }
             let linksTo = notesLinkedTo(from: note)
             let linkedFrom = notesLinking(to: note)
-            if !linksTo.isEmpty || !linkedFrom.isEmpty {
+            let notYetMade = missingLinks(from: note)
+            if !linksTo.isEmpty || !linkedFrom.isEmpty || !notYetMade.isEmpty {
                 DisclosureGroup(isExpanded: $showLinks) {
                     VStack(alignment: .leading, spacing: 8) {
                         if !linksTo.isEmpty {
                             SectionLabel(title: "Links to", count: linksTo.count, systemImage: "arrow.up.right")
                                 .font(.caption)
                             LinkedNotesList(notes: linksTo)
+                        }
+                        if !notYetMade.isEmpty {
+                            SectionLabel(title: "Not made yet", count: notYetMade.count, systemImage: "plus.circle")
+                                .font(.caption)
+                            MissingLinksList(titles: notYetMade, notePath: note.relativePath)
                         }
                         if !linkedFrom.isEmpty {
                             SectionLabel(title: "Linked from", count: linkedFrom.count, systemImage: "arrow.down.left")
@@ -301,7 +325,7 @@ struct NoteEditorView: View {
                         }
                     }
                 } label: {
-                    SectionLabel(title: "Linked notes", count: linksTo.count + linkedFrom.count,
+                    SectionLabel(title: "Linked notes", count: linksTo.count + linkedFrom.count + notYetMade.count,
                                  systemImage: "link", tint: note.tint)
                         .font(.subheadline.weight(.medium))
                 }
@@ -426,6 +450,24 @@ struct NoteEditorView: View {
             guard candidate.relativePath != note.relativePath,
                   seen.insert(candidate.relativePath).inserted else { continue }
             result.append(candidate)
+        }
+        return result
+    }
+
+    /// The `[[links]]` in this note that name no note yet. Shown as their own short list,
+    /// because a link to something not written yet is a to-do, not a mistake.
+    private func missingLinks(from note: Note) -> [String] {
+        // While notes are still coming from iCloud, "there is no such note" is not something
+        // this app is entitled to say (build 100). Say nothing rather than something wrong.
+        guard model.notesWaitingForCloud.isEmpty else { return [] }
+        let index = model.index
+        var seen = Set<String>()
+        var result: [String] = []
+        for title in WikiLinks.titles(in: note.text) {
+            guard index.note(matching: title) == nil,
+                  model.workNote(titled: title, near: note) == nil,
+                  seen.insert(title.lowercased()).inserted else { continue }
+            result.append(title)
         }
         return result
     }
@@ -701,6 +743,33 @@ struct LinkedNotesList: View {
                     }
                 }
                 .buttonStyle(.plain)
+            }
+        }
+        .padding(.top, 4)
+    }
+}
+
+/// The links that name a note nobody has written. Clicking one offers to make it — the
+/// same offer a Command-click on the link itself gives, in a place that is easier to find.
+struct MissingLinksList: View {
+    @EnvironmentObject private var model: AppModel
+    let titles: [String]
+    let notePath: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            ForEach(titles, id: \.self) { title in
+                Button {
+                    model.openWikiLink(title, from: notePath)
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "plus.circle")
+                        Text(title)
+                    }
+                    .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .help("No note is called this yet \u{2014} click to make it")
             }
         }
         .padding(.top, 4)

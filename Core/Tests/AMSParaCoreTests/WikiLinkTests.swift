@@ -78,6 +78,17 @@ final class WikiLinkTests: XCTestCase {
         XCTAssertNil(WikiLinks.link(at: 2, in: text))
     }
 
+    func testAnAliasAndAHeadingStillPointAtTheNote() {
+        let text = "See [[Endurance|the plan]] and [[Health#Sleep]]."
+        XCTAssertEqual(WikiLinks.titles(in: text), ["Endurance", "Health"])
+        XCTAssertEqual(WikiLinks.link(at: 8, in: text), "Endurance")
+        XCTAssertEqual(WikiLinks.link(at: 35, in: text), "Health")
+    }
+
+    func testALinkWithNothingBeforeTheBarNamesNoNote() {
+        XCTAssertEqual(WikiLinks.titles(in: "[[|just words]] and [[#heading]]"), [])
+    }
+
     func testEveryLinkInANoteIsListedOnce() {
         let text = "[[Endurance]] and [[endurance]] and [[Health]]"
         XCTAssertEqual(WikiLinks.titles(in: text), ["Endurance", "Health"])

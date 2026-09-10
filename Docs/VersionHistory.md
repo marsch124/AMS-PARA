@@ -2,6 +2,14 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 118 · 10 September 2026
+
+- **Back and Forward.** Follow a link to another note and **Back** brings you where you were — the ‹ button at the top left of the window, ⌃⌘←, or **Go › Back** in the menu bar; ⌃⌘→ goes forward again. It remembers the whole trail, not just the last step, and steps over notes deleted in the meantime. (The iPhone already had its own back arrow.)
+- **A link to a note that does not exist yet can make it.** ⌘-click the link — or click it in the new **Not made yet** list in the note's **Linked notes** section — and you are asked what kind of note it should be. It is created with the link's own words as its title, opened, and the link works from that moment. A link written inside a work note makes a work note.
+- Links with no note behind them are no longer silent: they are listed under **Not made yet**, so a link you meant to follow up is visible rather than forgotten.
+- **`[[Note|call it something else]]` and `[[Note#a heading]]` now work everywhere.** They already worked in Preview; clicking them in the editor, and the Linked notes lists, went looking for a note with the whole phrase as its name and never found one.
+- While notes are still arriving from iCloud, the app no longer says a note does not exist — it says how many are still coming. Saying otherwise is how you end up with two copies of the same note.
+
 ## Build 117 · 10 September 2026
 
 - **Fix: the long press could not open Work on the iPhone.** The "Browse" title the press belongs to was drawn behind iPhone's own large title, so nothing ever reached it. The title is now the small one at the top of the screen and takes the press properly — and opening Work goes straight to it instead of only adding the row at the foot of the list.

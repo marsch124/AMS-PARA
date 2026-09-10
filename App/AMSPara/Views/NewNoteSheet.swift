@@ -127,3 +127,63 @@ struct NewNoteSheet: View {
         dismiss()
     }
 }
+
+/// What a `[[link]]` to a note that does not exist yet offers: make that note.
+///
+/// The title is the link's own words and cannot be changed here — changing it would leave
+/// the link pointing at nothing, which is the very thing this sheet is for. All that is left
+/// to decide is what kind of note it should be. A link inside a work note makes a work note,
+/// so the two sets stay apart without the sheet having to ask.
+struct NoteFromLinkSheet: View {
+    @EnvironmentObject private var model: AppModel
+    @Environment(\.dismiss) private var dismiss
+    @State private var kind: ParaKind = .resource
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Make this note")
+                .font(.title2.bold())
+                .foregroundStyle(model.linkToCreate?.isWork == true ? SidebarSection.work.tint : kind.tint)
+            Text(linkTitle)
+                .font(.title3.weight(.semibold))
+                .textSelection(.enabled)
+            if model.linkToCreate?.isWork == true {
+                Text("A work note, kept with the rest of your work notes.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            } else {
+                Picker("Type", selection: $kind) {
+                    Text("Goal").tag(ParaKind.goal)
+                    Text("Project").tag(ParaKind.project)
+                    Text("Area").tag(ParaKind.area)
+                    Text("Resource").tag(ParaKind.resource)
+                }
+                .pickerStyle(.segmented)
+            }
+            Text("The link becomes a real link as soon as the note is there.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            HStack {
+                Spacer()
+                Button("Cancel") { cancel() }
+                    .keyboardShortcut(.cancelAction)
+                Button("Create", action: create)
+                    .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(20)
+        .frame(minWidth: 380)
+    }
+
+    private var linkTitle: String { model.linkToCreate?.title ?? "" }
+
+    private func create() {
+        model.createNoteFromLink(kind: kind)
+        dismiss()
+    }
+
+    private func cancel() {
+        model.linkToCreate = nil
+        dismiss()
+    }
+}

@@ -75,6 +75,9 @@ struct ContentView: View {
             case .syncReport:
                 SyncReportView()
                     .environmentObject(model)
+            case .noteFromLink:
+                NoteFromLinkSheet()
+                    .environmentObject(model)
             case .settings:
                 NavigationStack {
                     SettingsView()

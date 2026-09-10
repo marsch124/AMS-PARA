@@ -78,13 +78,15 @@ enum AppSheet: String, Identifiable {
     case quickCapture
     case settings
     case syncReport
+    /// A `[[link]]` was clicked that names no note yet; the sheet offers to make it.
+    case noteFromLink
 
     var id: String { rawValue }
 }
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 117
+    static let number = 118
 }
 
 @MainActor
@@ -102,7 +104,10 @@ final class AppModel: ObservableObject {
         didSet {
             guard selectedNotePath != oldValue else { return }
             log("note -> \(selectedNotePath ?? "nil")")
-            if let selectedNotePath { rememberOpened(selectedNotePath) }
+            if let selectedNotePath {
+                rememberOpened(selectedNotePath)
+                recordVisit(selectedNotePath)
+            }
             tameSoon()
         }
     }
@@ -389,6 +394,7 @@ final class AppModel: ObservableObject {
     /// Puts it away again. The notes stay where they are; only the row goes.
     func hideWork() {
         workRevealed = false
+        forgetWorkVisits()
         if section == .work { show(section: .inbox, notePath: nil) }
     }
 
@@ -415,7 +421,18 @@ final class AppModel: ObservableObject {
         if let target = workNote(titled: title, near: here) ?? index.note(matching: title) {
             show(target)
         } else {
-            flash("No note called \u{201C}\(title)\u{201D} yet")
+            // Never offer to make a note that may already exist and simply has not come
+            // down from iCloud yet: that is how you end up with two of it (build 100).
+            guard notesWaitingForCloud.isEmpty else {
+                flash("Not found \u{2014} but \(notesWaitingForCloud.count) notes are still coming from iCloud")
+                return
+            }
+            // The click can land inside a SwiftUI update (build 116), so the sheet is asked
+            // for after the update rather than in the middle of one.
+            afterUpdate {
+                self.linkToCreate = LinkToCreate(title: title, fromPath: path, isWork: self.isWorkNote(here))
+                self.activeSheet = .noteFromLink
+            }
         }
     }
 
@@ -437,6 +454,147 @@ final class AppModel: ObservableObject {
             result.append(candidate)
         }
         return result
+    }
+
+    // MARK: Where you have been
+
+    /// One place the app has been: a note, and the section it was shown in. Both, because
+    /// coming back to a note in the wrong list would leave the middle column pointing
+    /// somewhere else.
+    struct Visit: Equatable {
+        let section: SidebarSection?
+        let path: String
+    }
+
+    /// The notes behind and ahead of the one on screen. Published so the Back and Forward
+    /// buttons know whether there is anywhere to go.
+    @Published private(set) var backStack: [Visit] = []
+    @Published private(set) var forwardStack: [Visit] = []
+    /// Where we are, as far as the history is concerned.
+    private var currentVisit: Visit?
+    /// The one arrival a Back or Forward is about to cause, so it is not filed as a new
+    /// place visited — which would push what we just left back on and never move. It is
+    /// dropped again a few turns later whatever happens: a guard that outlives its move
+    /// would swallow the next note opened by hand.
+    private var expectedVisit: String?
+    private var expectedVisitToken = 0
+    /// Enough to get back through an afternoon's reading without growing without bound.
+    private static let historyLimit = 60
+
+    var canGoBack: Bool { !backStack.isEmpty }
+    var canGoForward: Bool { !forwardStack.isEmpty }
+
+    /// Forgets where we have been. Called when the vault changes: the same relative path
+    /// means a different note in a different vault, and Back must not walk into it.
+    func clearHistory() {
+        if !backStack.isEmpty { backStack = [] }
+        if !forwardStack.isEmpty { forwardStack = [] }
+        currentVisit = nil
+        expectedVisit = nil
+    }
+
+    /// Drops every work note from the history. Hiding the Work section has to mean hidden:
+    /// otherwise Back or Forward would put one back on screen, and the section with it.
+    private func forgetWorkVisits() {
+        backStack = backStack.filter { !isWorkVisit($0) }
+        forwardStack = forwardStack.filter { !isWorkVisit($0) }
+        if let currentVisit, isWorkVisit(currentVisit) { self.currentVisit = nil }
+    }
+
+    private func isWorkVisit(_ visit: Visit) -> Bool {
+        vault?.isWorkPath(visit.path) ?? false
+    }
+
+    /// Called for every note that is opened, however it was opened.
+    private func recordVisit(_ path: String) {
+        if expectedVisit == path {
+            expectedVisit = nil
+            return
+        }
+        let visit = Visit(section: section, path: path)
+        // Opening the same note again (from another list, say) is not a step.
+        guard visit.path != currentVisit?.path else {
+            currentVisit = visit
+            return
+        }
+        if let currentVisit { backStack.append(currentVisit) }
+        if backStack.count > Self.historyLimit {
+            backStack.removeFirst(backStack.count - Self.historyLimit)
+        }
+        currentVisit = visit
+        // Going somewhere new is what ends the forward road, exactly as in a browser.
+        if !forwardStack.isEmpty { forwardStack.removeAll() }
+    }
+
+    /// Back to the note you came from. Notes deleted since are stepped over rather than
+    /// opened as a blank screen.
+    func goBack() {
+        flushPendingEdits()
+        while let target = backStack.popLast() {
+            // A note that is gone, or the one already on screen: neither is a step back.
+            guard note(at: target.path) != nil, target.path != selectedNotePath else { continue }
+            if let currentVisit { forwardStack.append(currentVisit) }
+            go(to: target)
+            return
+        }
+    }
+
+    /// Forward again, after a Back.
+    func goForward() {
+        flushPendingEdits()
+        while let target = forwardStack.popLast() {
+            guard note(at: target.path) != nil, target.path != selectedNotePath else { continue }
+            if let currentVisit { backStack.append(currentVisit) }
+            go(to: target)
+            return
+        }
+    }
+
+    private func go(to visit: Visit) {
+        currentVisit = visit
+        // Only a move that will really happen needs the guard: arming it for a note already
+        // on screen would leave it set, and it would eat the next genuine visit there.
+        expectedVisit = selectedNotePath == visit.path ? nil : visit.path
+        expectedVisitToken += 1
+        let token = expectedVisitToken
+        // The Inbox's own middle column clears the selection as it appears, so a note
+        // remembered while that section was open is shown in the list it belongs to instead.
+        let remembered = visit.section == .inbox ? note(at: visit.path).map { sidebarSection(for: $0) } : visit.section
+        if let target = remembered {
+            show(section: target, notePath: visit.path)
+        } else {
+            afterUpdate { if self.selectedNotePath != visit.path { self.selectedNotePath = visit.path } }
+        }
+        // Three turns is past the two `show` takes, so the guard cannot outlive its move.
+        afterUpdate {
+            self.afterUpdate {
+                self.afterUpdate { if self.expectedVisitToken == token { self.expectedVisit = nil } }
+            }
+        }
+    }
+
+    // MARK: A link to a note that is not there yet
+
+    /// A `[[link]]` that names no note, and the note it was clicked in. The sheet reads it.
+    struct LinkToCreate: Equatable {
+        let title: String
+        let fromPath: String
+        /// A work note's links make work notes; everything else makes an ordinary note.
+        let isWork: Bool
+    }
+
+    @Published var linkToCreate: LinkToCreate?
+
+    /// Makes the note a link asked for. The title is the link's own words, so the link
+    /// resolves the moment the note exists.
+    func createNoteFromLink(kind: ParaKind) {
+        guard let request = linkToCreate else { return }
+        linkToCreate = nil
+        if request.isWork {
+            createWorkNote(title: request.title)
+        } else {
+            createNote(kind: kind, title: request.title)
+        }
     }
 
     func createWorkNote(title: String) {
@@ -529,6 +687,7 @@ final class AppModel: ObservableObject {
         securityScopedURL = scoped ? url : nil
         storeBookmark(for: url)
         selectedNotePath = nil
+        clearHistory()
         vault = opened
         cloudWatcher.watch(opened.rootURL)
         reload()
@@ -553,6 +712,7 @@ final class AppModel: ObservableObject {
         vault = nil
         notes = []
         selectedNotePath = nil
+        clearHistory()
     }
 
     /// Writes the editor's unsaved text, if any.
@@ -1336,10 +1496,12 @@ final class AppModel: ObservableObject {
 
     /// Follows a `[[wikilink]]` or `related:` reference. Unknown titles become a new resource note.
     func open(reference: String) {
-        if let target = index.note(matching: reference) {
+        // Preview and the editor must answer a link the same way: follow it, or offer to
+        // make the note. Until build 118 this branch made a Resource without asking.
+        if let path = selectedNotePath {
+            openWikiLink(reference, from: path)
+        } else if let target = index.note(matching: reference) {
             show(target)
-        } else {
-            createNote(kind: .resource, title: reference)
         }
     }
 

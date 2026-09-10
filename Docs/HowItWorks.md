@@ -245,7 +245,11 @@ Type two square brackets in any note and a list of your notes appears under the 
 
 **Opening one.** Hold ⌘ and click the link on the Mac; tap it on the iPhone, or click it in Preview. A plain click on the Mac still just puts the cursor where you clicked, so a link never gets in the way of writing. The pointer turns into a hand when it is over one.
 
+**Coming back.** Following a link takes you to the other note; **Back** brings you here again. On the Mac it is the ‹ button at the top left of the window, or ⌃⌘←, with ⌃⌘→ to go forward again — the same as a web browser, and it remembers the whole trail, not just the last step. On the iPhone the ordinary back arrow does it.
+
 **Both directions.** A note's **Linked notes** section lists **Links to** — the notes this one points at — and **Linked from** — the notes that point at it. You never have to remember who mentioned what: point from wherever you happen to be writing, and the other end knows.
+
+**Linking to a note you have not written yet.** Write the link anyway. It appears under **Not made yet** in the Linked notes section, and clicking it — or ⌘-clicking the link in the text — offers to make that note there and then, with the link's own words as its title. Choose whether it should be a goal, project, area or resource and it is created, opened, and the link is a real link from that moment.
 
 **What counts as a link.** Both `[[double brackets]]` in the text and the `goal:`, `area:`, `parent:` and `related:` lines at the top of a note.
 
@@ -387,6 +391,7 @@ lives in your Applications folder like any other app.
 ## Keyboard shortcuts
 
 - ⌘N new note, ⇧⌘N quick capture, ⇧⌘F search everywhere, ⇧⌘R sync with Reminders
+- ⌃⌘← back to the note you came from, ⌃⌘→ forward again
 - ⌘⌫ delete the open note (it waits in Deleted)
 - ⌃⌘D copy diagnostics, a log you can paste when reporting a problem
 - The sync button's menu holds the sync preview and the last report

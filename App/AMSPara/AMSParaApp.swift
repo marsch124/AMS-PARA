@@ -32,6 +32,19 @@ struct AMSParaApp: App {
                 .keyboardShortcut("w", modifiers: [.command, .control])
                 .disabled(model.vault == nil)
             }
+            // Its own menu, so the shortcuts work wherever the focus happens to be — the
+            // toolbar buttons only exist while a note is open.
+            CommandMenu("Go") {
+                // Arrows, not the browsers' \u{2318}[ and \u{2318}]: on a Swedish keyboard those
+                // brackets are \u{2325}8 and \u{2325}9, so the shortcut would be a three-finger
+                // chord and the menu would advertise a key he does not have.
+                Button("Back") { model.goBack() }
+                    .keyboardShortcut(.leftArrow, modifiers: [.command, .control])
+                    .disabled(!model.canGoBack)
+                Button("Forward") { model.goForward() }
+                    .keyboardShortcut(.rightArrow, modifiers: [.command, .control])
+                    .disabled(!model.canGoForward)
+            }
             CommandGroup(replacing: .help) {
                 #if os(macOS)
                 HelpMenuButtons()
