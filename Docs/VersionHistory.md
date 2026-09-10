@@ -2,6 +2,10 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 113 · 10 September 2026
+
+- **The coloured line along the top of the right-hand panel is gone.** Only the even tint is left.
+
 ## Build 112 · 10 September 2026
 
 - **A separate place for work notes.** Plain notes in a `Work` folder in your vault, kept out of Today, All actions, the Map, the weekly review, the main search — and out of Reminders. No projects, no goals, no dates: notes and a list of them, with its own search box.

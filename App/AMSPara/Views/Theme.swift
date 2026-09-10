@@ -104,9 +104,10 @@ struct VaultWarningBar: View {
     }
 }
 
-/// The colour of the section you are in, laid over the detail column: a hairline along the top
-/// and one even tint over the column. Enough to say "you are in Projects" out of the corner of
-/// your eye, and not enough to tire you out in a long note.
+/// The colour of the section you are in, laid evenly over the detail column. Enough to say
+/// "you are in Projects" out of the corner of your eye, and not enough to tire you out in a
+/// long note. The hairline along the top went in build 113: it read as a border round the
+/// panel rather than as part of it.
 struct ModeAccent: ViewModifier {
     let tint: Color
 
@@ -117,12 +118,6 @@ struct ModeAccent: ViewModifier {
                 // preview. The gradient at the top went out in build 110: he wanted the colour
                 // to sit evenly rather than pool under the toolbar.
                 tint.opacity(0.085).allowsHitTesting(false)
-            }
-            .overlay(alignment: .top) {
-                Rectangle()
-                    .fill(tint.opacity(0.6))
-                    .frame(height: 2)
-                    .allowsHitTesting(false)
             }
     }
 }
