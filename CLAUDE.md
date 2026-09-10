@@ -663,6 +663,21 @@ saying it would make a duplicate of a note already in iCloud.
 "Note". `matches(in:)` goes through it, so clicking, backlinks and **Not made yet** all agree
 with the preview, which had always parsed them that way.
 
+## New note asks one thing (build 119)
+
+He called the old sheet "long and a bit crude" and picked this shape from a preview artifact
+before anything was built. `NewNoteSheet` is now: name field first with `@FocusState`
+(`DispatchQueue.main.async { nameFocused = true }` in `onAppear` — focus does not always take
+in the appearing turn), the four kinds as `KindChoice` buttons in `ParaKind.tint` rather than
+a segmented Picker, one line of `hint`, and `moreFields` behind a plain Button + `if showMore`
+— **not** a `DisclosureGroup`, and `showMore` is never persisted. `moreLabel` names what is
+inside, `hasMoreToOffer` keeps it from opening onto an empty box, and `pick(_:)` clears
+`servesGoal`/`parentArea`/`target` on a change of kind so a choice never follows you across.
+New: a project can set `goal:` at creation. `ParaKind.singularName` (extension in
+`NewNoteSheet.swift`) exists because `displayName` is the plural name of the list a note lands
+in — wrong for the one note being made, which is how the old sheet came to label a new project
+"Projects".
+
 ## Not built (by choice)
 
 Saved searches. Roadmap stopped there on his request.

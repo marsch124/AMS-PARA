@@ -47,7 +47,13 @@ tags: [sport, training]
 
 Useful keys: `status` (active, on hold, done), `area`, `goal`, `due`, `tags`, `related`, `reviewed`, `order` (where the note sits when you have arranged the list by hand), `reminders-list` to sync into a Reminders list with a different name, `sync: false` to keep a note out of Reminders.
 
-Links between notes use `[[Note title]]`. Unknown titles become a new resource note when you click them.
+Links between notes use `[[Note title]]`; see **Linking notes with [[ ]]** below.
+
+### Making one
+
+**⌘N** asks for a name — the cursor is already in the field, so a note is usually a name and Return. Under it are the four kinds in their own colours: **Goal**, **Project**, **Area**, **Resource**, with one line saying what the chosen one is for.
+
+**More** holds everything else, and is shut each time: which template to start from, what an area is part of, a goal's horizon and target date, and the goal a project serves. Its label says what is inside, so you can tell at a glance whether it is worth opening.
 
 ### Renaming a note
 

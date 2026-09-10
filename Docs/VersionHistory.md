@@ -2,6 +2,13 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 119 · 10 September 2026
+
+- **New note (⌘N) asks one thing, not nine.** The name field is first with the cursor already in it, so a note is a name and Return. Under it, the four kinds as coloured buttons — the same gold, green, pink and blue as the sidebar — and one line saying what that kind is for.
+- **Everything else is behind "More".** Template, what an area is part of, a goal's horizon and target date, the goal a project serves. It is shut every time the sheet opens, and the label says what is inside so you know when to open it.
+- **A project can now name the goal it serves as you make it**, instead of being opened afterwards to add the line by hand.
+- The heading says **New project**, not "Projects" — it is one note, not the list it lands in.
+
 ## Build 118 · 10 September 2026
 
 - **Back and Forward.** Follow a link to another note and **Back** brings you where you were — the ‹ button at the top left of the window, ⌃⌘←, or **Go › Back** in the menu bar; ⌃⌘→ goes forward again. It remembers the whole trail, not just the last step, and steps over notes deleted in the meantime. (The iPhone already had its own back arrow.)
