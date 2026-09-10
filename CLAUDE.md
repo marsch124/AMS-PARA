@@ -64,6 +64,11 @@ the phone and on the Mac. Xcode is no longer part of his routine.
   collides: build 88 put a segmented Picker plus three buttons there and it rendered as
   overlapping letters. Branch the `.toolbar` on `isPhone` and give the phone one `Menu`
   (`ToolbarContentBuilder` takes `if`/`else`).
+- **A `.principal` toolbar item is only the title when the title is inline.** With the default
+  large title iOS draws its own below the bar and the principal view is not what a press lands
+  on, so build 112's long press on the phone's "Browse" title did nothing until build 117 added
+  `.navigationBarTitleDisplayMode(.inline)`. A hidden gesture also needs a second, findable
+  target: the "Build N" row at the foot of the Browse list carries the same long press.
 - A helper type that touches `AppModel` needs `@MainActor` on it (the model is main-actor
   bound), or the build fails with "main actor-isolated property … can not be referenced from
   a nonisolated context" (build 67).
@@ -587,7 +592,8 @@ falls back to `workNotes` so `NoteEditorView` and the row actions work unchanged
 move one into the visible vault). `SidebarSection.work` is drawn only while
 `AppModel.workRevealed`, which is session-only and never stored. In: a 1.2 s long press on the
 sidebar's **PARA** header (a Section header, so it takes no click off a row), on the phone the
-**Browse** title drawn as a `.principal` toolbar item, or ⌃⌘W (not ⌥⌘W — macOS closes all
+**Browse** title drawn as a `.principal` toolbar item (inline since build 117) or the
+**Build N** row at the foot of Browse, or ⌃⌘W (not ⌥⌘W — macOS closes all
 windows with that). Out: the Hide button in the section's toolbar, or quitting.
 Deliberately **not** in `Docs/HowItWorks.md`: the manual is bundled and visible to anyone
 looking over his shoulder, so the gestures live in VersionHistory and here only.

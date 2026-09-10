@@ -115,6 +115,17 @@ struct PhoneStack<Content: View>: View {
                 path.removeLast()
             }
         }
+        // Revealing Work has to open it here as well: the Mac's columns watch the section,
+        // but on the phone a screen exists only once it has been pushed (build 117). The
+        // Browse tab is the one with no section of its own.
+        .onChange(of: model.workRevealed) { _, revealed in
+            guard isActive, section == nil else { return }
+            if revealed {
+                if path.last != .section(.work) { path.append(.section(.work)) }
+            } else if path.last == .section(.work) {
+                path.removeLast()
+            }
+        }
         .onChange(of: model.selectedNotePath) { _, selected in
             guard isActive else { return }
             if let selected {
@@ -179,9 +190,14 @@ struct PhoneBrowseView: View {
                 }
             }
             Section {
+                // The other way in, and the one that can actually be found: a long press here.
+                // The title in the navigation bar is small and easy to miss (build 117).
                 Text("Build \(BuildStamp.number)")
                     .font(.caption)
                     .foregroundStyle(.tertiary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+                    .onLongPressGesture(minimumDuration: 1.2) { model.revealWork() }
             }
             // Only there once it has been asked for; see the long press below.
             if model.workRevealed {
@@ -202,12 +218,16 @@ struct PhoneBrowseView: View {
             }
         }
         .navigationTitle("Browse")
+        // Inline, or iOS draws its own large title below the bar and the principal item is
+        // never the thing being pressed — which is why build 112's long press did nothing.
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             // The way in: a long press on the title. A plain navigation title cannot take a
             // gesture, so the title is drawn here instead (build 112).
             ToolbarItem(placement: .principal) {
                 Text("Browse")
                     .font(.headline)
+                    .contentShape(Rectangle())
                     .onLongPressGesture(minimumDuration: 1.2) { model.revealWork() }
             }
         }

@@ -2,6 +2,11 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 117 · 10 September 2026
+
+- **Fix: the long press could not open Work on the iPhone.** The "Browse" title the press belongs to was drawn behind iPhone's own large title, so nothing ever reached it. The title is now the small one at the top of the screen and takes the press properly — and opening Work goes straight to it instead of only adding the row at the foot of the list.
+- **A second way in on the iPhone: long-press the "Build 117" line** at the very bottom of the Browse list. Easier to hit than the title.
+
 ## Build 116 · 10 September 2026
 
 - **Fix: choosing a note from the `[[` list spun the app.** Writing the chosen title told the editor to update, which told the app to update, which told the editor again. The chosen title is now written once and everything the editor reports back waits until the screen has finished drawing.
