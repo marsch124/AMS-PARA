@@ -219,6 +219,9 @@ struct NoteEditorView: View {
                     .frame(height: 320)
             }
         }
+        // The phone has no third column, so the note screen itself carries the section's
+        // colour (build 111). Same tint, same rule as the Mac's right-hand panel.
+        .modeAccent(model.section?.tint ?? .secondary)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             VStack(spacing: 0) {
                 Divider()

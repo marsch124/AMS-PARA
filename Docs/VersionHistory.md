@@ -2,6 +2,10 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 111 · 10 September 2026
+
+- **The iPhone gets the section's colour too.** The phone has no right-hand panel, so the note screen itself carries the tint of the section you came in through.
+
 ## Build 110 · 10 September 2026
 
 - **The gradient at the top of the right-hand panel is gone.** The section's colour now sits evenly over the whole column, with the hairline along the top.

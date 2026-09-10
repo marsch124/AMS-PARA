@@ -569,7 +569,8 @@ artifact and had the top gradient removed in build 110, so change neither withou
 `detail` computed property holding the old `if`/`else` chain, so the ViewBuilder rule is kept.
 Background and overlay, never a frame or an inset — the third column's intrinsic size is what
 builds 30/34 were about. The tint follows the *section*, so it does not flicker as notes are
-clicked. The phone does not have this column and is unchanged.
+clicked. The phone has no such column, so `NoteEditorView.phoneBody` carries the same `.modeAccent`
+(build 111).
 
 ## Not built (by choice)
 
