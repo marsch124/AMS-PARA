@@ -233,15 +233,22 @@ struct MarkdownTextViewRepresentable: NSViewRepresentable {
         context.coordinator.onLinkKey = onLinkKey
         // A title picked from the list: written in here, where the text view is, so undo and
         // the cursor behave as they would for typing.
-        if let completion {
+        if let completion, !context.coordinator.applying {
+            // Writing the text sends the delegate off through its callbacks, and anything that
+            // published state from there would be publishing inside a SwiftUI update — which
+            // is a spin, not a crash, and looks like a beachball (build 116). The flag keeps
+            // the coordinator quiet until this pass is over.
+            context.coordinator.applying = true
             let done = WikiLinks.completing(textView.string, draft: completion.draft, with: completion.title)
             textView.string = done.text
             textView.setSelectedRange(NSRange(location: min(done.cursor, (done.text as NSString).length), length: 0))
-            if text != done.text { text = done.text }
             context.coordinator.highlight(tint: NSColor(tint))
+            let finished = done.text
             DispatchQueue.main.async {
+                self.text = finished
                 self.completion = nil
                 self.linkDraft = nil
+                context.coordinator.applying = false
             }
             return
         }
@@ -261,6 +268,8 @@ struct MarkdownTextViewRepresentable: NSViewRepresentable {
         var linkDraft: Binding<LinkDraftOnScreen?>
         var openLink: (String) -> Void
         var onLinkKey: (LinkKey) -> Bool
+        /// True while a chosen title is being written in: nothing is reported meanwhile.
+        var applying = false
         weak var textView: NSTextView?
 
         init(text: Binding<String>, linkDraft: Binding<LinkDraftOnScreen?>,
@@ -303,11 +312,12 @@ struct MarkdownTextViewRepresentable: NSViewRepresentable {
         /// Tells the note screen what is being typed and where the caret is. Reading only:
         /// nothing here changes the text, so typing is never interrupted.
         private func reportDraft() {
-            guard let textView, let layout = textView.layoutManager, let container = textView.textContainer else { return }
+            guard !applying, let textView, let layout = textView.layoutManager,
+                  let container = textView.textContainer else { return }
             let selected = textView.selectedRange()
             guard selected.length == 0,
                   let draft = WikiLinks.draft(in: textView.string, cursor: selected.location) else {
-                if linkDraft.wrappedValue != nil { linkDraft.wrappedValue = nil }
+                publish(nil)
                 return
             }
             let glyph = layout.glyphRange(forCharacterRange: NSRange(location: selected.location, length: 0),
@@ -321,7 +331,16 @@ struct MarkdownTextViewRepresentable: NSViewRepresentable {
             let onScreen = LinkDraftOnScreen(draft: draft,
                                              caret: CGPoint(x: rect.minX, y: rect.minY - scrolled),
                                              lineHeight: max(rect.height, 16))
-            if linkDraft.wrappedValue != onScreen { linkDraft.wrappedValue = onScreen }
+            publish(onScreen)
+        }
+
+        /// Never straight away: a delegate callback can happen inside a SwiftUI update, and
+        /// state written there sends the two of them round in circles.
+        private func publish(_ value: LinkDraftOnScreen?) {
+            guard linkDraft.wrappedValue != value else { return }
+            DispatchQueue.main.async { [self] in
+                if linkDraft.wrappedValue != value { linkDraft.wrappedValue = value }
+            }
         }
 
         private var lastTint: NSColor = .controlAccentColor
@@ -374,15 +393,18 @@ struct MarkdownTextViewRepresentable: UIViewRepresentable {
         context.coordinator.text = $text
         context.coordinator.linkDraft = $linkDraft
         context.coordinator.openLink = openLink
-        if let completion {
+        if let completion, !context.coordinator.applying {
+            context.coordinator.applying = true
             let done = WikiLinks.completing(textView.text, draft: completion.draft, with: completion.title)
             textView.text = done.text
             textView.selectedRange = NSRange(location: min(done.cursor, (done.text as NSString).length), length: 0)
-            if text != done.text { text = done.text }
             context.coordinator.highlight(tint: UIColor(tint))
+            let finished = done.text
             DispatchQueue.main.async {
+                self.text = finished
                 self.completion = nil
                 self.linkDraft = nil
+                context.coordinator.applying = false
             }
             return
         }
@@ -400,6 +422,8 @@ struct MarkdownTextViewRepresentable: UIViewRepresentable {
         var text: Binding<String>
         var linkDraft: Binding<LinkDraftOnScreen?>
         var openLink: (String) -> Void
+        /// True while a chosen title is being written in: nothing is reported meanwhile.
+        var applying = false
         weak var textView: UITextView?
         private var lastTint: UIColor = .tintColor
 
@@ -430,19 +454,28 @@ struct MarkdownTextViewRepresentable: UIViewRepresentable {
 
         /// Reading only: what is being typed and where the caret is.
         private func reportDraft() {
-            guard let textView else { return }
+            guard !applying, let textView else { return }
             let selected = textView.selectedRange
             guard selected.length == 0,
                   let draft = WikiLinks.draft(in: textView.text, cursor: selected.location),
                   let position = textView.position(from: textView.beginningOfDocument, offset: selected.location) else {
-                if linkDraft.wrappedValue != nil { linkDraft.wrappedValue = nil }
+                publish(nil)
                 return
             }
             let caret = textView.caretRect(for: position)
             let onScreen = LinkDraftOnScreen(draft: draft,
                                              caret: CGPoint(x: caret.minX, y: caret.minY - textView.contentOffset.y),
                                              lineHeight: max(caret.height, 16))
-            if linkDraft.wrappedValue != onScreen { linkDraft.wrappedValue = onScreen }
+            publish(onScreen)
+        }
+
+        /// Never straight away: see the macOS side. A delegate callback can land inside a
+        /// SwiftUI update, and state written there sends the two round in circles.
+        private func publish(_ value: LinkDraftOnScreen?) {
+            guard linkDraft.wrappedValue != value else { return }
+            DispatchQueue.main.async { [self] in
+                if linkDraft.wrappedValue != value { linkDraft.wrappedValue = value }
+            }
         }
 
         func highlight(tint: UIColor?) {

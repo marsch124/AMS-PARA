@@ -606,6 +606,11 @@ never takes focus** — it cannot, or typing would break — so the arrow keys, 
 arrive through `textView(_:doCommandBy:)` on macOS and are forwarded to `NoteEditorView.
 handleLinkKey`. `LinkingTextView` (NSTextView subclass) takes ⌘-click only: a plain click must
 keep placing the cursor. iOS uses a `UITapGestureRecognizer` with `cancelsTouchesInView = false`.
+**Build 116, and the rule behind it:** a text view's delegate callbacks can land *inside* a
+SwiftUI update, so the coordinator publishes `linkDraft` through a `DispatchQueue.main.async`
+and never directly, and an `applying` flag keeps it silent while a chosen title is written in.
+Picking a title beachballed the app without it — the same class of bug the model's `afterUpdate`
+exists for.
 `AppModel.linkableTitles(from:)`/`openWikiLink(_:from:)`/`backlinks(to:)` keep work notes and
 ordinary notes from seeing each other in both directions. `NoteEditorView` splits the old mixed
 list into **Links to** and **Linked from**.

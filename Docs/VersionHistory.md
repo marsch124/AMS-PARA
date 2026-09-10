@@ -2,6 +2,10 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 116 · 10 September 2026
+
+- **Fix: choosing a note from the `[[` list spun the app.** Writing the chosen title told the editor to update, which told the app to update, which told the editor again. The chosen title is now written once and everything the editor reports back waits until the screen has finished drawing.
+
 ## Build 115 · 10 September 2026
 
 - **Fix: the `[[` list was cut off at the bottom of the editor.** When the cursor is near the foot of the note there is no room under it, so the list now opens upwards instead — and it always stays inside the editor rather than sliding off an edge.
