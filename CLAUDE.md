@@ -592,6 +592,24 @@ windows with that). Out: the Hide button in the section's toolbar, or quitting.
 Deliberately **not** in `Docs/HowItWorks.md`: the manual is bundled and visible to anyone
 looking over his shoulder, so the gestures live in VersionHistory and here only.
 
+## Linking with [[ ]] (build 114)
+
+`Core/Markdown/WikiLinks.swift` holds every decision that is text rather than interface, so it
+is testable: `draft(in:cursor:)` (the `[[` being typed — same line only, and a `]]` in between
+closes it), `suggestions(for:among:limit:)` (prefix matches first, then contains),
+`completing(_:draft:with:)` (returns the new text and where the cursor goes; swallows a `]]`
+already after the cursor), `link(at:in:)`, `matches`, `titles`. `WikiLinkTests` covers them.
+The editor's part: `MarkdownSyntaxEditor` gained `linkDraft` (out: what is being typed plus the
+caret in the editor's coordinates), `completion` (in: the chosen title, written by the text view
+itself so undo behaves), `openLink` and `onLinkKey`. **The list never writes into the text and
+never takes focus** — it cannot, or typing would break — so the arrow keys, Return and Escape
+arrive through `textView(_:doCommandBy:)` on macOS and are forwarded to `NoteEditorView.
+handleLinkKey`. `LinkingTextView` (NSTextView subclass) takes ⌘-click only: a plain click must
+keep placing the cursor. iOS uses a `UITapGestureRecognizer` with `cancelsTouchesInView = false`.
+`AppModel.linkableTitles(from:)`/`openWikiLink(_:from:)`/`backlinks(to:)` keep work notes and
+ordinary notes from seeing each other in both directions. `NoteEditorView` splits the old mixed
+list into **Links to** and **Linked from**.
+
 ## Not built (by choice)
 
 Saved searches. Roadmap stopped there on his request.

@@ -16,6 +16,12 @@ struct NoteEditorView: View {
     @State private var snippetToFill: Snippet?
     @State private var renamingNote = false
     @State private var noteTitleDraft = ""
+    /// A `[[` being typed, with where the caret is; nil when nothing is.
+    @State private var linkDraft: LinkDraftOnScreen?
+    /// The title to write in, handed to the editor.
+    @State private var linkCompletion: LinkCompletion?
+    /// Which suggestion the arrow keys are on.
+    @State private var linkChoice = 0
     @State private var vaultPath: String?
     /// The note's real text (markers included) that the shown text was made from.
     @State private var baseText = ""
@@ -278,13 +284,25 @@ struct NoteEditorView: View {
                 .padding(.vertical, 6)
                 Divider()
             }
-            let linked = linkedNotes(for: note)
-            if !linked.isEmpty {
+            let linksTo = notesLinkedTo(from: note)
+            let linkedFrom = notesLinking(to: note)
+            if !linksTo.isEmpty || !linkedFrom.isEmpty {
                 DisclosureGroup(isExpanded: $showLinks) {
-                    LinkedNotesList(notes: linked)
+                    VStack(alignment: .leading, spacing: 8) {
+                        if !linksTo.isEmpty {
+                            SectionLabel(title: "Links to", count: linksTo.count, systemImage: "arrow.up.right")
+                                .font(.caption)
+                            LinkedNotesList(notes: linksTo)
+                        }
+                        if !linkedFrom.isEmpty {
+                            SectionLabel(title: "Linked from", count: linkedFrom.count, systemImage: "arrow.down.left")
+                                .font(.caption)
+                            LinkedNotesList(notes: linkedFrom)
+                        }
+                    }
                 } label: {
-                    SectionLabel(title: "Linked notes", count: linked.count, systemImage: "link",
-                                 tint: note.tint)
+                    SectionLabel(title: "Linked notes", count: linksTo.count + linkedFrom.count,
+                                 systemImage: "link", tint: note.tint)
                         .font(.subheadline.weight(.medium))
                 }
                 .padding(.horizontal, 12)
@@ -298,10 +316,16 @@ struct NoteEditorView: View {
     private var editorPane: some View {
         HStack(spacing: 0) {
             if mode != .preview {
-                MarkdownSyntaxEditor(text: $text, tint: note?.tint ?? .accentColor)
+                MarkdownSyntaxEditor(text: $text, tint: note?.tint ?? .accentColor,
+                                     linkDraft: $linkDraft, completion: $linkCompletion,
+                                     openLink: { model.openWikiLink($0, from: path) },
+                                     onLinkKey: handleLinkKey)
                     .onChange(of: text) { _, newValue in
                         scheduleSave(newValue)
                     }
+                    // The list of titles sits over the editor, under the caret.
+                    .overlay(alignment: .topLeading) { linkSuggestions }
+                    .onChange(of: linkDraft) { _, _ in linkChoice = 0 }
             }
             if mode == .split {
                 Divider()
@@ -310,6 +334,41 @@ struct NoteEditorView: View {
                 MarkdownPreview(note: note, beforeToggle: flushSave)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+        }
+    }
+
+    /// What `[[` offers: the titles this note may link to, closest match first.
+    private var linkTitles: [String] {
+        guard let draft = linkDraft?.draft else { return [] }
+        return WikiLinks.suggestions(for: draft.query, among: model.linkableTitles(from: path))
+    }
+
+    /// The arrow keys, Return and Escape while the list is up. They arrive from the text view,
+    /// which has the focus; returning false lets the keystroke do its ordinary job.
+    private func handleLinkKey(_ key: LinkKey) -> Bool {
+        guard let draft = linkDraft?.draft, !linkTitles.isEmpty else { return false }
+        switch key {
+        case .down:
+            linkChoice = min(linkChoice + 1, linkTitles.count - 1)
+        case .up:
+            linkChoice = max(linkChoice - 1, 0)
+        case .enter:
+            guard linkTitles.indices.contains(linkChoice) else { return false }
+            linkCompletion = LinkCompletion(draft: draft, title: linkTitles[linkChoice])
+        case .escape:
+            linkDraft = nil
+        }
+        return true
+    }
+
+    @ViewBuilder
+    private var linkSuggestions: some View {
+        if let linkDraft, !linkTitles.isEmpty {
+            WikiLinkList(titles: linkTitles, choice: $linkChoice, tint: note?.tint ?? .accentColor,
+                         kindFor: { model.index.note(matching: $0)?.kind ?? model.note(at: path)?.kind ?? .resource },
+                         pick: { title in linkCompletion = LinkCompletion(draft: linkDraft.draft, title: title) })
+                .offset(x: max(linkDraft.caret.x - 6, 6),
+                        y: linkDraft.caret.y + linkDraft.lineHeight + 4)
         }
     }
 
@@ -345,12 +404,28 @@ struct NoteEditorView: View {
         snippetToFill = snippet
     }
 
-    private func linkedNotes(for note: Note) -> [Note] {
+    /// The notes this one points at: its `goal`/`area`/`parent`/`related` lines and its
+    /// `[[links]]`.
+    private func notesLinkedTo(from note: Note) -> [Note] {
         let index = model.index
         var seen = Set<String>()
         var result: [Note] = []
-        for candidate in index.backlinks(to: note) + note.outgoingReferences.compactMap(index.note(matching:)) {
-            guard candidate.relativePath != note.relativePath, seen.insert(candidate.relativePath).inserted else { continue }
+        for title in note.outgoingReferences + WikiLinks.titles(in: note.text) {
+            guard let candidate = index.note(matching: title) ?? model.workNote(titled: title, near: note) else { continue }
+            guard candidate.relativePath != note.relativePath,
+                  seen.insert(candidate.relativePath).inserted else { continue }
+            result.append(candidate)
+        }
+        return result
+    }
+
+    /// The notes that point at this one.
+    private func notesLinking(to note: Note) -> [Note] {
+        var seen = Set<String>()
+        var result: [Note] = []
+        for candidate in model.backlinks(to: note) {
+            guard candidate.relativePath != note.relativePath,
+                  seen.insert(candidate.relativePath).inserted else { continue }
             result.append(candidate)
         }
         return result
@@ -793,5 +868,46 @@ struct GoalDashboardView: View {
             Text(value).font(.headline).foregroundStyle(goal.tint)
             Text(label).font(.caption2).foregroundStyle(.secondary)
         }
+    }
+}
+
+/// The list of titles that drops under the cursor while a `[[link]]` is being typed.
+///
+/// It only ever reads the text and hands a chosen title back: it never writes into the editor
+/// itself, so typing cannot be interrupted by it. The arrow keys are taken only while it is on
+/// screen, and Escape puts it away.
+struct WikiLinkList: View {
+    let titles: [String]
+    @Binding var choice: Int
+    let tint: Color
+    let kindFor: (String) -> ParaKind
+    let pick: (String) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(Array(titles.enumerated()), id: \.element) { index, title in
+                Button {
+                    pick(title)
+                } label: {
+                    HStack(spacing: 8) {
+                        KindBadge(kind: kindFor(title), size: 16)
+                        Text(title)
+                            .lineLimit(1)
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 5)
+                    .background(index == choice ? tint.opacity(0.22) : .clear,
+                                in: RoundedRectangle(cornerRadius: 5))
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(4)
+        .frame(maxWidth: 320, alignment: .leading)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: Theme.radius))
+        .overlay(RoundedRectangle(cornerRadius: Theme.radius).strokeBorder(tint.opacity(0.35)))
+        .shadow(radius: 12, y: 4)
     }
 }

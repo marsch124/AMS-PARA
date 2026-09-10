@@ -239,6 +239,18 @@ The **Export** button in the Map's toolbar offers:
 
 On the Mac a save dialog asks where to put the file. On the iPhone the share sheet opens, so it can go to Files, Mail, Messages or anywhere else.
 
+## Linking notes with [[ ]]
+
+Type two square brackets in any note and a list of your notes appears under the cursor. Keep typing to narrow it down, use the arrow keys to move, and press Return — or click one — to put it in. What lands in the text is `[[The note's title]]`.
+
+**Opening one.** Hold ⌘ and click the link on the Mac; tap it on the iPhone, or click it in Preview. A plain click on the Mac still just puts the cursor where you clicked, so a link never gets in the way of writing. The pointer turns into a hand when it is over one.
+
+**Both directions.** A note's **Linked notes** section lists **Links to** — the notes this one points at — and **Linked from** — the notes that point at it. You never have to remember who mentioned what: point from wherever you happen to be writing, and the other end knows.
+
+**What counts as a link.** Both `[[double brackets]]` in the text and the `goal:`, `area:`, `parent:` and `related:` lines at the top of a note.
+
+**Renaming.** If you rename a note, every `[[link]]` to it is rewritten. Links are for connections that cut across the structure — a resource three projects use, a person who turns up in two areas — while Goals, Areas and Projects are the structure itself.
+
 ## Finding things again
 
 - **Recent** in the sidebar lists what you opened last, newest first, whatever kind it was. It is remembered between launches; **Clear** empties it.

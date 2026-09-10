@@ -2,6 +2,16 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 114 · 10 September 2026
+
+Linking notes with `[[ ]]`.
+
+- **Type `[[` and a list of your notes drops under the cursor.** Keep typing to narrow it, ↑ ↓ to move, Return or a click to put it in. It completes to `[[Title]]` and leaves the cursor after the brackets.
+- **⌘-click a link to open that note** (a tap on the iPhone, and a plain click in Preview). An ordinary click still just places the cursor, so editing is never hijacked; on the Mac the pointer turns into a hand over a link.
+- **Linked notes is now two lists: "Links to" and "Linked from"**, so you can see who points at whom instead of one mixed pile. Links in the text count as well as `goal:`, `area:`, `parent:` and `related:` lines.
+- **Work notes and ordinary notes never see each other.** Inside a work note, `[[` offers work notes; everywhere else it offers the rest of the vault.
+- A link to a note that does not exist yet says so when you click it. Making one from the link comes next.
+
 ## Build 113 · 10 September 2026
 
 - **The coloured line along the top of the right-hand panel is gone.** Only the even tint is left.

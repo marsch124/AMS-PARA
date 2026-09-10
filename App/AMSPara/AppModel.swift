@@ -84,7 +84,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 113
+    static let number = 114
 }
 
 @MainActor
@@ -390,6 +390,53 @@ final class AppModel: ObservableObject {
     func hideWork() {
         workRevealed = false
         if section == .work { show(section: .inbox, notePath: nil) }
+    }
+
+    /// A work note by title, but only from inside another work note: the two sets do not see
+    /// each other, which is the whole point of the Work section.
+    func workNote(titled title: String, near note: Note) -> Note? {
+        guard isWorkNote(note) else { return nil }
+        return workNotes.first { $0.displayTitle.localizedCaseInsensitiveCompare(title) == .orderedSame }
+    }
+
+    // MARK: [[links]]
+
+    /// The titles `[[` offers in a given note. A work note is offered its own set; every other
+    /// note is offered the ordinary vault, so nothing leaks either way.
+    func linkableTitles(from path: String) -> [String] {
+        let here = note(at: path)
+        let pool = (here.map(isWorkNote) ?? false) ? workNotes : notes
+        return pool.filter { $0.relativePath != path && $0.kind != .inbox }.map(\.displayTitle)
+    }
+
+    /// Opens the note a `[[link]]` names. Says so plainly when there is no such note yet.
+    func openWikiLink(_ title: String, from path: String) {
+        guard let here = note(at: path) else { return }
+        if let target = workNote(titled: title, near: here) ?? index.note(matching: title) {
+            show(target)
+        } else {
+            flash("No note called \u{201C}\(title)\u{201D} yet")
+        }
+    }
+
+    /// The notes pointing at this one: through `goal`/`area`/`parent`/`related`, and through
+    /// `[[links]]` in their text. Work notes are looked up among work notes only.
+    func backlinks(to note: Note) -> [Note] {
+        let title = note.displayTitle
+        if isWorkNote(note) {
+            return workNotes.filter { candidate in
+                candidate.relativePath != note.relativePath
+                    && WikiLinks.titles(in: candidate.text).contains { $0.localizedCaseInsensitiveCompare(title) == .orderedSame }
+            }
+        }
+        var result = index.backlinks(to: note)
+        for candidate in notes where !result.contains(where: { $0.relativePath == candidate.relativePath }) {
+            guard candidate.relativePath != note.relativePath,
+                  WikiLinks.titles(in: candidate.text).contains(where: { $0.localizedCaseInsensitiveCompare(title) == .orderedSame })
+            else { continue }
+            result.append(candidate)
+        }
+        return result
     }
 
     func createWorkNote(title: String) {

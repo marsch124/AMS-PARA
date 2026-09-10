@@ -17,10 +17,53 @@ typealias PlatformColor = UIColor
 struct MarkdownSyntaxEditor: View {
     @Binding var text: String
     var tint: Color = .accentColor
+    /// Where a half-typed `[[link]]` is, and where on screen it is being typed, so the note
+    /// screen can put the list of titles under the cursor. Nil when nothing is being typed.
+    @Binding var linkDraft: LinkDraftOnScreen?
+    /// Set by the note screen to put a chosen title in and move the cursor past it.
+    @Binding var completion: LinkCompletion?
+    /// A ⌘-click (a tap on the phone) on a finished `[[link]]`.
+    var openLink: (String) -> Void = { _ in }
+    /// The keys the list of titles wants while it is up. True means it was used.
+    var onLinkKey: (LinkKey) -> Bool = { _ in false }
+
+    init(text: Binding<String>,
+         tint: Color = .accentColor,
+         linkDraft: Binding<LinkDraftOnScreen?> = .constant(nil),
+         completion: Binding<LinkCompletion?> = .constant(nil),
+         openLink: @escaping (String) -> Void = { _ in },
+         onLinkKey: @escaping (LinkKey) -> Bool = { _ in false }) {
+        _text = text
+        self.tint = tint
+        _linkDraft = linkDraft
+        _completion = completion
+        self.openLink = openLink
+        self.onLinkKey = onLinkKey
+    }
 
     var body: some View {
-        MarkdownTextViewRepresentable(text: $text, tint: tint)
+        MarkdownTextViewRepresentable(text: $text, tint: tint, linkDraft: $linkDraft,
+                                      completion: $completion, openLink: openLink,
+                                      onLinkKey: onLinkKey)
     }
+}
+
+/// The keys the list of titles answers to.
+enum LinkKey { case up, down, enter, escape }
+
+/// A `[[` being typed, and the caret's place in the editor's own coordinates.
+struct LinkDraftOnScreen: Equatable {
+    let draft: WikiLinks.Draft
+    /// The caret, from the top left of the editor.
+    let caret: CGPoint
+    /// How tall the line is, so the list can sit just below it.
+    let lineHeight: CGFloat
+}
+
+/// A title the note screen wants written into the text.
+struct LinkCompletion: Equatable {
+    let draft: WikiLinks.Draft
+    let title: String
 }
 
 /// Turns the spans from the Core highlighter into text attributes.
@@ -102,15 +145,69 @@ enum MarkdownAttributes {
 // MARK: - The platform text view
 
 #if os(macOS)
+/// An NSTextView that reports a ⌘-click. Plain clicks are left alone: they place the cursor,
+/// which is what a text view is for — a link opens on ⌘-click and never by accident.
+final class LinkingTextView: NSTextView {
+    var onCommandClick: ((Int) -> Void)?
+
+    static func scrollable() -> NSScrollView {
+        let scrollView = NSTextView.scrollableTextView()
+        guard let old = scrollView.documentView as? NSTextView,
+              let container = old.textContainer, let layout = container.layoutManager,
+              let storage = layout.textStorage else { return scrollView }
+        let textView = LinkingTextView(frame: old.frame, textContainer: container)
+        textView.autoresizingMask = old.autoresizingMask
+        textView.minSize = old.minSize
+        textView.maxSize = old.maxSize
+        textView.isVerticallyResizable = true
+        textView.isHorizontallyResizable = false
+        _ = storage
+        scrollView.documentView = textView
+        return scrollView
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        guard event.modifierFlags.contains(.command) else {
+            super.mouseDown(with: event)
+            return
+        }
+        let point = convert(event.locationInWindow, from: nil)
+        let offset = characterIndexForInsertion(at: point)
+        onCommandClick?(offset)
+    }
+
+    override func resetCursorRects() {
+        super.resetCursorRects()
+        // A pointing hand over every link, so it is plain they can be opened.
+        guard let layout = layoutManager, let container = textContainer else { return }
+        for match in WikiLinks.matches(in: string) {
+            let glyphs = layout.glyphRange(forCharacterRange: match.range, actualCharacterRange: nil)
+            var rect = layout.boundingRect(forGlyphRange: glyphs, in: container)
+            rect.origin.x += textContainerInset.width
+            rect.origin.y += textContainerInset.height
+            addCursorRect(rect, cursor: .pointingHand)
+        }
+    }
+}
+
 struct MarkdownTextViewRepresentable: NSViewRepresentable {
     @Binding var text: String
     var tint: Color
+    @Binding var linkDraft: LinkDraftOnScreen?
+    @Binding var completion: LinkCompletion?
+    var openLink: (String) -> Void
+    var onLinkKey: (LinkKey) -> Bool
 
-    func makeCoordinator() -> Coordinator { Coordinator(text: $text) }
+    func makeCoordinator() -> Coordinator {
+        Coordinator(text: $text, linkDraft: $linkDraft, openLink: openLink, onLinkKey: onLinkKey)
+    }
 
     func makeNSView(context: Context) -> NSScrollView {
-        let scrollView = NSTextView.scrollableTextView()
-        guard let textView = scrollView.documentView as? NSTextView else { return scrollView }
+        let scrollView = LinkingTextView.scrollable()
+        guard let textView = scrollView.documentView as? LinkingTextView else { return scrollView }
+        textView.onCommandClick = { [weak coordinator = context.coordinator] offset in
+            coordinator?.commandClicked(at: offset)
+        }
         textView.delegate = context.coordinator
         textView.allowsUndo = true
         textView.isRichText = false
@@ -131,6 +228,23 @@ struct MarkdownTextViewRepresentable: NSViewRepresentable {
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         guard let textView = scrollView.documentView as? NSTextView else { return }
         context.coordinator.text = $text
+        context.coordinator.linkDraft = $linkDraft
+        context.coordinator.openLink = openLink
+        context.coordinator.onLinkKey = onLinkKey
+        // A title picked from the list: written in here, where the text view is, so undo and
+        // the cursor behave as they would for typing.
+        if let completion {
+            let done = WikiLinks.completing(textView.string, draft: completion.draft, with: completion.title)
+            textView.string = done.text
+            textView.setSelectedRange(NSRange(location: min(done.cursor, (done.text as NSString).length), length: 0))
+            if text != done.text { text = done.text }
+            context.coordinator.highlight(tint: NSColor(tint))
+            DispatchQueue.main.async {
+                self.completion = nil
+                self.linkDraft = nil
+            }
+            return
+        }
         // Only when the text really came from somewhere else, so typing is never interrupted.
         if textView.string != text {
             let selected = textView.selectedRange()
@@ -144,16 +258,70 @@ struct MarkdownTextViewRepresentable: NSViewRepresentable {
     @MainActor
     final class Coordinator: NSObject, NSTextViewDelegate {
         var text: Binding<String>
+        var linkDraft: Binding<LinkDraftOnScreen?>
+        var openLink: (String) -> Void
+        var onLinkKey: (LinkKey) -> Bool
         weak var textView: NSTextView?
 
-        init(text: Binding<String>) {
+        init(text: Binding<String>, linkDraft: Binding<LinkDraftOnScreen?>,
+             openLink: @escaping (String) -> Void, onLinkKey: @escaping (LinkKey) -> Bool) {
             self.text = text
+            self.linkDraft = linkDraft
+            self.openLink = openLink
+            self.onLinkKey = onLinkKey
+        }
+
+        /// While the list of titles is up it gets the arrow keys, Return and Escape. Anything
+        /// else, and anything it does not use, goes on to do its ordinary job.
+        func textView(_ textView: NSTextView, doCommandBy selector: Selector) -> Bool {
+            guard linkDraft.wrappedValue != nil else { return false }
+            switch selector {
+            case #selector(NSResponder.moveDown(_:)): return onLinkKey(.down)
+            case #selector(NSResponder.moveUp(_:)): return onLinkKey(.up)
+            case #selector(NSResponder.insertNewline(_:)): return onLinkKey(.enter)
+            case #selector(NSResponder.cancelOperation(_:)): return onLinkKey(.escape)
+            default: return false
+            }
         }
 
         func textDidChange(_ notification: Notification) {
             guard let textView else { return }
             if text.wrappedValue != textView.string { text.wrappedValue = textView.string }
             highlight(tint: nil)
+            reportDraft()
+        }
+
+        func textViewDidChangeSelection(_ notification: Notification) {
+            reportDraft()
+        }
+
+        func commandClicked(at offset: Int) {
+            guard let textView, let title = WikiLinks.link(at: offset, in: textView.string) else { return }
+            openLink(title)
+        }
+
+        /// Tells the note screen what is being typed and where the caret is. Reading only:
+        /// nothing here changes the text, so typing is never interrupted.
+        private func reportDraft() {
+            guard let textView, let layout = textView.layoutManager, let container = textView.textContainer else { return }
+            let selected = textView.selectedRange()
+            guard selected.length == 0,
+                  let draft = WikiLinks.draft(in: textView.string, cursor: selected.location) else {
+                if linkDraft.wrappedValue != nil { linkDraft.wrappedValue = nil }
+                return
+            }
+            let glyph = layout.glyphRange(forCharacterRange: NSRange(location: selected.location, length: 0),
+                                          actualCharacterRange: nil)
+            var rect = layout.boundingRect(forGlyphRange: glyph, in: container)
+            rect.origin.x += textView.textContainerInset.width
+            rect.origin.y += textView.textContainerInset.height
+            // Minus how far the view is scrolled: the list is placed over the editor, not over
+            // the document.
+            let scrolled = textView.enclosingScrollView?.contentView.bounds.origin.y ?? 0
+            let onScreen = LinkDraftOnScreen(draft: draft,
+                                             caret: CGPoint(x: rect.minX, y: rect.minY - scrolled),
+                                             lineHeight: max(rect.height, 16))
+            if linkDraft.wrappedValue != onScreen { linkDraft.wrappedValue = onScreen }
         }
 
         private var lastTint: NSColor = .controlAccentColor
@@ -171,12 +339,24 @@ struct MarkdownTextViewRepresentable: NSViewRepresentable {
 struct MarkdownTextViewRepresentable: UIViewRepresentable {
     @Binding var text: String
     var tint: Color
+    @Binding var linkDraft: LinkDraftOnScreen?
+    @Binding var completion: LinkCompletion?
+    var openLink: (String) -> Void
+    var onLinkKey: (LinkKey) -> Bool
 
-    func makeCoordinator() -> Coordinator { Coordinator(text: $text) }
+    func makeCoordinator() -> Coordinator {
+        Coordinator(text: $text, linkDraft: $linkDraft, openLink: openLink)
+    }
 
     func makeUIView(context: Context) -> UITextView {
         let textView = UITextView()
         textView.delegate = context.coordinator
+        // A tap on a link opens it; anywhere else the tap belongs to the text view, so the
+        // recogniser gives way rather than competing with it.
+        let tap = UITapGestureRecognizer(target: context.coordinator,
+                                         action: #selector(Coordinator.handleTap(_:)))
+        tap.cancelsTouchesInView = false
+        textView.addGestureRecognizer(tap)
         textView.backgroundColor = .clear
         textView.textContainerInset = UIEdgeInsets(top: 12, left: 8, bottom: 12, right: 8)
         textView.autocorrectionType = .yes
@@ -192,6 +372,20 @@ struct MarkdownTextViewRepresentable: UIViewRepresentable {
 
     func updateUIView(_ textView: UITextView, context: Context) {
         context.coordinator.text = $text
+        context.coordinator.linkDraft = $linkDraft
+        context.coordinator.openLink = openLink
+        if let completion {
+            let done = WikiLinks.completing(textView.text, draft: completion.draft, with: completion.title)
+            textView.text = done.text
+            textView.selectedRange = NSRange(location: min(done.cursor, (done.text as NSString).length), length: 0)
+            if text != done.text { text = done.text }
+            context.coordinator.highlight(tint: UIColor(tint))
+            DispatchQueue.main.async {
+                self.completion = nil
+                self.linkDraft = nil
+            }
+            return
+        }
         if textView.text != text {
             let selected = textView.selectedRange
             textView.text = text
@@ -204,16 +398,51 @@ struct MarkdownTextViewRepresentable: UIViewRepresentable {
     @MainActor
     final class Coordinator: NSObject, UITextViewDelegate {
         var text: Binding<String>
+        var linkDraft: Binding<LinkDraftOnScreen?>
+        var openLink: (String) -> Void
         weak var textView: UITextView?
         private var lastTint: UIColor = .tintColor
 
-        init(text: Binding<String>) {
+        init(text: Binding<String>, linkDraft: Binding<LinkDraftOnScreen?>, openLink: @escaping (String) -> Void) {
             self.text = text
+            self.linkDraft = linkDraft
+            self.openLink = openLink
         }
 
         func textViewDidChange(_ textView: UITextView) {
             if text.wrappedValue != textView.text { text.wrappedValue = textView.text }
             highlight(tint: nil)
+            reportDraft()
+        }
+
+        func textViewDidChangeSelection(_ textView: UITextView) {
+            reportDraft()
+        }
+
+        @objc func handleTap(_ recogniser: UITapGestureRecognizer) {
+            guard let textView else { return }
+            let point = recogniser.location(in: textView)
+            guard let position = textView.closestPosition(to: point) else { return }
+            let offset = textView.offset(from: textView.beginningOfDocument, to: position)
+            guard let title = WikiLinks.link(at: offset, in: textView.text) else { return }
+            openLink(title)
+        }
+
+        /// Reading only: what is being typed and where the caret is.
+        private func reportDraft() {
+            guard let textView else { return }
+            let selected = textView.selectedRange
+            guard selected.length == 0,
+                  let draft = WikiLinks.draft(in: textView.text, cursor: selected.location),
+                  let position = textView.position(from: textView.beginningOfDocument, offset: selected.location) else {
+                if linkDraft.wrappedValue != nil { linkDraft.wrappedValue = nil }
+                return
+            }
+            let caret = textView.caretRect(for: position)
+            let onScreen = LinkDraftOnScreen(draft: draft,
+                                             caret: CGPoint(x: caret.minX, y: caret.minY - textView.contentOffset.y),
+                                             lineHeight: max(caret.height, 16))
+            if linkDraft.wrappedValue != onScreen { linkDraft.wrappedValue = onScreen }
         }
 
         func highlight(tint: UIColor?) {
