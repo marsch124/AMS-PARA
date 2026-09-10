@@ -104,24 +104,19 @@ struct VaultWarningBar: View {
     }
 }
 
-/// The colour of the section you are in, laid over the detail column: a hairline at the top, a
-/// wash below it, and the faintest tint over the whole column. Enough to say "you are in
-/// Projects" out of the corner of your eye, and not enough to tire you out in a long note.
+/// The colour of the section you are in, laid over the detail column: a hairline along the top
+/// and one even tint over the column. Enough to say "you are in Projects" out of the corner of
+/// your eye, and not enough to tire you out in a long note.
 struct ModeAccent: ViewModifier {
     let tint: Color
 
     func body(content: Content) -> some View {
         content
-            .background(alignment: .top) {
-                ZStack(alignment: .top) {
-                    // The whole column, and the top of it stronger again. He picked these two
-                    // from the preview (build 109); they are the only numbers to change.
-                    tint.opacity(0.085)
-                    LinearGradient(colors: [tint.opacity(0.16), tint.opacity(0)],
-                                   startPoint: .top, endPoint: .bottom)
-                        .frame(height: 180)
-                }
-                .allowsHitTesting(false)
+            .background {
+                // One even tint over the whole column, at the strength he picked from the
+                // preview. The gradient at the top went out in build 110: he wanted the colour
+                // to sit evenly rather than pool under the toolbar.
+                tint.opacity(0.085).allowsHitTesting(false)
             }
             .overlay(alignment: .top) {
                 Rectangle()

@@ -563,8 +563,9 @@ belongs in front of the user, not in the diagnostics log.
 
 ## The colour of the mode (build 107)
 
-`ModeAccent` (Theme.swift, applied as `.modeAccent(_:)`) puts a 2pt hairline, a 180pt wash and
-(builds 108/109) an 8.5% tint over the whole detail column and a 16% wash — he chose both from a preview artifact, so change them only when he asks, all in `SidebarSection.tint`; `DetailView.body` applies it to a
+`ModeAccent` (Theme.swift, applied as `.modeAccent(_:)`) puts a 2pt hairline and one even 8.5%
+tint of `SidebarSection.tint` over the detail column — he chose the strength from a preview
+artifact and had the top gradient removed in build 110, so change neither without asking; `DetailView.body` applies it to a
 `detail` computed property holding the old `if`/`else` chain, so the ViewBuilder rule is kept.
 Background and overlay, never a frame or an inset — the third column's intrinsic size is what
 builds 30/34 were about. The tint follows the *section*, so it does not flicker as notes are

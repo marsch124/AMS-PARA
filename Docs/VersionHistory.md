@@ -2,6 +2,10 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 110 · 10 September 2026
+
+- **The gradient at the top of the right-hand panel is gone.** The section's colour now sits evenly over the whole column, with the hairline along the top.
+
 ## Build 109 · 9 September 2026
 
 - **The section's colour on the right-hand panel is stronger**, both over the whole column and in the wash at the top — the setting you chose from the preview.
