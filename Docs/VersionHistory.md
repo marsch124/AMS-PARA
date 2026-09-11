@@ -2,6 +2,10 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 122 · 11 September 2026
+
+- **Fix: on the iPhone the long press into the Work section only ever worked once.** It opened Work the first time and did nothing every time after, until the app was quit. Now every press opens it. (The Work row at the foot of the Browse list was still there in the meantime — that was the way back in.)
+
 ## Build 121 · 10 September 2026
 
 - **The "More" fold in the new-note sheet is gone.** Everything is on screen at once: name, kind, and whatever settings apply to that kind. Nothing to open.

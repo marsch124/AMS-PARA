@@ -601,7 +601,10 @@ move one into the visible vault). `SidebarSection.work` is drawn only while
 sidebar's **PARA** header (a Section header, so it takes no click off a row), on the phone the
 **Browse** title drawn as a `.principal` toolbar item (inline since build 117) or the
 **Build N** row at the foot of Browse, or ⌃⌘W (not ⌥⌘W — macOS closes all
-windows with that). Out: the Hide button in the section's toolbar, or quitting.
+windows with that). The phone pushes the screen from `AppModel.workRequests`, a counter
+bumped by every `revealWork()`, **not** from `workRevealed`: a Bool that is only ever set
+true changes once, so the second long press did nothing at all (build 122). Anything a
+repeatable gesture triggers needs a counter or an explicit request, never a latch. Out: the Hide button in the section's toolbar, or quitting.
 Deliberately **not** in `Docs/HowItWorks.md`: the manual is bundled and visible to anyone
 looking over his shoulder, so the gestures live in VersionHistory and here only.
 

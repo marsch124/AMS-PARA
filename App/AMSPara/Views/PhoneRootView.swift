@@ -118,13 +118,17 @@ struct PhoneStack<Content: View>: View {
         // Revealing Work has to open it here as well: the Mac's columns watch the section,
         // but on the phone a screen exists only once it has been pushed (build 117). The
         // Browse tab is the one with no section of its own.
-        .onChange(of: model.workRevealed) { _, revealed in
+        //
+        // Driven by the *count* of requests, not by `workRevealed`: that flag changes on the
+        // first long press and never again, so the second one went nowhere (build 122).
+        .onChange(of: model.workRequests) { _, _ in
             guard isActive, section == nil else { return }
-            if revealed {
-                if path.last != .section(.work) { path.append(.section(.work)) }
-            } else if path.last == .section(.work) {
-                path.removeLast()
-            }
+            if path.last != .section(.work) { path.append(.section(.work)) }
+        }
+        // Hiding is still a change of the flag, and only ever in one direction.
+        .onChange(of: model.workRevealed) { _, revealed in
+            guard isActive, section == nil, !revealed else { return }
+            if path.last == .section(.work) { path.removeLast() }
         }
         .onChange(of: model.selectedNotePath) { _, selected in
             guard isActive else { return }

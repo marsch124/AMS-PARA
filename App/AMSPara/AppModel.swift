@@ -86,7 +86,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 121
+    static let number = 122
 }
 
 @MainActor
@@ -384,10 +384,16 @@ final class AppModel: ObservableObject {
         workNotes = vault?.workNotes() ?? []
     }
 
+    /// Counts how many times Work has been asked for, not whether it is showing. The phone
+    /// pushes its screen from this: `workRevealed` changes exactly once, so every long press
+    /// after the first changed nothing and the gesture looked broken (build 122).
+    @Published private(set) var workRequests = 0
+
     /// The hidden way in: a long press, or the keyboard shortcut. Reveals the row and goes there.
     func revealWork() {
         refreshWorkNotes()
         workRevealed = true
+        workRequests += 1
         show(section: .work, notePath: nil)
     }
 
