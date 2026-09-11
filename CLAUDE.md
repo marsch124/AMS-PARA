@@ -235,8 +235,16 @@ is, so the text view was proposed a height it never claimed. If this is attempte
 must implement `sizeThatFits(_:uiView:context:)` on the representable (iOS 16+, and the
 target is 17) returning `uiView.sizeThatFits` for the proposed width **with a floor**, so a
 miscalculation can never leave nothing to tap — and it must be seen running on a phone or a
-simulator before it ships. What follows is what 123 did, kept because the diagnosis is right
-even though the fix was not: A `UITextView` scrolls itself, so the phone had two
+simulator before it ships.
+
+**Build 125 is that second attempt**, shipped with his agreement on the explicit basis that it
+cannot collapse: `sizeThatFits(_:uiView:context:)` on the iOS representable returns
+`uiView.sizeThatFits` for the proposed width but never less than `leastHeight` (320), *and*
+`phoneBody` puts `.frame(minHeight: 320)` around it, so the floor holds even when
+`sizeThatFits` returns nil (no width proposed) and SwiftUI falls back to its own sizing. Only
+the Edit mode branch does this; Preview and Split keep `.frame(height: 320)` because
+`MarkdownPreview` is a `ScrollView` and needs a height handed to it. What follows is the
+description of the approach, whose diagnosis was right even when 123's fix was not: A `UITextView` scrolls itself, so the phone had two
 scroll views stacked and a plain tap was ambiguous between them: it took a press and hold to
 place the cursor, which he reasonably took for a deliberate "edit mode".
 `MarkdownSyntaxEditor` now takes `scrolls:`, and `editorPane` is a function rather than a
