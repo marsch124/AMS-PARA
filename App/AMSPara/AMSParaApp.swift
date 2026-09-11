@@ -59,7 +59,7 @@ struct AMSParaApp: App {
             }
         }
         #if os(macOS)
-        MenuBarExtra("AMS PARA quick capture", systemImage: "tray.and.arrow.down", isInserted: $showMenuBarItem) {
+        MenuBarExtra("PARAGON quick capture", systemImage: "tray.and.arrow.down", isInserted: $showMenuBarItem) {
             QuickCaptureView(compact: true)
                 .environmentObject(model)
         }
@@ -68,7 +68,7 @@ struct AMSParaApp: App {
             SettingsView()
                 .environmentObject(model)
         }
-        WindowGroup("AMS PARA Help", id: "help", for: HelpView.Page.self) { page in
+        WindowGroup("PARAGON Help", id: "help", for: HelpView.Page.self) { page in
             HelpView(page: page.wrappedValue ?? .howItWorks)
         }
         .defaultSize(width: 720, height: 640)
@@ -82,7 +82,7 @@ struct HelpMenuButtons: View {
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
-        Button("How AMS PARA Works") { openWindow(id: "help", value: HelpView.Page.howItWorks) }
+        Button("How PARAGON Works") { openWindow(id: "help", value: HelpView.Page.howItWorks) }
             .keyboardShortcut("?", modifiers: [.command])
         Button("Version History") { openWindow(id: "help", value: HelpView.Page.versionHistory) }
     }

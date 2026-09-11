@@ -15,7 +15,7 @@ struct CalendarEvent: Identifiable, Equatable {
     var calendarTitle: String
     var color: Color
     var location: String?
-    /// True for events AMS PARA created in the Time Blocks section.
+    /// True for events PARAGON created in the Time Blocks section.
     var isTimeBlock: Bool = false
 
     /// "All day", "09:00 – 10:30", or an arrow when the event runs past the day's edges.
@@ -40,7 +40,7 @@ struct CalendarInfo: Identifiable, Equatable {
     var isWritable: Bool
 }
 
-/// A block of time AMS PARA wrote to Apple Calendar. It is an ordinary event marked with
+/// A block of time PARAGON wrote to Apple Calendar. It is an ordinary event marked with
 /// `amspara://timeblock` as its URL, so it shows up on every device and can be edited there too.
 struct TimeBlock: Identifiable, Equatable {
     var id: String
@@ -171,7 +171,7 @@ final class EventKitCalendarStore {
                          color: event.calendar?.cgColor.map { Color(cgColor: $0) } ?? .accentColor)
     }
 
-    /// The blocks AMS PARA created, in any calendar, between two dates.
+    /// The blocks PARAGON created, in any calendar, between two dates.
     func timeBlocks(from: Date, to: Date) -> [TimeBlock] {
         let predicate = eventStore.predicateForEvents(withStart: from, end: to, calendars: nil)
         return eventStore.events(matching: predicate)

@@ -1,6 +1,6 @@
-# How AMS PARA works
+# How PARAGON works
 
-AMS PARA is a plain-text project and life management app. Everything you write is a markdown file in a folder you own. The app reads and writes those files; Apple Reminders and Apple Calendar stay in sync with them.
+PARAGON is a plain-text project and life management app. Everything you write is a markdown file in a folder you own. The app reads and writes those files; Apple Reminders and Apple Calendar stay in sync with them.
 
 Every heading below opens and closes, so this page is a contents list you drill into rather than a wall of text. The box at the top searches it: type a word and only the parts that mention it are shown, already opened.
 
@@ -333,7 +333,7 @@ Open **Templates** in the sidebar, pick a file and edit it. It saves itself a mo
 ## Quick capture
 
 - ⇧⌘N opens the capture panel in the app. On the Mac there is also a panel in the menu bar.
-- On the iPhone, Share › AMS PARA sends text or a link.
+- On the iPhone, Share › PARAGON sends text or a link.
 - Other apps and Shortcuts can call `amspara://capture?text=Call%20the%20bank&target=inbox`.
 
 Captures land in the Inbox, today's note or a project, and are filed the next time the app is active.
@@ -357,7 +357,7 @@ Sync with Reminders from the phone with the button in the top right of Today and
 
 On the phone, a note's own actions — the Edit / Split / Preview switch, Rename, Archive and Delete — are behind the **⋯** button at the top right of the note. On the Mac they are buttons in the toolbar.
 
-The phone shows four tabs. **Today** and **Inbox** are the same lists as on the Mac. **Browse** holds everything else: Goals, Projects, Areas, Resources, Archive, Calendar, Time Blocks, Done, Review, Map, Search, and Settings with Help. **Capture** opens the capture panel. Tap a note to open it and swipe from the left edge to go back. Long-press a task for the task menu. The share sheet in other apps has an AMS PARA entry that sends text or a link to the Inbox.
+The phone shows four tabs. **Today** and **Inbox** are the same lists as on the Mac. **Browse** holds everything else: Goals, Projects, Areas, Resources, Archive, Calendar, Time Blocks, Done, Review, Map, Search, and Settings with Help. **Capture** opens the capture panel. Tap a note to open it and swipe from the left edge to go back. Long-press a task for the task menu. The share sheet in other apps has a PARAGON entry that sends text or a link to the Inbox.
 
 ## Mac and iPhone together
 
@@ -365,7 +365,7 @@ Keep the vault in iCloud Drive and pick the same folder on both devices. iCloud 
 
 ### How iCloud moves the files
 
-There is no AMS PARA server. Everything the app knows lives in the markdown files in your vault folder, and iCloud is what copies those files between the Mac and the phone — the same way it does for any other folder in iCloud Drive.
+There is no PARAGON server. Everything the app knows lives in the markdown files in your vault folder, and iCloud is what copies those files between the Mac and the phone — the same way it does for any other folder in iCloud Drive.
 
 That has one consequence worth knowing. iCloud does not push every file to every device the moment it is written. It tells the other device that a file exists and leaves the contents behind until something asks for them. Until then there is only a marker where the file should be: the name is reserved, but the note is not really on the phone yet. This is normal iCloud behaviour, and it is why "Optimise storage" on a phone with little space left can leave a lot of your vault as markers.
 

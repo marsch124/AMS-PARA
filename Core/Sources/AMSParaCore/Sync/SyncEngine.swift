@@ -292,7 +292,7 @@ public final class SyncEngine {
             for reminder in remindersByID.values.sorted(by: { $0.identifier < $1.identifier }) where !handledReminderIDs.contains(reminder.identifier) {
                 guard var path = pathForList[reminder.listName] else { continue }
                 if Self.markerTaskID(in: reminder.notes) != nil {
-                    // Marked by AMS PARA but not linked here and not in any note this device can see.
+                    // Marked by PARAGON but not linked here and not in any note this device can see.
                     // That happens on a fresh device before the notes arrive; never delete on that basis.
                     continue
                 }

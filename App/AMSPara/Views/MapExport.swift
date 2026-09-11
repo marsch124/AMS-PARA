@@ -51,11 +51,11 @@ enum MapExport {
         return produced
     }
 
-    /// A suggested file name: "AMS PARA map 2026-09-09".
+    /// A suggested file name: "PARAGON map 2026-09-09".
     static func fileName(date: Date = Date()) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
-        return "AMS PARA map \(formatter.string(from: date))"
+        return "PARAGON map \(formatter.string(from: date))"
     }
 
     /// Writes the data into a temporary file, which is what both the save dialog on the Mac

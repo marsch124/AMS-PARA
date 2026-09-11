@@ -35,11 +35,11 @@ targets:
     info:
       path: App/Config/AMSPara/Info.plist
       properties:
-        CFBundleDisplayName: AMS PARA
-        CFBundleName: AMS PARA
+        CFBundleDisplayName: PARAGON
+        CFBundleName: PARAGON
         UTExportedTypeDeclarations:
           - UTTypeIdentifier: com.schabbauer.amspara.task
-            UTTypeDescription: AMS PARA task
+            UTTypeDescription: PARAGON task
             UTTypeConformsTo: [public.data]
         # Without this key macOS and iOS ignore the AppIcon set in the asset catalog.
         CFBundleIconName: AppIcon
@@ -47,10 +47,10 @@ targets:
         CFBundleURLTypes:
           - CFBundleURLName: com.schabbauer.amspara
             CFBundleURLSchemes: [amspara]
-        NSCalendarsFullAccessUsageDescription: AMS PARA shows calendar events for the day next to your tasks in Today and in daily notes.
-        NSCalendarsUsageDescription: AMS PARA shows calendar events for the day next to your tasks in Today and in daily notes.
-        NSRemindersFullAccessUsageDescription: AMS PARA mirrors the tasks in your PARA notes to Apple Reminders and back.
-        NSRemindersUsageDescription: AMS PARA mirrors the tasks in your PARA notes to Apple Reminders and back.
+        NSCalendarsFullAccessUsageDescription: PARAGON shows calendar events for the day next to your tasks in Today and in daily notes.
+        NSCalendarsUsageDescription: PARAGON shows calendar events for the day next to your tasks in Today and in daily notes.
+        NSRemindersFullAccessUsageDescription: PARAGON mirrors the tasks in your PARA notes to Apple Reminders and back.
+        NSRemindersUsageDescription: PARAGON mirrors the tasks in your PARA notes to Apple Reminders and back.
         NSHumanReadableCopyright: ""
         UILaunchScreen: {}
         # Apple rejects an upload without these: iPad multitasking needs all four.
@@ -76,6 +76,13 @@ targets:
         com.apple.security.application-groups: [group.com.schabbauer.amspara]
     settings:
       base:
+        # The built app is PARAGON.app, not AMSPara.app: on the Mac, Finder and the Dock
+        # show the bundle's file name, so CFBundleDisplayName alone would leave the old
+        # name on screen. The target, the folder and the bundle id are untouched.
+        PRODUCT_NAME: PARAGON
+        # Pinned, not derived from the target name: this is the app's identity to Apple and
+        # changing it would make PARAGON a different app — new TestFlight, fresh install.
+        PRODUCT_BUNDLE_IDENTIFIER: com.schabbauer.AMSPara
         SWIFT_VERSION: "5.0"
         MARKETING_VERSION: 0.1.0
         CURRENT_PROJECT_VERSION: 1
@@ -99,7 +106,7 @@ targets:
     info:
       path: App/Config/AMSParaShare/Info.plist
       properties:
-        CFBundleDisplayName: AMS PARA
+        CFBundleDisplayName: PARAGON
         NSExtension:
           NSExtensionPointIdentifier: com.apple.share-services
           NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ShareViewController

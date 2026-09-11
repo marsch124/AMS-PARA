@@ -62,7 +62,7 @@ final class ShareViewController: UIViewController {
     private func save(_ item: CaptureItem) {
         guard let outboxURL else {
             extensionContext?.cancelRequest(withError: NSError(domain: "AMSParaShare", code: 1, userInfo: [
-                NSLocalizedDescriptionKey: "AMS PARA's shared folder is not available. Open the app once and try again."]))
+                NSLocalizedDescriptionKey: "PARAGON's shared folder is not available. Open the app once and try again."]))
             return
         }
         do {
@@ -115,12 +115,12 @@ struct ShareCaptureView: View {
                     Toggle("As note, not task", isOn: $asNote)
                 }
                 Section {
-                    Text("Filed into your vault the next time AMS PARA opens. Add >2026-09-10 for a date, !! for priority, #tags as usual.")
+                    Text("Filed into your vault the next time PARAGON opens. Add >2026-09-10 for a date, !! for priority, #tags as usual.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             }
-            .navigationTitle("AMS PARA")
+            .navigationTitle("PARAGON")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

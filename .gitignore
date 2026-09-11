@@ -7,5 +7,5 @@ DerivedData/
 .DS_Store
 Package.resolved
 
-# AMS PARA per-vault state lives inside the vault, not the repo
+# PARAGON per-vault state lives inside the vault, not the repo
 .ams-para/

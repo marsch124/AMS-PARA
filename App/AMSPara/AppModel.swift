@@ -86,7 +86,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 129
+    static let number = 130
 }
 
 @MainActor
@@ -169,7 +169,7 @@ final class AppModel: ObservableObject {
     @Published private(set) var calendarAccessGranted: Bool?
     /// Every calendar on this Mac, loaded once access is granted.
     @Published private(set) var calendars: [CalendarInfo] = []
-    /// The blocks AMS PARA wrote to Apple Calendar, a week back and two months ahead.
+    /// The blocks PARAGON wrote to Apple Calendar, a week back and two months ahead.
     @Published private(set) var timeBlocks: [TimeBlock] = []
     /// Filled by "Block time for this…" on a task; the Time Blocks form picks it up.
     @Published var timeBlockDraft: TimeBlockDraft?
@@ -265,11 +265,11 @@ final class AppModel: ObservableObject {
         let stamp = Date().formatted(date: .omitted, time: .standard)
         diagnostics.append("\(stamp) \(line)")
         if diagnostics.count > 500 { diagnostics.removeFirst(100) }
-        print("AMSPARA " + line)
+        print("PARAGON " + line)
     }
 
     var diagnosticsReport: String {
-        var lines = ["AMS PARA build \(BuildStamp.number)",
+        var lines = ["PARAGON build \(BuildStamp.number)",
                      "section: \(section.map(\.title) ?? "nil")  note: \(selectedNotePath ?? "nil")",
                      "notes: \(notes.count)  goals: \(notes.filter { $0.kind == .goal }.map(\.title))",
                      ""]
@@ -1673,6 +1673,8 @@ final class AppModel: ObservableObject {
     static let appGroupID = "group.com.schabbauer.amspara"
 
     /// Shared with the share extension through the App Group; falls back to Application Support.
+    /// That folder is still called "AMS PARA": it is a path, not a label, and renaming it would
+    /// strand anything already queued there. Same reason the App Group keeps its old name.
     static var outboxURL: URL {
         let base = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupID)
             ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!.appendingPathComponent("AMS PARA", isDirectory: true)
@@ -1877,7 +1879,7 @@ final class AppModel: ObservableObject {
     @discardableResult
     func saveTimeBlock(id: String?, title: String, start: Date, end: Date, notes: String, calendarID: String?) async -> Bool {
         guard await ensureCalendarAccess() else {
-            errorMessage = "AMS PARA needs Calendar access to write time blocks. Allow it in System Settings › Privacy & Security › Calendars."
+            errorMessage = "PARAGON needs Calendar access to write time blocks. Allow it in System Settings › Privacy & Security › Calendars."
             return false
         }
         let name = title.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -2003,7 +2005,7 @@ final class AppModel: ObservableObject {
         defer { try? FileManager.default.removeItem(at: temporary) }
         do {
             guard try await remindersStore.requestAccess() else {
-                errorMessage = "AMS PARA needs full access to Reminders. You can grant it in System Settings › Privacy & Security › Reminders."
+                errorMessage = "PARAGON needs full access to Reminders. You can grant it in System Settings › Privacy & Security › Reminders."
                 return
             }
             try vault.copyContents(to: temporary)
@@ -2050,7 +2052,7 @@ final class AppModel: ObservableObject {
         defer { isSyncing = false }
         do {
             guard try await remindersStore.requestAccess() else {
-                errorMessage = "AMS PARA needs full access to Reminders. You can grant it in System Settings › Privacy & Security › Reminders."
+                errorMessage = "PARAGON needs full access to Reminders. You can grant it in System Settings › Privacy & Security › Reminders."
                 return
             }
             let engine = SyncEngine(vault: vault, store: remindersStore, deviceID: deviceID)

@@ -1,4 +1,4 @@
-# Getting AMS PARA onto the iPhone through TestFlight
+# Getting PARAGON onto the iPhone through TestFlight
 
 Once this is set up, every new version reaches the phone by itself. No cable, no Xcode,
 no seven-day expiry. Everything below happens in a web browser; none of it needs the Mac.
@@ -17,7 +17,8 @@ day, sometimes two. You get an email when you are in.
 <https://appstoreconnect.apple.com> › **Users and Access** › **Integrations** › **App Store Connect API**
 
 - Press **+** to add a key.
-- Name it `AMS PARA build server`.
+- Name it `PARAGON build server`. (The key already in use is called
+  `AMS PARA build server` — a key's name cannot be changed, and nothing depends on it.)
 - Access: **App Manager**.
 - Press Generate.
 
@@ -36,7 +37,7 @@ Apple lets you download the key file **once**. Keep it somewhere safe.
 <https://appstoreconnect.apple.com> › **Apps** › **+** › **New App**
 
 - Platform: **iOS**
-- Name: `AMS PARA`
+- Name: `PARAGON`
 - Primary language: English
 - Bundle ID: pick `com.schabbauer.AMSPara` from the list. If it is not there yet, run the
   build once (step 5); it registers the identifier, then come back here.
@@ -68,17 +69,17 @@ minutes and then emails you.
 
 ### 6. Install TestFlight on the phone
 
-Get **TestFlight** from the App Store, sign in with the same Apple ID, and AMS PARA is
+Get **TestFlight** from the App Store, sign in with the same Apple ID, and PARAGON is
 waiting there. Tap Install.
 
 ### 7. The Mac app, the same way
 
 The build button sends the Mac app as well. Two things are needed once:
 
-- In App Store Connect › **AMS PARA** › **Distribution**, press **Add Platform** and choose
+- In App Store Connect › **PARAGON** › **Distribution**, press **Add Platform** and choose
   **macOS**.
 - On the Mac, get **TestFlight** from the App Store (it is a Mac app too), sign in, and
-  AMS PARA is there. Press Install. It lands in your Applications folder.
+  PARAGON is there. Press Install. It lands in your Applications folder.
 
 After that the Mac app updates itself through TestFlight, exactly like the phone. Xcode is
 only needed if you want to look at the code.

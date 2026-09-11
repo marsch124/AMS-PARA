@@ -18,7 +18,7 @@ Four folders, ordered by how actionable the content is.
 - **Resources**: reference material that supports projects, areas and life in general.
 - **Archive**: anything inactive from the other three. Nothing is deleted.
 
-## How AMS PARA uses it
+## How PARAGON uses it
 
 - Project and Area notes mirror their tasks to a Reminders list of the same name.
 - Resource notes link back to what they support with `related:` in the frontmatter or `[[wikilinks]]`.

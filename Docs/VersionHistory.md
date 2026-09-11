@@ -2,6 +2,13 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 130 · 11 September 2026
+
+- **The app is called PARAGON.** The name under the icon, the window title, the Mac menu bar, the Help window, the share sheet on the iPhone, the permission prompts, the exported map's file name and this manual.
+- Nothing underneath moved. It is the same app in TestFlight, updated the same way, and your vault, your reminders and your settings do not notice the new name.
+- **On the Mac the application file is now PARAGON rather than AMSPara**, so Finder and the Dock say the right thing. After this update you may find the old AMSPara still sitting in your Applications folder: it can be dragged to the Trash. Keep the one that shows build 130.
+- Four things keep the old name on purpose, because something else depends on each: the app's identity to Apple, the `ams-para:` marker that ties every mirrored reminder to its task, the hidden `.ams-para` folder in your vault, and the `amspara://` link other apps use to add to your Inbox.
+
 ## Build 129 · 11 September 2026
 
 - **A new app icon**, the first step of the rename to PARAGON. A white frame now sits outside the gold goals frame, with a small star resting on its top edge. Everything inside — the four PARA squares and the tick — is unchanged.

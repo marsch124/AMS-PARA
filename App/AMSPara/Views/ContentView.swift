@@ -155,7 +155,7 @@ struct WelcomeView: View {
                         .frame(width: 38, height: 38)
                 }
             }
-            Text("AMS PARA")
+            Text("PARAGON")
                 .font(.largeTitle.bold())
             Text("Projects, Areas, Resources and Archive as plain markdown files, with tasks that stay in sync with Apple Reminders.")
                 .multilineTextAlignment(.center)
@@ -214,7 +214,7 @@ struct SidebarView: View {
                 }
             }
         }
-        .navigationTitle("AMS PARA")
+        .navigationTitle("PARAGON")
         .safeAreaInset(edge: .bottom) {
             VStack(spacing: 4) {
                 if let warning = model.vaultWarning {

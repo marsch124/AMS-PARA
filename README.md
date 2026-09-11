@@ -1,4 +1,4 @@
-# AMS PARA
+# PARAGON
 
 A personal project and action management app built on plain markdown files, organised the PARA way
 (Projects, Areas, Resources, Archive), with tasks that sync both ways with Apple Reminders.
@@ -104,7 +104,7 @@ Three ways to get a thought into the system without opening the right note first
 - **Menu bar (macOS).** A tray icon in the menu bar opens a small panel: text, a target (Inbox, today's
   note, or any active project), and a checkbox to save it as a note line instead of a task. It can be
   hidden in Settings. Inside the app, ⇧⌘N opens the same panel.
-- **Share sheet (iOS).** Share text or a web page to "AMS PARA". The extension can't reach the vault
+- **Share sheet (iOS).** Share text or a web page to "PARAGON". The extension can't reach the vault
   directly, so it parks the capture in an App Group outbox; the app files it the next time it opens.
 - **URL scheme.** `amspara://capture?text=Call%20the%20bank&target=inbox` adds a task; `target=today`
   or a note path such as `Projects/Shed.md` changes where it lands, `url=` attaches a link, `note=1`

@@ -1,4 +1,4 @@
-# AMS PARA – working notes
+# PARAGON – working notes
 
 Memory for anyone (human or Claude) picking this project up. Keep it short and current.
 
@@ -27,7 +27,8 @@ the phone and on the Mac. Xcode is no longer part of his routine.
 ## Rules
 
 - Branch: `claude/ams-para-reminders-sync-s0ex53` only. No PRs unless asked.
-- GitHub repo name stays `AMS-PARA` (access is scoped to it); local folder is "AMS PARA".
+- GitHub repo is still `AMS-PARA` and session access is scoped to it; his local folder is
+  still "AMS PARA". Both are renamed in phase 4 of the rebrand, below — not before.
 - No Swift toolchain in the remote container: verify via CI (`mcp__github__actions_list`, `get_job_logs`).
 - Bump `BuildStamp.number` in `App/AMSPara/AppModel.swift` on every push; it shows at the bottom of the sidebar so we know which build he runs.
 - Add a section for that build to `Docs/VersionHistory.md` (user-facing wording) on every push. `Docs/HowItWorks.md` is the manual; update it when behaviour changes. Both are bundled (project.yml `Docs` resources) and shown by `HelpView`.
@@ -733,7 +734,11 @@ one its own build so a red light means one thing:
    gold frame of build 111 was added by a one-off script and never written back, so from 111 to
    129 the committed script did not reproduce what shipped and this change had to start by
    measuring the PNG. Never draw the icon anywhere but that file.
-2. **The name everywhere he sees it.** `CFBundleDisplayName`/`CFBundleName`, every visible
+2. **The name everywhere he sees it** (build 130, done). Also `PRODUCT_NAME: PARAGON` on the
+   app target — on the Mac, Finder and the Dock read the bundle's *file* name, so
+   `CFBundleDisplayName` alone leaves "AMSPara" on screen; the target and folder are
+   untouched, and `PRODUCT_BUNDLE_IDENTIFIER` is now pinned explicitly so it can never
+   follow a target rename. `CFBundleDisplayName`/`CFBundleName`, every visible
    string in the app, the permission prompts, the share extension's name, `Docs/HowItWorks.md`,
    `Docs/VersionHistory.md`, `README.md`, `TESTFLIGHT.md`, this file, the Example Vault.
 3. **The name inside the code.** `App/AMSPara/` → `App/Paragon/`, `AMSParaCore` → `ParagonCore`,
@@ -746,7 +751,8 @@ one its own build so a red light means one thing:
 **Four identifiers deliberately keep the old name.** `com.schabbauer.AMSPara` (a new bundle id
 is a different app: new TestFlight, fresh install, his settings gone), `ams-para:^t…` (the
 marker in every mirrored reminder's notes — rename it and every existing reminder is orphaned),
-`.ams-para` (the vault's state folder: sync state, backups, deleted notes) and `amspara://`
+`.ams-para` (the vault's state folder: sync state, backups, deleted notes), the Application
+Support fallback folder in `AppModel.outboxURL`, and `amspara://`
 (the capture link his Shortcuts use; `paragon://` can be *added* beside it, never instead).
 The App Group `group.com.schabbauer.amspara` likewise: it is enabled in the developer portal
 under that name.

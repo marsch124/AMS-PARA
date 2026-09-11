@@ -1,6 +1,6 @@
 name: TestFlight
 
-# Builds AMS PARA for the iPhone and for the Mac and sends both to TestFlight, so a new
+# Builds PARAGON for the iPhone and for the Mac and sends both to TestFlight, so a new
 # version appears on both devices without touching Xcode. Started by hand from the Actions tab.
 #
 # Needs four repository secrets, made once in App Store Connect:
@@ -167,7 +167,7 @@ jobs:
         if: success()
         run: |
           echo "### Sent ${{ matrix.label }} to TestFlight" >> $GITHUB_STEP_SUMMARY
-          echo "AMS PARA build $STAMP — the same number the app shows in the sidebar." >> $GITHUB_STEP_SUMMARY
+          echo "PARAGON build $STAMP — the same number the app shows in the sidebar." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Apple processes it for a few minutes, then it appears in TestFlight." >> $GITHUB_STEP_SUMMARY
           if [ -n "${{ github.event.inputs.notes }}" ]; then
