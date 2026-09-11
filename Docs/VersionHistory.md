@@ -2,10 +2,10 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
-## Build 123 · 11 September 2026
+## Build 124 · 11 September 2026
 
-- **Fix: on the iPhone it took a press and hold to start typing in a note.** The text had its own little scrolling window inside the scrolling page, and the two of them argued over your tap. Now the text simply grows to its full height and the page does the scrolling, so a tap puts the cursor where you tapped.
-- **The note text is no longer stuck in a 320pt window** while you are editing. The whole note is there, and you scroll the page as one thing.
+- **Build 123 is undone.** Letting the note text size itself to the whole page made the text area collapse on the iPhone, so notes could not be edited at all. Editing works again exactly as it did in 122.
+- The original problem — needing to press and hold rather than tap to start typing — is still there, and still worth fixing. It needs a safer approach than 123 took.
 
 ## Build 122 · 11 September 2026
 

@@ -227,7 +227,16 @@ is no leftover height to take — and `addTaskBar` pinned as a `.safeAreaInset(e
 so it never has to be scrolled to. The shared pieces (`sections`, `editorPane`, `addTaskBar`)
 are what both layouts are built from, so a change lands on both.
 
-**Build 123 undid the 320pt part of that.** A `UITextView` scrolls itself, so the phone had two
+**Build 123 tried to undo the 320pt part of that and had to be reverted in 124 — read this
+before trying again.** Setting `isScrollEnabled = false` and removing the frame made the text
+area **collapse to nothing on the phone**: notes could not be edited at all. A
+`UIViewRepresentable` is not laid out from `intrinsicContentSize` the way a plain UIKit view
+is, so the text view was proposed a height it never claimed. If this is attempted again it
+must implement `sizeThatFits(_:uiView:context:)` on the representable (iOS 16+, and the
+target is 17) returning `uiView.sizeThatFits` for the proposed width **with a floor**, so a
+miscalculation can never leave nothing to tap — and it must be seen running on a phone or a
+simulator before it ships. What follows is what 123 did, kept because the diagnosis is right
+even though the fix was not: A `UITextView` scrolls itself, so the phone had two
 scroll views stacked and a plain tap was ambiguous between them: it took a press and hold to
 place the cursor, which he reasonably took for a deliberate "edit mode".
 `MarkdownSyntaxEditor` now takes `scrolls:`, and `editorPane` is a function rather than a
