@@ -2,6 +2,12 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 128 · 11 September 2026
+
+- **A single tap puts the cursor in a note on the iPhone.** No more pressing and holding. The cause was a link-tap handler added in build 114: a text view uses your tap to place the cursor, and having a second handler watching for taps made that ambiguous. It is gone.
+- **Following a `[[link]]` on the phone is done in Read**, which is one tap away in the bar below the note. Edit is for writing, Read is for reading and following links.
+- The Read / Edit button is now just its icon, in a border.
+
 ## Build 127 · 11 September 2026
 
 - **A Read / Edit button on the iPhone**, in the bar at the bottom of the note where it is always in reach. It says what it will switch to. A note left in Read looks exactly like an editor that refuses to type — which is what went wrong yesterday — so it is one tap now instead of a setting buried in the ⋯ menu. Split is gone from the phone; it was never useful on a screen that size.

@@ -427,10 +427,12 @@ struct NoteEditorView: View {
                 } label: {
                     Label(mode == .edit ? "Read" : "Edit",
                           systemImage: mode == .edit ? "eye" : "pencil")
-                        .font(.footnote)
+                        .labelStyle(.iconOnly)
+                        .frame(width: 22, height: 22)
                 }
                 .buttonStyle(.bordered)
                 .fixedSize()
+                .accessibilityLabel(mode == .edit ? "Read" : "Edit")
             }
             TextField("Add a task… (>2026-09-10 or >2026-09-10T14:30 for a date, !! for priority, #tag)", text: $newTask)
                 .textFieldStyle(.roundedBorder)

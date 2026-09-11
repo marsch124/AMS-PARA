@@ -646,7 +646,14 @@ itself so undo behaves), `openLink` and `onLinkKey`. **The list never writes int
 never takes focus** — it cannot, or typing would break — so the arrow keys, Return and Escape
 arrive through `textView(_:doCommandBy:)` on macOS and are forwarded to `NoteEditorView.
 handleLinkKey`. `LinkingTextView` (NSTextView subclass) takes ⌘-click only: a plain click must
-keep placing the cursor. iOS uses a `UITapGestureRecognizer` with `cancelsTouchesInView = false`.
+keep placing the cursor. **iOS has no tap recogniser at all, and must not get one again (build 128).** 114 added a
+`UITapGestureRecognizer` with `cancelsTouchesInView = false`, believing that made it yield.
+It does not: a `UITextView`'s own single tap is what places the caret, and a second tap
+recogniser on the same view makes that tap ambiguous, so the caret only appears on a press and
+hold. That is the "long press to edit" he reported and put up with from 114 to 128, and it is
+why three attempts at the editor's *layout* (123, 125, 127) never touched it — the fault was a
+gesture, not a frame. On the phone, links are followed in Read mode, one tap away in the
+add-task bar.
 **Build 116, and the rule behind it:** a text view's delegate callbacks can land *inside* a
 SwiftUI update, so the coordinator publishes `linkDraft` through a `DispatchQueue.main.async`
 and never directly, and an `applying` flag keeps it silent while a chosen title is written in.

@@ -397,12 +397,13 @@ struct MarkdownTextViewRepresentable: UIViewRepresentable {
     func makeUIView(context: Context) -> UITextView {
         let textView = UITextView()
         textView.delegate = context.coordinator
-        // A tap on a link opens it; anywhere else the tap belongs to the text view, so the
-        // recogniser gives way rather than competing with it.
-        let tap = UITapGestureRecognizer(target: context.coordinator,
-                                         action: #selector(Coordinator.handleTap(_:)))
-        tap.cancelsTouchesInView = false
-        textView.addGestureRecognizer(tap)
+        // NO gesture recogniser here. Build 114 added a tap recogniser so a tap could open a
+        // [[link]], with cancelsTouchesInView = false in the belief that it would give way.
+        // It did not: a UITextView's own single tap is what places the cursor, and a second
+        // tap recogniser on the same view makes that tap ambiguous — you have to press and
+        // hold to get a caret. That is the long press he lived with from 114 to 128, and it
+        // is why three attempts at the *layout* never touched it. On the phone, links are
+        // followed in Read, which is one tap away in the bar below.
         textView.backgroundColor = .clear
         textView.textContainerInset = UIEdgeInsets(top: 12, left: 8, bottom: 12, right: 8)
         textView.autocorrectionType = .yes
@@ -470,15 +471,6 @@ struct MarkdownTextViewRepresentable: UIViewRepresentable {
 
         func textViewDidChangeSelection(_ textView: UITextView) {
             reportDraft()
-        }
-
-        @objc func handleTap(_ recogniser: UITapGestureRecognizer) {
-            guard let textView else { return }
-            let point = recogniser.location(in: textView)
-            guard let position = textView.closestPosition(to: point) else { return }
-            let offset = textView.offset(from: textView.beginningOfDocument, to: position)
-            guard let title = WikiLinks.link(at: offset, in: textView.text) else { return }
-            openLink(title)
         }
 
         /// Reading only: what is being typed and where the caret is.

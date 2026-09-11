@@ -249,7 +249,7 @@ On the Mac a save dialog asks where to put the file. On the iPhone the share she
 
 Type two square brackets in any note and a list of your notes appears under the cursor. Keep typing to narrow it down, use the arrow keys to move, and press Return — or click one — to put it in. What lands in the text is `[[The note's title]]`.
 
-**Opening one.** Hold ⌘ and click the link on the Mac; tap it on the iPhone, or click it in Preview. A plain click on the Mac still just puts the cursor where you clicked, so a link never gets in the way of writing. The pointer turns into a hand when it is over one.
+**Opening one.** Hold ⌘ and click the link on the Mac. On the iPhone, switch to **Read** with the button below the note and tap the link there. A plain click on the Mac still just puts the cursor where you clicked, so a link never gets in the way of writing. The pointer turns into a hand when it is over one.
 
 **Coming back.** Following a link takes you to the other note; **Back** brings you here again. On the Mac it is the ‹ button at the top left of the window, or ⌃⌘←, with ⌃⌘→ to go forward again — the same as a web browser, and it remembers the whole trail, not just the last step. On the iPhone the ordinary back arrow does it.
 
