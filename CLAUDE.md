@@ -12,9 +12,10 @@ Owner: Martin Schabbauer (project manager, part-time retired, Sweden, not a
 developer). Communicate in short, friendly, concrete steps. He cannot run
 Terminal commands. Since build 56 both apps come from TestFlight. When CI is green, tell him in two
 short lines, naming which of the two things is meant (he asked for that, and equally
-for no step-by-step lecture): **Run workflow** on GitHub
-(`.../actions/workflows/testflight.yml`), then **Update** in Apple's TestFlight app on
-the phone and on the Mac. Xcode is no longer part of his routine.
+for no step-by-step lecture): **Run workflow** on GitHub, then **Update** in Apple's
+TestFlight app on the phone and on the Mac. Give him the **whole URL**, not an abbreviation —
+https://github.com/marsch124/AMS-PARAGON/actions/workflows/testflight.yml — he clicks it, and
+after the repository rename the old shorthand sent him to the wrong place. Xcode is no longer part of his routine.
 
 ## Layout
 
