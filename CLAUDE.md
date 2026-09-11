@@ -788,8 +788,10 @@ PARAGON's shape and take the spec's questions and checks.
 
 Build 132 closed the gaps that were real, all pure computation over existing frontmatter:
 `ProjectHealth.Flag.noGoal`, `.dueAfterGoal` (project `due:` later than its goal's `target:`),
-and `GoalHealth.Flag.noProjectYet` (only an area serves it — a life goal with dated subgoals
-is excluded, those carry the projects).
+and `GoalHealth.Flag.noProjectYet` (only an area serves it). That last one is **dated goals
+only**: a life goal held by an area is the aspiration sitting inside its area, which is the
+shape the model wants — `GoalTests.testReviewListsGoalsAttentionFirst` caught me flagging it
+as a fault in build 132's first push.
 
 **`noGoal` is not an alarm, by design.** `ProjectHealth.needsAttention` ignores it, the same
 way it ignores `.onHold`, and `ReviewReport.projectsWithoutGoal` gathers them into one

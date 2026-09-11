@@ -135,6 +135,15 @@ final class ReviewTests: XCTestCase {
         XCTAssertFalse(health.flags.contains(.nothingServing))
     }
 
+    func testALifeGoalHeldByAnAreaIsNotFlagged() {
+        // The aspiration sitting inside its area is the shape the model wants, not a fault.
+        // Its path is the dated goals below it, and having none yet is a yearly question.
+        let life = goalNote("Still racing at seventy", horizon: "life")
+        let area = areaNote("Endurance", serves: "Still racing at seventy")
+        let health = NoteIndex(notes: [life, area]).goalHealth(of: life, today: today)
+        XCTAssertEqual(health.flags, [])
+    }
+
     func testGoalWithAProjectHasAPath() {
         let goal = goalNote("Living as nomads", horizon: "long", target: "2028-12-31")
         let area = areaNote("Living & Finance", serves: "Living as nomads")

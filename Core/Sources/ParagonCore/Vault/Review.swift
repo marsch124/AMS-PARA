@@ -188,10 +188,13 @@ public extension NoteIndex {
         } else {
             if servingNotes.isEmpty {
                 flags.append(.nothingServing)
-            } else if projects.isEmpty && subgoals.isEmpty {
-                // Only an area serves it. An area is a standard you keep up, not a path to a
-                // dated outcome, so there is still no way for this goal to be reached. A life
-                // goal served by dated sub-goals is not this case: those carry the projects.
+            } else if goal.horizon != .life, projects.isEmpty, subgoals.isEmpty {
+                // A *dated* goal served only by an area has no way of being reached: an area is
+                // a standard you keep up, not a path to an outcome on a date. Two things are
+                // deliberately not this case. A goal reached through dated sub-goals — those
+                // carry the projects. And a life goal, whose whole job is to sit inside an area
+                // and say who you are becoming there; it is reached through dated goals, and
+                // having none yet is a question for the yearly review, not a fault.
                 flags.append(.noProjectYet)
             }
             if let target = goal.targetDate, target < today { flags.append(.pastTarget) }

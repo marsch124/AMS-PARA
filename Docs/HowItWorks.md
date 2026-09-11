@@ -174,7 +174,7 @@ Two of those deserve a word.
 
 **"Hobby or homeless?"** is its own short list, above the inbox: the projects with no `goal:` line at all. Work with nothing above it is not an error — plenty of good work is simply something you want to do — so these are never counted as needing attention and never coloured as a problem. The review just asks, once, so you can give one a goal, decide it belongs to an area as a standing responsibility, or leave it exactly as it is.
 
-A goal is flagged when nothing serves it, when its target date has passed, when nothing has moved for 30 days, or when the only thing serving it is an area. That last one, **"No project yet"**, is the difference between a goal and a wish: an area is a standard you keep up, not a path to a dated outcome. A life goal served by dated goals is not in this position — those carry the projects.
+A goal is flagged when nothing serves it, when its target date has passed, when nothing has moved for 30 days, or when the only thing serving it is an area. That last one, **"No project yet"**, is the difference between a dated goal and a wish: an area is a standard you keep up, not a path to an outcome on a date. It applies to dated goals only. A goal reached through dated sub-goals is fine — those carry the projects — and so is a life goal held by an area, which is exactly where a life goal belongs.
 
 ## Map
 
