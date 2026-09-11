@@ -26,25 +26,32 @@ struct MarkdownSyntaxEditor: View {
     var openLink: (String) -> Void = { _ in }
     /// The keys the list of titles wants while it is up. True means it was used.
     var onLinkKey: (LinkKey) -> Bool = { _ in false }
+    /// Whether the text scrolls inside itself. False makes it grow to its full height and
+    /// leaves the scrolling to whatever it is placed in — which is what the phone wants, so
+    /// that a tap is a tap and not an argument between two scroll views (build 123).
+    /// macOS ignores it: there the text view lives in its own NSScrollView by design.
+    var scrolls: Bool = true
 
     init(text: Binding<String>,
          tint: Color = .accentColor,
          linkDraft: Binding<LinkDraftOnScreen?> = .constant(nil),
          completion: Binding<LinkCompletion?> = .constant(nil),
          openLink: @escaping (String) -> Void = { _ in },
-         onLinkKey: @escaping (LinkKey) -> Bool = { _ in false }) {
+         onLinkKey: @escaping (LinkKey) -> Bool = { _ in false },
+         scrolls: Bool = true) {
         _text = text
         self.tint = tint
         _linkDraft = linkDraft
         _completion = completion
         self.openLink = openLink
         self.onLinkKey = onLinkKey
+        self.scrolls = scrolls
     }
 
     var body: some View {
         MarkdownTextViewRepresentable(text: $text, tint: tint, linkDraft: $linkDraft,
                                       completion: $completion, openLink: openLink,
-                                      onLinkKey: onLinkKey)
+                                      onLinkKey: onLinkKey, scrolls: scrolls)
     }
 }
 
@@ -197,6 +204,9 @@ struct MarkdownTextViewRepresentable: NSViewRepresentable {
     @Binding var completion: LinkCompletion?
     var openLink: (String) -> Void
     var onLinkKey: (LinkKey) -> Bool
+    /// Taken so both platforms have the same shape; the Mac's editor always scrolls in its
+    /// own NSScrollView, and builds 30 and 34 are about why it must never do anything else.
+    var scrolls: Bool = true
 
     func makeCoordinator() -> Coordinator {
         Coordinator(text: $text, linkDraft: $linkDraft, openLink: openLink, onLinkKey: onLinkKey)
@@ -362,6 +372,7 @@ struct MarkdownTextViewRepresentable: UIViewRepresentable {
     @Binding var completion: LinkCompletion?
     var openLink: (String) -> Void
     var onLinkKey: (LinkKey) -> Bool
+    var scrolls: Bool = true
 
     func makeCoordinator() -> Coordinator {
         Coordinator(text: $text, linkDraft: $linkDraft, openLink: openLink)
@@ -382,7 +393,12 @@ struct MarkdownTextViewRepresentable: UIViewRepresentable {
         textView.autocapitalizationType = .sentences
         textView.smartQuotesType = .no
         textView.smartDashesType = .no
-        textView.alwaysBounceVertical = true
+        // Not scrolling means the text view reports its whole height and the page it sits in
+        // does the scrolling. Two scroll views on top of each other made a plain tap
+        // ambiguous on the phone: it took a press and hold to place the cursor (build 123).
+        textView.isScrollEnabled = scrolls
+        textView.alwaysBounceVertical = scrolls
+        textView.setContentCompressionResistancePriority(.required, for: .vertical)
         textView.text = text
         context.coordinator.textView = textView
         context.coordinator.highlight(tint: UIColor(tint))

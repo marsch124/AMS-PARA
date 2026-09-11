@@ -215,7 +215,7 @@ struct NoteEditorView: View {
             // guard, expanding a disclosure above it made the text editor report its full
             // text height as a minimum, and the window's content grew past the window.
             GeometryReader { geo in
-                editorPane
+                editorPane(scrolls: true)
                     .frame(width: geo.size.width, height: geo.size.height)
                     .clipped()
             }
@@ -239,8 +239,14 @@ struct NoteEditorView: View {
         ScrollView {
             VStack(spacing: 0) {
                 sections
-                editorPane
-                    .frame(height: 320)
+                // While editing, the text does not scroll inside itself: it grows to its full
+                // height and this page does all the scrolling. Two scroll views stacked made
+                // a plain tap ambiguous — it took a press and hold to put the cursor in — and
+                // kept the whole note in a 320pt window (build 123). Preview and Split keep a
+                // height of their own, because MarkdownPreview is itself a scroll view and
+                // would otherwise have no height at all to fill.
+                editorPane(scrolls: mode != .edit)
+                    .frame(height: mode == .edit ? nil : CGFloat(320))
             }
         }
         // The phone has no third column, so the note screen itself carries the section's
@@ -337,13 +343,14 @@ struct NoteEditorView: View {
     }
 
     /// The markdown itself: the raw text, the rendered version, or both side by side.
-    private var editorPane: some View {
+    private func editorPane(scrolls: Bool) -> some View {
         HStack(spacing: 0) {
             if mode != .preview {
                 MarkdownSyntaxEditor(text: $text, tint: note?.tint ?? .accentColor,
                                      linkDraft: $linkDraft, completion: $linkCompletion,
                                      openLink: { model.openWikiLink($0, from: path) },
-                                     onLinkKey: handleLinkKey)
+                                     onLinkKey: handleLinkKey,
+                                     scrolls: scrolls)
                     .onChange(of: text) { _, newValue in
                         scheduleSave(newValue)
                     }
