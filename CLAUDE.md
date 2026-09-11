@@ -838,6 +838,14 @@ call pushes one screen and the system back arrow returns to the list. Build 134'
 but not leaving is better than going back. **A row inside a working screen should select, not
 navigate away.**
 
+**Build 136: a graphical `DatePicker` alone is unusable for a date years out.** He was asked
+to set a project deadline to 2031-12-01 and counted about forty presses. `ProjectDeadlineChip`
+now leads with a `TextField` (the app's existing `YYYY-MM-DD` convention, as in the New Note
+sheet's target date and the add-task bar's `>2026-09-10`); the calendar stays below and writes
+into the field, and **Set reads the field, not the calendar**. `TaskDatePicker` in
+TaskActions.swift still has the old shape — tasks are usually near at hand, but it is the same
+fault waiting.
+
 Still open, in the order agreed: roll-up progress from projects to a goal; then Goals and
 Aspirations screens if the one review is not enough; then the status vocabulary
 (reached / missed / dropped), last because it edits his notes.

@@ -2,6 +2,11 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 136 · 11 September 2026
+
+- **A project's deadline can be typed.** The **Due** button now opens with a field at the top: write 2031-12-01 and press Return. The calendar is still there underneath for dates close at hand, and picking in it fills the field in.
+- This was needed because a goal can be years away. Reaching December 2031 by pressing the calendar's arrow was about forty presses.
+
 ## Build 135 · 11 September 2026
 
 - **Pressing a project under "Hobby or homeless?" no longer throws the review away.** The note opens beside the list on the Mac, or one screen forward on the phone, and the Weekly review is still there when you come back. Before this it jumped to the Projects section and there was no way back to where you were.

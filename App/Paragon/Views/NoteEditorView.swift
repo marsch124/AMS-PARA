@@ -551,10 +551,18 @@ struct ProjectDeadlineChip: View {
     let note: Note
     @State private var picking = false
     @State private var date = Date()
+    /// What the field holds. A goal can be years out — build 136 was asked for because
+    /// reaching December 2031 through the calendar is about forty presses — so the typed
+    /// date is what "Set" reads, and the calendar only writes into it.
+    @State private var typed = ""
+
+    private var parsed: DateOnly? { DateOnly(typed.trimmingCharacters(in: .whitespaces)) }
 
     var body: some View {
         Button {
-            date = note.dueDate?.date() ?? Date()
+            let start = note.dueDate ?? DateOnly(Date())
+            date = start.date() ?? Date()
+            typed = start.description
             picking = true
         } label: {
             Label(note.dueDate.map { "Due \($0.description)" } ?? "Set a deadline\u{2026}",
@@ -564,10 +572,18 @@ struct ProjectDeadlineChip: View {
         .foregroundStyle(note.dueDate == nil ? Color.secondary : ParaKind.project.tint)
         .help("When this project has to be finished. The weekly review compares it with the goal it serves.")
         .popover(isPresented: $picking) {
-            VStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 10) {
+                TextField("2031-12-01", text: $typed)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.body.monospacedDigit())
+                    .onSubmit(commit)
+                Text(parsed == nil ? "Write the date as 2031-12-01." : "Or pick it below.")
+                    .font(.caption)
+                    .foregroundStyle(parsed == nil ? Color.red : Color.secondary)
                 DatePicker("Deadline", selection: $date, displayedComponents: .date)
                     .datePickerStyle(.graphical)
                     .labelsHidden()
+                    .onChange(of: date) { _, picked in typed = DateOnly(picked).description }
                 HStack {
                     if note.dueDate != nil {
                         Button("Clear", role: .destructive) {
@@ -576,16 +592,20 @@ struct ProjectDeadlineChip: View {
                         }
                     }
                     Spacer()
-                    Button("Set") {
-                        model.setDeadline(note, DateOnly(date))
-                        picking = false
-                    }
-                    .keyboardShortcut(.defaultAction)
+                    Button("Set", action: commit)
+                        .keyboardShortcut(.defaultAction)
+                        .disabled(parsed == nil)
                 }
             }
             .padding(12)
             .frame(width: 300)
         }
+    }
+
+    private func commit() {
+        guard let parsed else { return }
+        model.setDeadline(note, parsed)
+        picking = false
     }
 }
 
