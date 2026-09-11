@@ -227,28 +227,23 @@ is no leftover height to take — and `addTaskBar` pinned as a `.safeAreaInset(e
 so it never has to be scrolled to. The shared pieces (`sections`, `editorPane`, `addTaskBar`)
 are what both layouts are built from, so a change lands on both.
 
-**Build 123 tried to undo the 320pt part of that and had to be reverted in 124 — read this
-before trying again.** Setting `isScrollEnabled = false` and removing the frame made the text
-area **collapse to nothing on the phone**: notes could not be edited at all. A
-`UIViewRepresentable` is not laid out from `intrinsicContentSize` the way a plain UIKit view
-is, so the text view was proposed a height it never claimed. If this is attempted again it
-must implement `sizeThatFits(_:uiView:context:)` on the representable (iOS 16+, and the
-target is 17) returning `uiView.sizeThatFits` for the proposed width **with a floor**, so a
-miscalculation can never leave nothing to tap — and it must be seen running on a phone or a
-simulator before it ships. What follows is what 123 did, kept because the diagnosis is right
-even though the fix was not: A `UITextView` scrolls itself, so the phone had two
-scroll views stacked and a plain tap was ambiguous between them: it took a press and hold to
-place the cursor, which he reasonably took for a deliberate "edit mode".
-`MarkdownSyntaxEditor` now takes `scrolls:`, and `editorPane` is a function rather than a
-property so each layout says what it wants. The phone passes `false` **while the mode is
-Edit** — `isScrollEnabled = false` makes the text view report its whole height and the page's
-own `ScrollView` does the scrolling. Preview and Split keep the 320pt frame, because
-`MarkdownPreview` is itself a `ScrollView` and would otherwise have no height to fill. macOS
-passes `true` and is untouched: builds 30/34 are precisely about the Mac's editor never
-reporting its full height. **The rule: never put a scrolling view inside a scrolling view.**
-Still to watch: `linkSuggestions` clamps the `[[` list to the editor's bounds, which on the
-phone are now the whole note rather than a 320pt window, so the list may sit below the visible
-screen when the caret is low. Unverified — fix it as its own build if he reports it.
+**STOP — two attempts, two broken phones. Do not try this again without running it.**
+Builds 123 and 125 both tried to stop the phone's editor scrolling inside itself so that a
+plain tap, rather than a press and hold, would place the cursor. Both left the note screen
+unusable and both were reverted (124, 126). `App/AMSPara/Views` is back to exactly what build
+53 made it.
+
+123 set `isScrollEnabled = false` and dropped the fixed frame; the editor collapsed. 125 added
+`sizeThatFits(_:uiView:context:)` clamped to a 320pt floor **and** `.frame(minHeight: 320)`
+around it — two independent floors — and it broke anyway. **That rules out the explanation
+both builds were built on:** if the only fault were a zero height, the floors would have held.
+So "two stacked scroll views make the tap ambiguous" is an unconfirmed hypothesis that has now
+failed twice, and it should not be treated as the diagnosis.
+
+Before anyone writes another line of this: reproduce it in the simulator (below), find out
+what actually happens to the touch, and watch the fix run. There is no Swift toolchain in the
+remote container, CI compiles but never taps, and this is the one part of the app where that
+gap has cost real damage — his phone was unusable twice in a day.
 
 **Testing the phone layouts on this Mac.** Xcode 26.6 is installed, so the simulator is
 usable without CI:
