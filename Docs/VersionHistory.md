@@ -2,6 +2,11 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 129 · 11 September 2026
+
+- **A new app icon**, the first step of the rename to PARAGON. A white frame now sits outside the gold goals frame, with a small star resting on its top edge. Everything inside — the four PARA squares and the tick — is unchanged.
+- The star fades out at the two smallest Mac sizes, which only ever appear in a Finder list. It is there in the Dock, in the sidebar and on the Home screen.
+
 ## Build 128 · 11 September 2026
 
 - **A single tap puts the cursor in a note on the iPhone.** No more pressing and holding. The cause was a link-tap handler added in build 114: a text view uses your tap to place the cursor, and having a second handler watching for taps made that ambiguous. It is gone.

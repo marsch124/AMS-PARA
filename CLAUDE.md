@@ -722,6 +722,35 @@ New: a project can set `goal:` at creation. `ParaKind.singularName` (extension i
 in — wrong for the one note being made, which is how the old sheet came to label a new project
 "Projects".
 
+## Becoming PARAGON (build 129 on)
+
+He is renaming the app from AMS PARA to PARAGON. Agreed with him from a brief he approved
+(https://claude.ai/code/artifact/0e196e75-3832-4398-9c98-80240d90c64e), in four phases, each
+one its own build so a red light means one thing:
+
+1. **The icon** (build 129, done). A white frame outside the gold one with a small star on its
+   top edge. `Tools/make_icon.py` draws the whole icon and is the only place it is drawn — the
+   gold frame of build 111 was added by a one-off script and never written back, so from 111 to
+   129 the committed script did not reproduce what shipped and this change had to start by
+   measuring the PNG. Never draw the icon anywhere but that file.
+2. **The name everywhere he sees it.** `CFBundleDisplayName`/`CFBundleName`, every visible
+   string in the app, the permission prompts, the share extension's name, `Docs/HowItWorks.md`,
+   `Docs/VersionHistory.md`, `README.md`, `TESTFLIGHT.md`, this file, the Example Vault.
+3. **The name inside the code.** `App/AMSPara/` → `App/Paragon/`, `AMSParaCore` → `ParagonCore`,
+   the targets, the scheme, `AMSPara.xcodeproj`, both workflows. Invisible to him; ~70 files;
+   CI is the only check, so it goes alone.
+4. **Outside the app**, his own three jobs, in browsers and Finder: the App Store Connect name,
+   the iCloud vault folder, and the GitHub repository (`ams-para` → `paragon`). The repo rename
+   is genuinely last: session access here is scoped to the old name and will be lost with it.
+
+**Four identifiers deliberately keep the old name.** `com.schabbauer.AMSPara` (a new bundle id
+is a different app: new TestFlight, fresh install, his settings gone), `ams-para:^t…` (the
+marker in every mirrored reminder's notes — rename it and every existing reminder is orphaned),
+`.ams-para` (the vault's state folder: sync state, backups, deleted notes) and `amspara://`
+(the capture link his Shortcuts use; `paragon://` can be *added* beside it, never instead).
+The App Group `group.com.schabbauer.amspara` likewise: it is enabled in the developer portal
+under that name.
+
 ## Not built (by choice)
 
 Saved searches. Roadmap stopped there on his request.
