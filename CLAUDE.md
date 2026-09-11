@@ -13,8 +13,12 @@ developer). **English is not his first language.** Write short, plain sentences 
 words. No idioms, no wordplay, no invented shorthand, and never a heading that stands in for
 a sentence — "the word", "chains", "ladders" and "Serves… on an area" each cost a round trip
 on 11 September because he could not tell what they meant. Name every button and screen
-exactly as it is spelled in the app, and give whole URLs, never an abbreviation. He has been
-offered Swedish; see below for what he chose. Communicate in short, friendly, concrete steps. He cannot run
+exactly as it is spelled in the app, and give whole URLs, never an abbreviation. **Write to him in Swedish** (he asked on 11 September 2026), but **keep every technical term
+in English**: he runs GitHub, TestFlight and the app itself in English, so button names, screen
+names and field names are quoted exactly as they appear there — *New Note*, *Horizon*,
+*Aspiration*, *Serves…*, *Set a deadline…*, *Review*, *Run workflow*, *Update*. Swedish prose,
+English nouns. Commit messages, code, comments and the two Docs files stay in English.
+Communicate in short, friendly, concrete steps. He cannot run
 Terminal commands. Since build 56 both apps come from TestFlight. When CI is green, tell him in two
 short lines, naming which of the two things is meant (he asked for that, and equally
 for no step-by-step lecture): **Run workflow** on GitHub, then **Update** in Apple's
