@@ -829,6 +829,15 @@ He spotted it from the chain diagram — "areas have no real goals attached" —
 That is now twice in one day that a rule read a line nothing could write (the other was `due:`
 on a project, build 132). **When adding a check, confirm something can produce the data it reads.**
 
+**Build 135:** a row in the review opens its note **without leaving `.review`**. `DetailView`
+falls through to `NoteEditorView` for any section that is not calendar/templates/inbox, so
+selecting a note while the section stays `.review` leaves the review list in the middle column
+and puts the note in the third — the review can be worked straight down. On the phone the same
+call pushes one screen and the system back arrow returns to the list. Build 134's buttons used
+`show(section: .kind(.project), …)`, which threw the review away; he asked for a back arrow,
+but not leaving is better than going back. **A row inside a working screen should select, not
+navigate away.**
+
 Still open, in the order agreed: roll-up progress from projects to a goal; then Goals and
 Aspirations screens if the one review is not enough; then the status vocabulary
 (reached / missed / dropped), last because it edits his notes.

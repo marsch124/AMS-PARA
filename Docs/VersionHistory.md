@@ -2,6 +2,10 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 135 · 11 September 2026
+
+- **Pressing a project under "Hobby or homeless?" no longer throws the review away.** The note opens beside the list on the Mac, or one screen forward on the phone, and the Weekly review is still there when you come back. Before this it jumped to the Projects section and there was no way back to where you were.
+
 ## Build 134 · 11 September 2026
 
 - **An area can now say which aspiration it serves.** A **Serves…** button at the top of an area note, beside "Part of…", and the same choice when you right-click an area in the list. Aspirations are offered first.

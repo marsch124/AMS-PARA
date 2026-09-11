@@ -27,7 +27,12 @@ struct ReviewView: View {
                     // what made the Inbox unselectable in builds 71 to 74.
                     ForEach(report.projectsWithoutGoal) { health in
                         Button {
-                            model.show(section: .kind(.project), notePath: health.note.relativePath)
+                            // Stay in Weekly review. On the Mac the note opens in the third
+                            // column with this list still beside it, so the review can be
+                            // worked straight down; on the phone it pushes one screen and the
+                            // back arrow returns here. Jumping to the Projects section instead
+                            // threw the review away and gave Back nowhere sensible to return to.
+                            model.show(section: .review, notePath: health.note.relativePath)
                         } label: {
                             Label(health.note.displayTitle, systemImage: "questionmark.circle")
                         }
