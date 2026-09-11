@@ -36,7 +36,7 @@ Requirements: Xcode 15.4 or newer (Xcode 16 recommended), and [XcodeGen](https:/
 
 ```bash
 brew install xcodegen
-cd AMS-PARA
+cd AMS-PARAGON
 swift test --package-path Core   # runs the core tests (no Xcode project needed)
 xcodegen generate           # creates Paragon.xcodeproj from project.yml
 open Paragon.xcodeproj      # select the Paragon scheme, set your Team under Signing, run

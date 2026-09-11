@@ -27,8 +27,10 @@ the phone and on the Mac. Xcode is no longer part of his routine.
 ## Rules
 
 - Branch: `claude/ams-para-reminders-sync-s0ex53` only. No PRs unless asked.
-- GitHub repo is still `AMS-PARA` and session access is scoped to it; his local folder is
-  still "AMS PARA". Both are renamed in phase 4 of the rebrand, below — not before.
+- GitHub repo is `marsch124/AMS-PARAGON` since 11 September 2026 (it was `AMS-PARA`). GitHub
+  forwards the old address, so a remote still pointing at the old name keeps working — which is
+  how the session that renamed it carried on afterwards. The working branch keeps its original
+  spelling, `claude/ams-para-reminders-sync-s0ex53`: it is only a label.
 - No Swift toolchain in the remote container: verify via CI (`mcp__github__actions_list`, `get_job_logs`).
 - Bump `BuildStamp.number` in `App/Paragon/AppModel.swift` on every push; it shows at the bottom of the sidebar so we know which build he runs.
 - Add a section for that build to `Docs/VersionHistory.md` (user-facing wording) on every push. `Docs/HowItWorks.md` is the manual; update it when behaviour changes. Both are bundled (project.yml `Docs` resources) and shown by `HelpView`.
@@ -751,9 +753,13 @@ one its own build so a red light means one thing:
    filter that picks our own stack frames is now case-insensitive on "paragon": the app's
    module is `PARAGON` (from `PRODUCT_NAME`) and the package's is `ParagonCore`, so a single
    spelling would have quietly matched half of them.
-4. **Outside the app**, his own three jobs, in browsers and Finder: the App Store Connect name,
-   the iCloud vault folder, and the GitHub repository (`ams-para` → `paragon`). The repo rename
-   is genuinely last: session access here is scoped to the old name and will be lost with it.
+4. **Outside the app** (done 11 September 2026, by him, from a runbook:
+   https://claude.ai/code/artifact/b6bd5eea-34c4-4d39-acb1-0b90e762d486). The App Store Connect
+   name, the iCloud vault folder, and the GitHub repository — `AMS-PARA` → **`AMS-PARAGON`**,
+   keeping the AMS. I expected the rename to end that session's access; it did not, because
+   GitHub forwards the old address and the clone's remote still resolved.
+
+**The rebrand is finished.** Nothing is left outstanding.
 
 **Four identifiers deliberately keep the old name.** `com.schabbauer.AMSPara` (a new bundle id
 is a different app: new TestFlight, fresh install, his settings gone), `ams-para:^t…` (the

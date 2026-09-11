@@ -46,7 +46,7 @@ Apple lets you download the key file **once**. Keep it somewhere safe.
 
 ### 4. Give the build server the key
 
-<https://github.com/marsch124/AMS-PARA/settings/secrets/actions> › **New repository secret**
+<https://github.com/marsch124/AMS-PARAGON/settings/secrets/actions> › **New repository secret**
 
 Make three secrets, exactly these names:
 
@@ -62,7 +62,7 @@ build stops with "Signing requires a development team".
 
 ### 5. Send the first build
 
-<https://github.com/marsch124/AMS-PARA/actions/workflows/testflight.yml> › **Run workflow**
+<https://github.com/marsch124/AMS-PARAGON/actions/workflows/testflight.yml> › **Run workflow**
 
 It takes about ten minutes. When it is green, Apple processes the build for a few more
 minutes and then emails you.
