@@ -31,7 +31,10 @@ the phone and on the Mac. Xcode is no longer part of his routine.
 - No Swift toolchain in the remote container: verify via CI (`mcp__github__actions_list`, `get_job_logs`).
 - Bump `BuildStamp.number` in `App/AMSPara/AppModel.swift` on every push; it shows at the bottom of the sidebar so we know which build he runs.
 - Add a section for that build to `Docs/VersionHistory.md` (user-facing wording) on every push. `Docs/HowItWorks.md` is the manual; update it when behaviour changes. Both are bundled (project.yml `Docs` resources) and shown by `HelpView`.
-- Build N = CI run N. Adding a source file needs a `project.yml` change so CI regenerates the committed project.
+- Build N = CI run N, *usually*: a docs-only push spends a run without bumping the stamp, so
+  the two drift apart (first at build 123, CI run 124). `BuildStamp.number` in the app and in
+  TestFlight is the truth; match on that, not on the run number.
+- Adding a source file needs a `project.yml` change so CI regenerates the committed project.
 
 ## Conventions
 
@@ -223,6 +226,20 @@ over the same `sections`, with `editorPane` given a fixed 320pt — inside a scr
 is no leftover height to take — and `addTaskBar` pinned as a `.safeAreaInset(edge: .bottom)`
 so it never has to be scrolled to. The shared pieces (`sections`, `editorPane`, `addTaskBar`)
 are what both layouts are built from, so a change lands on both.
+
+**Build 123 undid the 320pt part of that.** A `UITextView` scrolls itself, so the phone had two
+scroll views stacked and a plain tap was ambiguous between them: it took a press and hold to
+place the cursor, which he reasonably took for a deliberate "edit mode".
+`MarkdownSyntaxEditor` now takes `scrolls:`, and `editorPane` is a function rather than a
+property so each layout says what it wants. The phone passes `false` **while the mode is
+Edit** — `isScrollEnabled = false` makes the text view report its whole height and the page's
+own `ScrollView` does the scrolling. Preview and Split keep the 320pt frame, because
+`MarkdownPreview` is itself a `ScrollView` and would otherwise have no height to fill. macOS
+passes `true` and is untouched: builds 30/34 are precisely about the Mac's editor never
+reporting its full height. **The rule: never put a scrolling view inside a scrolling view.**
+Still to watch: `linkSuggestions` clamps the `[[` list to the editor's bounds, which on the
+phone are now the whole note rather than a 320pt window, so the list may sit below the visible
+screen when the caret is low. Unverified — fix it as its own build if he reports it.
 
 **Testing the phone layouts on this Mac.** Xcode 26.6 is installed, so the simulator is
 usable without CI:
