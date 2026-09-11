@@ -26,32 +26,25 @@ struct MarkdownSyntaxEditor: View {
     var openLink: (String) -> Void = { _ in }
     /// The keys the list of titles wants while it is up. True means it was used.
     var onLinkKey: (LinkKey) -> Bool = { _ in false }
-    /// Whether the text scrolls inside itself. False makes it ask for its full height and
-    /// leaves the scrolling to whatever it is placed in — what the phone wants, so a tap is
-    /// a tap rather than an argument between two scroll views. macOS ignores it: there the
-    /// text view lives in its own NSScrollView, which builds 30/34 require.
-    var scrolls: Bool = true
 
     init(text: Binding<String>,
          tint: Color = .accentColor,
          linkDraft: Binding<LinkDraftOnScreen?> = .constant(nil),
          completion: Binding<LinkCompletion?> = .constant(nil),
          openLink: @escaping (String) -> Void = { _ in },
-         onLinkKey: @escaping (LinkKey) -> Bool = { _ in false },
-         scrolls: Bool = true) {
+         onLinkKey: @escaping (LinkKey) -> Bool = { _ in false }) {
         _text = text
         self.tint = tint
         _linkDraft = linkDraft
         _completion = completion
         self.openLink = openLink
         self.onLinkKey = onLinkKey
-        self.scrolls = scrolls
     }
 
     var body: some View {
         MarkdownTextViewRepresentable(text: $text, tint: tint, linkDraft: $linkDraft,
                                       completion: $completion, openLink: openLink,
-                                      onLinkKey: onLinkKey, scrolls: scrolls)
+                                      onLinkKey: onLinkKey)
     }
 }
 
@@ -204,8 +197,6 @@ struct MarkdownTextViewRepresentable: NSViewRepresentable {
     @Binding var completion: LinkCompletion?
     var openLink: (String) -> Void
     var onLinkKey: (LinkKey) -> Bool
-    /// Taken so both platforms have the same shape; the Mac's editor always scrolls.
-    var scrolls: Bool = true
 
     func makeCoordinator() -> Coordinator {
         Coordinator(text: $text, linkDraft: $linkDraft, openLink: openLink, onLinkKey: onLinkKey)
@@ -371,24 +362,6 @@ struct MarkdownTextViewRepresentable: UIViewRepresentable {
     @Binding var completion: LinkCompletion?
     var openLink: (String) -> Void
     var onLinkKey: (LinkKey) -> Bool
-    var scrolls: Bool = true
-
-    /// The floor under everything below. Build 123 let the text view ask for its own height
-    /// and it asked for none, so a note could not be edited at all: SwiftUI does not lay a
-    /// `UIViewRepresentable` out from `intrinsicContentSize`, and nothing else claimed a
-    /// height either. Whatever the measuring does now, it can never come out shorter than
-    /// the box the editor has always had.
-    static let leastHeight: CGFloat = 320
-
-    /// Asked by SwiftUI how tall this wants to be. Only answered when the text does not
-    /// scroll itself; a scrolling text view takes whatever it is given, as it always has.
-    func sizeThatFits(_ proposal: ProposedViewSize, uiView: UITextView, context: Context) -> CGSize? {
-        guard !scrolls else { return nil }
-        let width = proposal.width ?? uiView.bounds.width
-        guard width > 0 else { return nil }
-        let fitted = uiView.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude))
-        return CGSize(width: width, height: max(fitted.height, Self.leastHeight))
-    }
 
     func makeCoordinator() -> Coordinator {
         Coordinator(text: $text, linkDraft: $linkDraft, openLink: openLink)
@@ -409,8 +382,7 @@ struct MarkdownTextViewRepresentable: UIViewRepresentable {
         textView.autocapitalizationType = .sentences
         textView.smartQuotesType = .no
         textView.smartDashesType = .no
-        textView.isScrollEnabled = scrolls
-        textView.alwaysBounceVertical = scrolls
+        textView.alwaysBounceVertical = true
         textView.text = text
         context.coordinator.textView = textView
         context.coordinator.highlight(tint: UIColor(tint))
@@ -418,7 +390,6 @@ struct MarkdownTextViewRepresentable: UIViewRepresentable {
     }
 
     func updateUIView(_ textView: UITextView, context: Context) {
-        if textView.isScrollEnabled != scrolls { textView.isScrollEnabled = scrolls }
         context.coordinator.text = $text
         context.coordinator.linkDraft = $linkDraft
         context.coordinator.openLink = openLink

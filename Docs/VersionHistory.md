@@ -2,10 +2,6 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
-## Build 125 · 11 September 2026
-
-- **Second attempt at the tap-to-type problem on the iPhone**, this time with a floor under it. While you are editing, the note text grows to its full height and the page does the scrolling, so a tap should put the cursor where you tapped — but the text area can never be shorter than the box it has always had. If the sizing is wrong again, the worst case is what you have today, not an editor that disappears.
-
 ## Build 124 · 11 September 2026
 
 - **Build 123 is undone.** Letting the note text size itself to the whole page made the text area collapse on the iPhone, so notes could not be edited at all. Editing works again exactly as it did in 122.

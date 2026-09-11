@@ -215,7 +215,7 @@ struct NoteEditorView: View {
             // guard, expanding a disclosure above it made the text editor report its full
             // text height as a minimum, and the window's content grew past the window.
             GeometryReader { geo in
-                editorPane(scrolls: true)
+                editorPane
                     .frame(width: geo.size.width, height: geo.size.height)
                     .clipped()
             }
@@ -239,21 +239,8 @@ struct NoteEditorView: View {
         ScrollView {
             VStack(spacing: 0) {
                 sections
-                // While editing, the text asks for its own height and this page does the
-                // scrolling: two scroll views stacked is why a tap was ambiguous and it took
-                // a press and hold to put the cursor in. `minHeight` rather than `height`
-                // is the lesson of build 123, which had no floor and collapsed the editor to
-                // nothing — the worst this can now do is leave the box it always had.
-                //
-                // Preview and Split are untouched: `MarkdownPreview` is itself a scroll view
-                // and needs a height handed to it.
-                if mode == .edit {
-                    editorPane(scrolls: false)
-                        .frame(minHeight: 320)
-                } else {
-                    editorPane(scrolls: true)
-                        .frame(height: 320)
-                }
+                editorPane
+                    .frame(height: 320)
             }
         }
         // The phone has no third column, so the note screen itself carries the section's
@@ -350,14 +337,13 @@ struct NoteEditorView: View {
     }
 
     /// The markdown itself: the raw text, the rendered version, or both side by side.
-    private func editorPane(scrolls: Bool) -> some View {
+    private var editorPane: some View {
         HStack(spacing: 0) {
             if mode != .preview {
                 MarkdownSyntaxEditor(text: $text, tint: note?.tint ?? .accentColor,
                                      linkDraft: $linkDraft, completion: $linkCompletion,
                                      openLink: { model.openWikiLink($0, from: path) },
-                                     onLinkKey: handleLinkKey,
-                                     scrolls: scrolls)
+                                     onLinkKey: handleLinkKey)
                     .onChange(of: text) { _, newValue in
                         scheduleSave(newValue)
                     }
