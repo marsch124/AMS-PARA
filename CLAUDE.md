@@ -736,7 +736,7 @@ one its own build so a red light means one thing:
    measuring the PNG. Never draw the icon anywhere but that file.
 2. **The name everywhere he sees it** (build 130, done). Also `PRODUCT_NAME: PARAGON` on the
    app target — on the Mac, Finder and the Dock read the bundle's *file* name, so
-   `CFBundleDisplayName` alone leaves "Paragon" on screen; the target and folder are
+   `CFBundleDisplayName` alone leaves "AMSPara" on screen; the target and folder are
    untouched, and `PRODUCT_BUNDLE_IDENTIFIER` is now pinned explicitly so it can never
    follow a target rename. `CFBundleDisplayName`/`CFBundleName`, every visible
    string in the app, the permission prompts, the share extension's name, `Docs/HowItWorks.md`,
