@@ -15,6 +15,28 @@ struct ReviewView: View {
                 if !report.goals.isEmpty {
                     LabeledContent("Goals needing attention", value: "\(report.goalsNeedingAttention.count)")
                 }
+                if !report.projectsWithoutGoal.isEmpty {
+                    LabeledContent("Projects not serving a goal", value: "\(report.projectsWithoutGoal.count)")
+                }
+            }
+
+            if !report.projectsWithoutGoal.isEmpty {
+                Section {
+                    // Buttons, not tagged HealthRows: these projects are listed again under
+                    // "3. Projects", and two rows carrying the same selection tag is exactly
+                    // what made the Inbox unselectable in builds 71 to 74.
+                    ForEach(report.projectsWithoutGoal) { health in
+                        Button {
+                            model.show(section: .kind(.project), notePath: health.note.relativePath)
+                        } label: {
+                            Label(health.note.displayTitle, systemImage: "questionmark.circle")
+                        }
+                    }
+                } header: {
+                    Text("Hobby or homeless?")
+                } footer: {
+                    Text("Work with nothing above it. Give one a goal, decide it is a standing part of an area \u{2014} or leave it be. None of these counts as needing attention.")
+                }
             }
 
             Section("1. Empty the inbox") {

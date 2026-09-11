@@ -2,6 +2,15 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 132 · 11 September 2026
+
+- **The weekly review now checks the chain**, the first step of the aspiration work. Three new questions, all answered from notes you already have:
+  - **A project that is due after the goal it serves.** That cannot be true and the goal still be reached, so it is flagged as needing attention.
+  - **A goal that only an area serves.** An area is a standard you keep up, not a path to a dated outcome — so the goal has no way of being reached yet. A life goal served by dated goals is fine; those carry the projects.
+  - **Projects with no goal at all**, gathered into their own short list headed "Hobby or homeless?". These are never counted as needing attention and never shown as a problem: work with nothing above it is often exactly right. The review asks once, rather than colouring every such project red.
+- **A project can now be given a deadline.** Press **Due** at the top of a project note and pick a date; press it again to change or clear it. Until now the app read a project's deadline but had no way to set one, so the "past its due date" check had never once been able to fire.
+- Nothing in your vault is changed or required. Every check reads what is already there.
+
 ## Build 131 · 11 September 2026
 
 - **Housekeeping only — nothing in the app changed.** The folders, targets and the Swift package inside the project were still called AMSPara; they are now called Paragon, so the project reads the same way the app does.

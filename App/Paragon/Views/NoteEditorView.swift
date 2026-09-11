@@ -543,6 +543,52 @@ struct NoteEditorView: View {
     }
 }
 
+/// A project's deadline, set from the note header. The review checks a project against its
+/// goal's target date, and against today — neither could ever fire while `due:` was a line
+/// only a text editor could write.
+struct ProjectDeadlineChip: View {
+    @ObservedObject var model: AppModel
+    let note: Note
+    @State private var picking = false
+    @State private var date = Date()
+
+    var body: some View {
+        Button {
+            date = note.dueDate?.date() ?? Date()
+            picking = true
+        } label: {
+            Label(note.dueDate.map { "Due \($0.description)" } ?? "Set a deadline\u{2026}",
+                  systemImage: "calendar")
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(note.dueDate == nil ? Color.secondary : ParaKind.project.tint)
+        .help("When this project has to be finished. The weekly review compares it with the goal it serves.")
+        .popover(isPresented: $picking) {
+            VStack(spacing: 10) {
+                DatePicker("Deadline", selection: $date, displayedComponents: .date)
+                    .datePickerStyle(.graphical)
+                    .labelsHidden()
+                HStack {
+                    if note.dueDate != nil {
+                        Button("Clear", role: .destructive) {
+                            model.setDeadline(note, nil)
+                            picking = false
+                        }
+                    }
+                    Spacer()
+                    Button("Set") {
+                        model.setDeadline(note, DateOnly(date))
+                        picking = false
+                    }
+                    .keyboardShortcut(.defaultAction)
+                }
+            }
+            .padding(12)
+            .frame(width: 300)
+        }
+    }
+}
+
 struct NoteHeader: View {
     @EnvironmentObject private var model: AppModel
     let note: Note
@@ -582,7 +628,9 @@ struct NoteHeader: View {
             if let target = note.targetDate {
                 Label("Target \(target.description)", systemImage: "flag.checkered")
             }
-            if let due = note.dueDate {
+            if note.kind == .project {
+                ProjectDeadlineChip(model: model, note: note)
+            } else if let due = note.dueDate {
                 Label("Due \(due.description)", systemImage: "calendar")
             }
             if !note.tags.isEmpty {

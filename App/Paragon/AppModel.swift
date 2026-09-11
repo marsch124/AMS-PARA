@@ -86,7 +86,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 131
+    static let number = 132
 }
 
 @MainActor
@@ -1455,6 +1455,21 @@ final class AppModel: ObservableObject {
             }
         } else {
             updated.frontmatter.remove("parent")
+        }
+        guard save(updated) else { return }
+        reload()
+    }
+
+    /// A project's own deadline, written as `due:`. Nothing in the app wrote that line before
+    /// build 132, so the review's "past its due date" check had never once been able to fire
+    /// and "due after its goal" would have been born dead.
+    func setDeadline(_ note: Note, _ date: DateOnly?) {
+        flushPendingEdits()
+        guard var updated = self.note(at: note.relativePath) else { return }
+        if let date {
+            updated.frontmatter.set("due", date.description)
+        } else {
+            updated.frontmatter.remove("due")
         }
         guard save(updated) else { return }
         reload()

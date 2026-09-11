@@ -6,6 +6,8 @@ public struct ProjectHealth: Identifiable, Equatable, Sendable {
         case noNextAction
         case overdueTasks
         case pastDue
+        case dueAfterGoal
+        case noGoal
         case stale
         case reviewDue
         case onHold
@@ -15,6 +17,8 @@ public struct ProjectHealth: Identifiable, Equatable, Sendable {
             case .noNextAction: return "No next action"
             case .overdueTasks: return "Overdue tasks"
             case .pastDue: return "Past its due date"
+            case .dueAfterGoal: return "Due after its goal"
+            case .noGoal: return "Not serving a goal"
             case .stale: return "No changes recently"
             case .reviewDue: return "Review due"
             case .onHold: return "On hold"
@@ -31,13 +35,19 @@ public struct ProjectHealth: Identifiable, Equatable, Sendable {
     public var flags: [Flag]
 
     public var id: String { note.relativePath }
-    public var needsAttention: Bool { !flags.isEmpty && flags != [.onHold] }
+    /// `onHold` and `noGoal` are deliberately not alarms. On hold is a decision already made,
+    /// and "not serving a goal" is a question for the review — in a vault that predates the
+    /// chain it would be true of nearly every project, and a review where everything is red
+    /// says nothing. Both still show on the row; `ReviewReport.projectsWithoutGoal` counts
+    /// the second so it can be asked once instead of once per project.
+    public var needsAttention: Bool { flags.contains { $0 != .onHold && $0 != .noGoal } }
 }
 
 /// Health of one goal: what serves it and whether anything is moving.
 public struct GoalHealth: Identifiable, Equatable, Sendable {
     public enum Flag: String, CaseIterable, Sendable {
         case nothingServing
+        case noProjectYet
         case pastTarget
         case noRecentActivity
         case achieved
@@ -45,6 +55,7 @@ public struct GoalHealth: Identifiable, Equatable, Sendable {
         public var label: String {
             switch self {
             case .nothingServing: return "No project or area serves this"
+            case .noProjectYet: return "No project yet \u{2014} only an area serves this"
             case .pastTarget: return "Past its target date"
             case .noRecentActivity: return "Nothing moved in 30 days"
             case .achieved: return "Achieved"
@@ -77,6 +88,8 @@ public struct ReviewReport: Equatable, Sendable {
     public var overdueTasks: [TaskRef]
 
     public var projectsNeedingAttention: [ProjectHealth] { projects.filter(\.needsAttention) }
+    /// Projects with no `goal:` — the weekly review's "hobby or homeless?" question.
+    public var projectsWithoutGoal: [ProjectHealth] { projects.filter { $0.flags.contains(.noGoal) } }
     public var goalsNeedingAttention: [GoalHealth] { goals.filter(\.needsAttention) }
 }
 
@@ -112,6 +125,18 @@ public extension NoteIndex {
             if open.isEmpty { flags.append(.noNextAction) }
             if !overdue.isEmpty { flags.append(.overdueTasks) }
             if let due = note.dueDate, due < today { flags.append(.pastDue) }
+            // A project is the only thing that has to serve a goal: an area is a standing
+            // responsibility and is allowed to serve nothing. Allowed but flagged, so the
+            // weekly review asks the question rather than the app refusing the note.
+            if note.kind == .project, note.goal == nil { flags.append(.noGoal) }
+            // A project cannot legitimately finish after the goal it is meant to deliver.
+            if note.kind == .project,
+               let due = note.dueDate,
+               let served = note.goal.flatMap({ self.goal(matching: $0) }),
+               let target = served.targetDate,
+               due > target {
+                flags.append(.dueAfterGoal)
+            }
             if let days = daysSinceModified, days >= config.staleProjectDays { flags.append(.stale) }
             if let days = daysSinceReview {
                 if days >= config.reviewIntervalDays { flags.append(.reviewDue) }
@@ -161,7 +186,14 @@ public extension NoteIndex {
         if goal.isAchieved {
             flags.append(.achieved)
         } else {
-            if servingNotes.isEmpty { flags.append(.nothingServing) }
+            if servingNotes.isEmpty {
+                flags.append(.nothingServing)
+            } else if projects.isEmpty && subgoals.isEmpty {
+                // Only an area serves it. An area is a standard you keep up, not a path to a
+                // dated outcome, so there is still no way for this goal to be reached. A life
+                // goal served by dated sub-goals is not this case: those carry the projects.
+                flags.append(.noProjectYet)
+            }
             if let target = goal.targetDate, target < today { flags.append(.pastTarget) }
             if let days = daysSinceActivity, days >= 30 { flags.append(.noRecentActivity) }
         }

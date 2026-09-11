@@ -166,7 +166,15 @@ Time Blocks are the one thing the app writes to Calendar. They are blocks of tim
 
 ## Weekly review
 
-The review walks through the inbox, the projects that need attention and the goals. A project is flagged when it has no next action, has overdue tasks, is past its due date, has not changed for the number of days set in Settings, or is on hold. Marking a project reviewed writes `reviewed:` with today's date.
+The review walks through the inbox, the projects that need attention and the goals. A project is flagged when it has no next action, has overdue tasks, is past its due date, is due after the goal it serves, has not changed for the number of days set in Settings, or is on hold. Marking a project reviewed writes `reviewed:` with today's date.
+
+Two of those deserve a word.
+
+**"Due after its goal"** means the project's own deadline falls later than the target date of the goal it serves. That cannot be true and the goal still be reached, so either the project has to come forward or the goal has to move. Set a project's deadline from the **Due** button at the top of the project note; press it again to change or clear it.
+
+**"Hobby or homeless?"** is its own short list, above the inbox: the projects with no `goal:` line at all. Work with nothing above it is not an error — plenty of good work is simply something you want to do — so these are never counted as needing attention and never coloured as a problem. The review just asks, once, so you can give one a goal, decide it belongs to an area as a standing responsibility, or leave it exactly as it is.
+
+A goal is flagged when nothing serves it, when its target date has passed, when nothing has moved for 30 days, or when the only thing serving it is an area. That last one, **"No project yet"**, is the difference between a goal and a wish: an area is a standard you keep up, not a path to a dated outcome. A life goal served by dated goals is not in this position — those carry the projects.
 
 ## Map
 

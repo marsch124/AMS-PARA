@@ -770,6 +770,42 @@ Support fallback folder in `AppModel.outboxURL`, and `amspara://`
 The App Group `group.com.schabbauer.amspara` likewise: it is enabled in the developer portal
 under that name.
 
+## The aspiration chain (build 132 on)
+
+He brought a spec from another session — "The Aspiration Chain"
+(https://claude.ai/code/artifact/644b6073-0301-4c86-881c-a77a1ad78775): Area → Aspiration →
+Goal → Project → Task, with rules the app should enforce and a review cadence per level.
+**Most of it was already built**, under other names: `horizon: life` is the aspiration,
+a dated goal pointing at it with `goal:` is the spec's Goal (the code already called it a
+"life goal" with dated subgoals), `measure:` is the spec's criterion, and the review already
+flagged `noNextAction`, `nothingServing`, `pastDue`, `pastTarget`.
+
+**Deliberately not adopted:** the spec roots the whole chain on the Area. PARAGON roots on
+goals, with areas and projects pointing up at them via `area:`/`goal:`. Both express the same
+links — the difference is only what the Map hangs from — so adopting the spec's shape would
+mean reworking the Map and re-filing his notes to connect nothing new. Agreed with him to keep
+PARAGON's shape and take the spec's questions and checks.
+
+Build 132 closed the gaps that were real, all pure computation over existing frontmatter:
+`ProjectHealth.Flag.noGoal`, `.dueAfterGoal` (project `due:` later than its goal's `target:`),
+and `GoalHealth.Flag.noProjectYet` (only an area serves it — a life goal with dated subgoals
+is excluded, those carry the projects).
+
+**`noGoal` is not an alarm, by design.** `ProjectHealth.needsAttention` ignores it, the same
+way it ignores `.onHold`, and `ReviewReport.projectsWithoutGoal` gathers them into one
+"Hobby or homeless?" section instead. In a vault written before the chain, `noGoal` is true of
+nearly every project, and a review where everything is red says nothing. Any future check that
+would be true of most of his existing notes needs the same treatment.
+
+Build 132 also added `AppModel.setDeadline` and `ProjectDeadlineChip` in the note header:
+`due:` on a project was read by the review but **nothing in the app had ever written it**, so
+the `pastDue` flag had never once been able to fire and `dueAfterGoal` would have been born
+dead. Worth checking, when adding a rule, that something can actually produce the data it reads.
+
+Still open, in the order agreed: roll-up progress from projects to a goal; then Goals and
+Aspirations screens if the one review is not enough; then the status vocabulary
+(reached / missed / dropped), last because it edits his notes.
+
 ## Not built (by choice)
 
 Saved searches. Roadmap stopped there on his request.
