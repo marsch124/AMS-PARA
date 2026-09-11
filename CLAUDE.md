@@ -9,7 +9,12 @@ Goals + PARA (Projects, Areas, Resources, Archive), tasks synced two-way with
 Apple Reminders, daily/weekly notes, quick capture, full-text search.
 
 Owner: Martin Schabbauer (project manager, part-time retired, Sweden, not a
-developer). Communicate in short, friendly, concrete steps. He cannot run
+developer). **English is not his first language.** Write short, plain sentences with common
+words. No idioms, no wordplay, no invented shorthand, and never a heading that stands in for
+a sentence — "the word", "chains", "ladders" and "Serves… on an area" each cost a round trip
+on 11 September because he could not tell what they meant. Name every button and screen
+exactly as it is spelled in the app, and give whole URLs, never an abbreviation. He has been
+offered Swedish; see below for what he chose. Communicate in short, friendly, concrete steps. He cannot run
 Terminal commands. Since build 56 both apps come from TestFlight. When CI is green, tell him in two
 short lines, naming which of the two things is meant (he asked for that, and equally
 for no step-by-step lecture): **Run workflow** on GitHub, then **Update** in Apple's
