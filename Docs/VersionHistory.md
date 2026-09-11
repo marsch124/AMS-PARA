@@ -2,6 +2,11 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 138 · 11 September 2026
+
+- **The rows in Weekly review no longer squash their own text.** In a narrow middle column the counts were being crushed until the words broke apart — "projects" became "project s" and a date came out over three lines. Each count now stays whole and moves down to the next line when it does not fit.
+- Long project and goal names stop after two lines instead of running down the column.
+
 ## Build 137 · 11 September 2026
 
 - **One date chooser, used everywhere a date is picked.** The same panel now opens for a project's deadline and for a task's date: a field at the top where you write 2031-12-01, a calendar underneath for dates close at hand, and **Clear**, **Cancel** and **Set**.

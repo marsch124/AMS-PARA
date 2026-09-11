@@ -851,6 +851,15 @@ away. **Left alone deliberately:** the Time Blocks pickers (a day *and* a time, 
 than 60 days out) and the New Note sheet's target field, which he designed with me and which
 is one short row per line.
 
+**Build 138: an `HStack` in a column too narrow does not overflow — it squeezes.** Every child
+is proposed a smaller and smaller width until the `Text` inside wraps, which is how the weekly
+review drew "2031-08-01" over three lines and "projects" as "project s" in his screenshot.
+`WrappingHStack` (a `Layout` in `Views/Theme.swift`) measures children with `.unspecified`, so
+each keeps its natural width and only whole items move to the next line. **Never put
+`.fixedSize()` on it** — that proposes a nil width and turns it back into one endless row; the
+modifier that matters on the container is `.lineLimit(1)`, which stops a child's own text from
+breaking mid-word. Titles in those rows are `.lineLimit(2)`.
+
 Still open, in the order agreed: roll-up progress from projects to a goal; then Goals and
 Aspirations screens if the one review is not enough; then the status vocabulary
 (reached / missed / dropped), last because it edits his notes.

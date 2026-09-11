@@ -113,18 +113,21 @@ struct HealthRow: View {
                     .foregroundStyle(health.needsAttention ? Color.orange : health.note.tint)
                 Text(health.note.title)
                     .font(.headline)
-                Spacer()
-                if let days = health.daysSinceReview {
-                    Text("reviewed \(days == 0 ? "today" : "\(days)d ago")")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                } else {
-                    Text("never reviewed")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                Spacer(minLength: 6)
+                Group {
+                    if let days = health.daysSinceReview {
+                        Text("reviewed \(days == 0 ? "today" : "\(days)d ago")")
+                    } else {
+                        Text("never reviewed")
+                    }
                 }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .fixedSize()
             }
-            HStack(spacing: 8) {
+            WrappingHStack(spacing: 8, lineSpacing: 3) {
                 Label("\(health.openTaskCount) open", systemImage: "checklist")
                 if health.overdueTaskCount > 0 {
                     Label("\(health.overdueTaskCount) overdue", systemImage: "clock.badge.exclamationmark")
@@ -137,8 +140,9 @@ struct HealthRow: View {
             }
             .font(.caption)
             .foregroundStyle(.secondary)
+            .lineLimit(1)
             if !health.flags.isEmpty {
-                HStack(spacing: 6) {
+                WrappingHStack(spacing: 6, lineSpacing: 3) {
                     ForEach(health.flags, id: \.self) { flag in
                         Text(flag.label)
                             .font(.caption2)
@@ -175,22 +179,27 @@ struct GoalHealthRow: View {
                 KindBadge(kind: .goal, size: 20)
                 Text(health.note.title)
                     .font(.headline)
+                    .lineLimit(2)
                 if let horizon = health.note.horizon {
                     Text(horizon.label)
                         .font(.caption2)
+                        .lineLimit(1)
+                        .fixedSize()
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
                         .background(health.note.tint.opacity(0.18), in: Capsule())
                         .foregroundStyle(health.note.tint)
                 }
-                Spacer()
+                Spacer(minLength: 6)
                 if let days = health.daysSinceActivity {
                     Text(days == 0 ? "moved today" : "moved \(days)d ago")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .fixedSize()
                 }
             }
-            HStack(spacing: 8) {
+            WrappingHStack(spacing: 8, lineSpacing: 3) {
                 Label("\(health.projects.count) projects", systemImage: "flag")
                 Label("\(health.areas.count) areas", systemImage: "circle.grid.2x2")
                 Label("\(health.openTaskCount) open", systemImage: "checklist")
@@ -201,8 +210,9 @@ struct GoalHealthRow: View {
             }
             .font(.caption)
             .foregroundStyle(.secondary)
+            .lineLimit(1)
             if !health.flags.isEmpty {
-                HStack(spacing: 6) {
+                WrappingHStack(spacing: 6, lineSpacing: 3) {
                     ForEach(health.flags, id: \.self) { flag in
                         Text(flag.label)
                             .font(.caption2)

@@ -193,3 +193,62 @@ struct DateChoiceView: View {
         choose(parsed)
     }
 }
+
+/// Lays its children out along a row and starts a new line when the next one will not fit.
+///
+/// SwiftUI has no flow layout of its own, and an `HStack` in a column too narrow for it does
+/// not overflow — it squeezes every child until the text inside wraps. That is how the weekly
+/// review came to draw "2031-08-01" over three lines and the word "projects" as "project s"
+/// (build 138). Children are measured unconstrained, so each one keeps its natural width and
+/// only whole items move down a line.
+struct WrappingHStack: Layout {
+    var spacing: CGFloat = 8
+    var lineSpacing: CGFloat = 4
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let limit = proposal.width ?? .infinity
+        let rows = rows(of: subviews, within: limit)
+        let height = rows.reduce(0) { $0 + $1.height } + lineSpacing * CGFloat(max(rows.count - 1, 0))
+        let widest = rows.map(\.width).max() ?? 0
+        return CGSize(width: limit == .infinity ? widest : min(widest, limit), height: height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var y = bounds.minY
+        for row in rows(of: subviews, within: bounds.width) {
+            var x = bounds.minX
+            for index in row.indices {
+                let size = subviews[index].sizeThatFits(.unspecified)
+                subviews[index].place(at: CGPoint(x: x, y: y + (row.height - size.height) / 2),
+                                      proposal: ProposedViewSize(size))
+                x += size.width + spacing
+            }
+            y += row.height + lineSpacing
+        }
+    }
+
+    private struct Row {
+        var indices: [Int] = []
+        var width: CGFloat = 0
+        var height: CGFloat = 0
+    }
+
+    private func rows(of subviews: Subviews, within limit: CGFloat) -> [Row] {
+        var rows: [Row] = []
+        var row = Row()
+        for index in subviews.indices {
+            let size = subviews[index].sizeThatFits(.unspecified)
+            let wanted = row.indices.isEmpty ? size.width : row.width + spacing + size.width
+            if !row.indices.isEmpty, wanted > limit {
+                rows.append(row)
+                row = Row(indices: [index], width: size.width, height: size.height)
+            } else {
+                row.indices.append(index)
+                row.width = wanted
+                row.height = max(row.height, size.height)
+            }
+        }
+        if !row.indices.isEmpty { rows.append(row) }
+        return rows
+    }
+}
