@@ -811,6 +811,14 @@ own name — which is exactly what confused him when he first met the New Note s
 value is still `horizon: life`**: only `GoalHorizon.label` and the picker title changed, so no
 vault touched and no migration. The star on the icon reads as the north star, unplanned but apt.
 
+**Build 134 gave an area a `goal:` it can actually set** — `AreaGoalChip`/`AreaGoalMenu`/
+`AreaGoalOptions` in ContentView, mirroring the `AreaParent*` trio, wired into the note header
+and the list's context menu. `setGoal` had existed since the Map work but **`MapView` was its
+only caller**, so the area half of "No project or area serves this" was unreachable in practice.
+He spotted it from the chain diagram — "areas have no real goals attached" — and he was right.
+That is now twice in one day that a rule read a line nothing could write (the other was `due:`
+on a project, build 132). **When adding a check, confirm something can produce the data it reads.**
+
 Still open, in the order agreed: roll-up progress from projects to a goal; then Goals and
 Aspirations screens if the one review is not enough; then the status vocabulary
 (reached / missed / dropped), last because it edits his notes.

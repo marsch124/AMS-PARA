@@ -2,6 +2,12 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 134 · 11 September 2026
+
+- **An area can now say which aspiration it serves.** A **Serves…** button at the top of an area note, beside "Part of…", and the same choice when you right-click an area in the list. Aspirations are offered first.
+- The app has always read that line — one of the review's flags says "No project **or area** serves this" — but the only thing that could ever write one was dragging an area's box onto a goal on the Map, which nobody would find. Now it is one click.
+- This is what gives an aspiration a home: Endurance holds "an endurance athlete still racing at seventy" instead of it floating on its own.
+
 ## Build 133 · 11 September 2026
 
 - **A goal with no date is now called an Aspiration**, not a "Life goal". PARAGON is PARA plus the aspiration, the goal and the north star, so the app may as well use its own word. The Horizon choice says **Aspiration**, and a dated goal's box says **Serves aspiration**.

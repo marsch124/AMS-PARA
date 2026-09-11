@@ -336,6 +336,7 @@ struct NoteListView: View {
             }
             if note.kind == .area {
                 AreaParentMenu(model: model, note: note)
+                AreaGoalMenu(model: model, note: note)
             }
             if model.canArchive(note) {
                 Button("Archive") { model.archive(note) }
@@ -552,6 +553,90 @@ struct AreaParentOptions: View {
                 Button(label(for: area)) { model.setParent(note, to: area) }
             }
         }
+    }
+}
+
+/// Which aspiration an area serves, written as `goal:`. The app has always read that line —
+/// the review's "No project or area serves this" counts areas — but until build 134 the only
+/// thing that could write one was dragging the area's box onto a goal on the Map. Build 74's
+/// lesson: an action reachable only by an obscure gesture is an action nobody finds.
+struct AreaGoalOptions: View {
+    /// Passed in rather than read from the environment: context-menu content is built
+    /// outside the row's own view hierarchy.
+    @ObservedObject var model: AppModel
+    let note: Note
+
+    private var current: Note? { note.goal.flatMap { model.index.goal(matching: $0) } }
+
+    /// Aspirations first, because an area holding an aspiration is the shape the model wants.
+    /// Dated goals are offered too: the review already knows what to say about a dated goal
+    /// that only an area serves.
+    private var aspirations: [Note] {
+        model.notes.filter { $0.kind == .goal && $0.horizon == .life }
+    }
+    private var datedGoals: [Note] {
+        model.notes.filter { $0.kind == .goal && $0.horizon != .life }
+    }
+
+    private func label(for goal: Note) -> String {
+        current?.relativePath == goal.relativePath ? "\u{2713} \(goal.displayTitle)" : goal.displayTitle
+    }
+
+    var body: some View {
+        if let current {
+            Button("Open \(current.displayTitle)") { model.show(current) }
+            Divider()
+        }
+        Button(current == nil ? "\u{2713} Serves nothing" : "Serves nothing") {
+            model.setGoal(note, to: nil)
+        }
+        if !aspirations.isEmpty {
+            Divider()
+            ForEach(aspirations) { goal in
+                Button(label(for: goal)) { model.setGoal(note, to: goal) }
+            }
+        }
+        if !datedGoals.isEmpty {
+            Divider()
+            ForEach(datedGoals) { goal in
+                Button(label(for: goal)) { model.setGoal(note, to: goal) }
+            }
+        }
+    }
+}
+
+/// Right-click an area in the list: which aspiration does it serve?
+struct AreaGoalMenu: View {
+    @ObservedObject var model: AppModel
+    let note: Note
+
+    var body: some View {
+        Menu("Serves") {
+            AreaGoalOptions(model: model, note: note)
+        }
+    }
+}
+
+/// The same choices at the top of an area note, beside "Part of\u{2026}".
+struct AreaGoalChip: View {
+    @ObservedObject var model: AppModel
+    let note: Note
+
+    private var title: String {
+        note.goal.flatMap { model.index.goal(matching: $0) }
+            .map { "Serves \($0.displayTitle)" } ?? "Serves\u{2026}"
+    }
+
+    var body: some View {
+        Menu {
+            AreaGoalOptions(model: model, note: note)
+        } label: {
+            Label(title, systemImage: "star")
+        }
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .foregroundStyle(ParaKind.goal.tint)
+        .help("Which aspiration this part of your life serves")
     }
 }
 

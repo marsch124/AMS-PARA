@@ -615,8 +615,8 @@ struct NoteHeader: View {
             }
             if note.kind == .area {
                 AreaParentChip(model: model, note: note)
-            }
-            if let goal = note.goal {
+                AreaGoalChip(model: model, note: note)
+            } else if let goal = note.goal {
                 Label(goal, systemImage: "star")
                     .foregroundStyle(ParaKind.goal.tint)
                     .contentShape(Rectangle())

@@ -68,6 +68,10 @@ A name another note already uses is refused. In Apple Reminders the list follows
 - Deleted notes are kept for **30 days**, then cleared out on their own. They live in a hidden folder inside the vault, so the phone and the Mac behave the same way and nothing there syncs to Reminders. The Inbox note cannot be deleted.
 - Only whole notes go here. A task you delete from a list is gone from the note straight away.
 
+### Which aspiration an area serves
+
+An area can say which aspiration it belongs to: **Serves…** at the top of the area note, or right-click the area in the list. That is what makes Endurance the home of "an endurance athlete still racing at seventy" rather than leaving the aspiration floating on its own. An area is allowed to serve nothing — it is a standard you keep up, not a path to an outcome — so the review never asks about an area without one.
+
 ## Sub-areas
 
 **Making one.** Open the area note and click **Part of…** in the top row, then pick the area it belongs to. "Not part of another area" takes it back out. The same choices sit on the right-click menu of an area in the list (long-press on the phone), and **New note › Area** has a **Part of** picker for making one from the start.
