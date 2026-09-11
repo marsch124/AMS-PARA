@@ -192,7 +192,7 @@ public extension NoteIndex {
                 // A *dated* goal served only by an area has no way of being reached: an area is
                 // a standard you keep up, not a path to an outcome on a date. Two things are
                 // deliberately not this case. A goal reached through dated sub-goals — those
-                // carry the projects. And a life goal, whose whole job is to sit inside an area
+                // carry the projects. And an aspiration, whose whole job is to sit inside an area
                 // and say who you are becoming there; it is reached through dated goals, and
                 // having none yet is a question for the yearly review, not a fault.
                 flags.append(.noProjectYet)

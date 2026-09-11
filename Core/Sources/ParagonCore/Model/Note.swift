@@ -8,7 +8,7 @@ public enum GoalHorizon: String, CaseIterable, Codable, Sendable {
 
     public var label: String {
         switch self {
-        case .life: return "Life goal"
+        case .life: return "Aspiration"
         case .long: return "Long term"
         case .year: return "This year"
         }
@@ -89,7 +89,7 @@ public struct Note: Equatable, Identifiable, Sendable {
         return parts.isEmpty ? nil : parts.joined(separator: ", ")
     }
 
-    /// The goal this note serves (projects, areas, or a dated goal pointing at a life goal).
+    /// The goal this note serves (projects, areas, or a dated goal pointing at an aspiration).
     /// Written as `goal: Title`; a value typed inside `[...]` is joined back into one title.
     public var goal: String? {
         let parts = frontmatter.list("goal").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
@@ -98,7 +98,8 @@ public struct Note: Equatable, Identifiable, Sendable {
 
     // MARK: Goal notes
 
-    /// `life` for enduring direction without a date, `long` for 3 to 10 years, `year` for 1 to 2 years.
+    /// `life` is the aspiration: enduring direction, no date. `long` is 3 to 10 years, `year` 1 to 2.
+    /// The stored value stays `life` — build 133 changed only the word shown, never the frontmatter.
     public var horizon: GoalHorizon? {
         guard kind == .goal else { return nil }
         return frontmatter.string("horizon").flatMap { GoalHorizon(rawValue: $0.lowercased()) } ?? .year

@@ -14,7 +14,7 @@ struct NewNoteSheet: View {
     @State private var title = ""
     @State private var horizon: GoalHorizon = .year
     @State private var target = ""
-    /// The goal this note serves: a life goal for a dated goal, any goal for a project.
+    /// The goal this note serves: an aspiration for a dated goal, any goal for a project.
     @State private var servesGoal = ""
     @State private var parentArea = ""
     @State private var template = ""
@@ -96,7 +96,7 @@ struct NewNoteSheet: View {
                     TextField("Target date, e.g. 2028-06-30", text: $target)
                         .textFieldStyle(.roundedBorder)
                     if !lifeGoals.isEmpty {
-                        Picker("Serves life goal", selection: $servesGoal) {
+                        Picker("Serves aspiration", selection: $servesGoal) {
                             Text("None").tag("")
                             ForEach(lifeGoals) { goal in Text(goal.title).tag(goal.title) }
                         }
@@ -167,7 +167,7 @@ struct NewNoteSheet: View {
         case .project: return "An outcome with an end. Its tasks are mirrored to a Reminders list of the same name."
         case .area: return "An ongoing responsibility with a standard to keep. Its tasks go to Reminders too."
         case .goal: return horizon == .life
-            ? "A direction, not a task list. Never synced to Reminders; the work lives in projects that point at it."
+            ? "Who you are becoming, with no end date. Never synced to Reminders \u{2014} the work lives in the dated goals that point at it."
             : "A goal with a date and a measure. Not synced to Reminders; its work lives in projects."
         default: return "Reference material. No dates, no Reminders \u{2014} link it from wherever it is useful with [[brackets]]."
         }

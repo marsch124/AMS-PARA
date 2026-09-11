@@ -146,7 +146,11 @@ The sync button is a menu. **Show me what would change…** rehearses the entire
 
 ## Goals
 
-New › Goal creates a goal. A life goal has no date. A dated goal has a target date, a measure, and can point at a life goal. Projects and areas link to a goal with the `goal:` line. The goal note shows how many projects and areas serve it, open tasks, activity in the last 30 days, and flags such as "Nothing serves this", "Past its target date" or "Achieved".
+New › Goal creates a goal, and the **Horizon** you pick says which kind it is.
+
+**Aspiration** has no date: who you want to be in some part of your life, which stays true after every goal is reached. It is the A in PARAGON, and it is never ticked off.
+
+**This year** and **Long term** are dated goals: a target date, a measure of what success looks like, and the aspiration they serve, chosen in the **Serves aspiration** box. Projects and areas link to a goal with the `goal:` line. The goal note shows how many projects and areas serve it, open tasks, activity in the last 30 days, and flags such as "Nothing serves this", "Past its target date" or "Achieved".
 
 ## Today, Calendar, daily and weekly notes
 
@@ -174,7 +178,7 @@ Two of those deserve a word.
 
 **"Hobby or homeless?"** is its own short list, above the inbox: the projects with no `goal:` line at all. Work with nothing above it is not an error — plenty of good work is simply something you want to do — so these are never counted as needing attention and never coloured as a problem. The review just asks, once, so you can give one a goal, decide it belongs to an area as a standing responsibility, or leave it exactly as it is.
 
-A goal is flagged when nothing serves it, when its target date has passed, when nothing has moved for 30 days, or when the only thing serving it is an area. That last one, **"No project yet"**, is the difference between a dated goal and a wish: an area is a standard you keep up, not a path to an outcome on a date. It applies to dated goals only. A goal reached through dated sub-goals is fine — those carry the projects — and so is a life goal held by an area, which is exactly where a life goal belongs.
+A goal is flagged when nothing serves it, when its target date has passed, when nothing has moved for 30 days, or when the only thing serving it is an area. That last one, **"No project yet"**, is the difference between a dated goal and a wish: an area is a standard you keep up, not a path to an outcome on a date. It applies to dated goals only. A goal reached through dated sub-goals is fine — those carry the projects — and so is an aspiration held by an area, which is exactly where an aspiration belongs.
 
 ## Map
 

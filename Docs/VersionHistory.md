@@ -2,6 +2,11 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 133 · 11 September 2026
+
+- **A goal with no date is now called an Aspiration**, not a "Life goal". PARAGON is PARA plus the aspiration, the goal and the north star, so the app may as well use its own word. The Horizon choice says **Aspiration**, and a dated goal's box says **Serves aspiration**.
+- Only the wording changed. Nothing was written to your notes, nothing moved, and every existing goal is exactly where it was.
+
 ## Build 132 · 11 September 2026
 
 - **The weekly review now checks the chain**, the first step of the aspiration work. Three new questions, all answered from notes you already have:

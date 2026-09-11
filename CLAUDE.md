@@ -804,6 +804,13 @@ Build 132 also added `AppModel.setDeadline` and `ProjectDeadlineChip` in the not
 the `pastDue` flag had never once been able to fire and `dueAfterGoal` would have been born
 dead. Worth checking, when adding a rule, that something can actually produce the data it reads.
 
+**Build 133 renamed the `horizon: life` label to "Aspiration"** (it was "Life goal"), and the
+dated goal's picker to "Serves aspiration". His reason, and it is a good one: PARAGON is PARA
+plus aspiration, goal and north star, so the app was using a different word for the idea in its
+own name — which is exactly what confused him when he first met the New Note sheet. **The stored
+value is still `horizon: life`**: only `GoalHorizon.label` and the picker title changed, so no
+vault touched and no migration. The star on the icon reads as the north star, unplanned but apt.
+
 Still open, in the order agreed: roll-up progress from projects to a goal; then Goals and
 Aspirations screens if the one review is not enough; then the status vocabulary
 (reached / missed / dropped), last because it edits his notes.

@@ -69,7 +69,7 @@ behaviour problems should show up there first.
 My PARA/
 ├── Inbox.md                 quick capture, mirrored to the "Inbox" list
 ├── Calendar/                daily notes YYYYMMDD.md and weekly notes YYYY-Www.md, like NotePlan
-├── Goals/                   life goals and dated goals, never synced; projects and areas link up with goal:
+├── Goals/                   aspirations and dated goals, never synced; projects and areas link up with goal:
 ├── Projects/                one note per project, mirrored to a list with the project's name
 ├── Areas/                   one note per area, mirrored too (can be switched off)
 ├── Resources/               reference material, any depth of sub-folders
@@ -118,9 +118,9 @@ Captured text uses the task syntax: `>2026-09-10T14:30`, `!!` and `#tags` are pi
 Goals sit above PARA: they are the reason projects and areas exist, so they get their own `Goals/` folder
 and a gold colour rather than a place inside the four buckets. Two horizons:
 
-- **Life goals** (`horizon: life`) have no date. They give direction.
+- **Aspirations** (`horizon: life`) have no date. They give direction.
 - **Dated goals** (`horizon: year` or `long`) carry a `target:` date and a `measure:`, and can point at a
-  life goal with `goal:`.
+  aspiration with `goal:`.
 
 A project or area serves a goal by naming it in its frontmatter: `goal: Walk the Kungsleden`. The goal note
 then shows everything that serves it, with open tasks rolled up, what got completed in the last 30 days,
@@ -137,7 +137,7 @@ horizon: year          # life | long | year
 status: active         # active | achieved
 target: 2028-08-15
 measure: All 440 km in one summer
-goal: Stay fit for the mountains   # optional parent life goal
+goal: Stay fit for the mountains   # optional parent aspiration
 ---
 ```
 
