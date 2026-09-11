@@ -227,23 +227,27 @@ is no leftover height to take — and `addTaskBar` pinned as a `.safeAreaInset(e
 so it never has to be scrolled to. The shared pieces (`sections`, `editorPane`, `addTaskBar`)
 are what both layouts are built from, so a change lands on both.
 
-**STOP — two attempts, two broken phones. Do not try this again without running it.**
-Builds 123 and 125 both tried to stop the phone's editor scrolling inside itself so that a
-plain tap, rather than a press and hold, would place the cursor. Both left the note screen
-unusable and both were reverted (124, 126). `App/AMSPara/Views` is back to exactly what build
-53 made it.
+**Build 127 removed the 320pt box while editing — and the story of how long that took is
+the lesson.** A `UITextView` scrolls itself, so on the phone the editor was one scroll view
+inside another and the note was penned into a 320pt window. `MarkdownSyntaxEditor` takes
+`scrolls:`; `phoneBody` passes `false` **only in Edit mode** and gives it
+`.frame(minHeight: 320)`, and the iOS representable implements
+`sizeThatFits(_:uiView:context:)` returning `uiView.sizeThatFits` for the proposed width but
+never less than `leastHeight` (320). Two independent floors, because an early version had
+none. Preview and Split still get `.frame(height: 320)` and a scrolling text view, since
+`MarkdownPreview` is itself a `ScrollView` and needs a height handed to it. macOS passes
+`true` throughout — builds 30/34 are about the Mac's editor never reporting its full height.
 
-123 set `isScrollEnabled = false` and dropped the fixed frame; the editor collapsed. 125 added
-`sizeThatFits(_:uiView:context:)` clamped to a 320pt floor **and** `.frame(minHeight: 320)`
-around it — two independent floors — and it broke anyway. **That rules out the explanation
-both builds were built on:** if the only fault were a zero height, the floors would have held.
-So "two stacked scroll views make the tap ambiguous" is an unconfirmed hypothesis that has now
-failed twice, and it should not be treated as the diagnosis.
-
-Before anyone writes another line of this: reproduce it in the simulator (below), find out
-what actually happens to the touch, and watch the fix run. There is no Swift toolchain in the
-remote container, CI compiles but never taps, and this is the one part of the app where that
-gap has cost real damage — his phone was unusable twice in a day.
+**The lesson, which cost a whole day: I never established the symptom before fixing it.**
+He said he could not type in a note on the phone. I assumed the editor had collapsed, shipped
+this change (123), took the blame, reverted it, shipped it again with floors (125), took the
+blame again, reverted that too (126) — and 126 was byte-identical to 122 and *still* failed.
+The actual cause was that his `editorMode` was set to **Preview**, where there is no text view
+at all and no tap can ever place a cursor. Both "broken" builds had left Preview on the old
+code path untouched, so neither had ever broken anything. Before changing code to fix a
+report, find out what the user is actually looking at — one question would have saved two
+reverts and his patience. Build 127 also puts an Edit/Preview toggle in the phone's add-task
+bar so that mode can never again be a hidden setting three taps deep.
 
 **Testing the phone layouts on this Mac.** Xcode 26.6 is installed, so the simulator is
 usable without CI:

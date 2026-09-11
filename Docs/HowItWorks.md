@@ -350,6 +350,9 @@ Time Machine covers the rest: these backups sit inside the vault folder, so they
 
 ## On the iPhone
 
+**Reading or writing.** A note opens ready to write in. The **Read** button at the bottom of the note shows it rendered instead — headings, bold, tappable links — and turns into **Edit** to bring the cursor back. If a note ever seems to refuse your typing, look at that button: you are in Read.
+
+
 Sync with Reminders from the phone with the button in the top right of Today and Inbox, or Settings › Reminders sync › Sync now. The first sync is when iOS asks for permission to use Reminders.
 
 On the phone, a note's own actions — the Edit / Split / Preview switch, Rename, Archive and Delete — are behind the **⋯** button at the top right of the note. On the Mac they are buttons in the toolbar.

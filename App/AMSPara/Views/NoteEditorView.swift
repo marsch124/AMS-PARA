@@ -113,12 +113,6 @@ struct NoteEditorView: View {
             if isPhone {
                 ToolbarItem(placement: .primaryAction) {
                     Menu {
-                        Picker("Mode", selection: $mode) {
-                            ForEach(EditorMode.allCases) { m in
-                                Text(m.label).tag(m)
-                            }
-                        }
-                        Divider()
                         if let note, note.kind != .inbox, note.kind != .daily {
                             Button {
                                 noteTitleDraft = note.displayTitle
@@ -215,7 +209,7 @@ struct NoteEditorView: View {
             // guard, expanding a disclosure above it made the text editor report its full
             // text height as a minimum, and the window's content grew past the window.
             GeometryReader { geo in
-                editorPane
+                editorPane(scrolls: true)
                     .frame(width: geo.size.width, height: geo.size.height)
                     .clipped()
             }
@@ -239,8 +233,21 @@ struct NoteEditorView: View {
         ScrollView {
             VStack(spacing: 0) {
                 sections
-                editorPane
-                    .frame(height: 320)
+                // While editing, the text asks for its own height and this page does the
+                // scrolling: two scroll views stacked is why a tap was ambiguous and it took
+                // a press and hold to put the cursor in. `minHeight` rather than `height`
+                // is the lesson of build 123, which had no floor and collapsed the editor to
+                // nothing — the worst this can now do is leave the box it always had.
+                //
+                // Preview and Split are untouched: `MarkdownPreview` is itself a scroll view
+                // and needs a height handed to it.
+                if mode == .edit {
+                    editorPane(scrolls: false)
+                        .frame(minHeight: 320)
+                } else {
+                    editorPane(scrolls: true)
+                        .frame(height: 320)
+                }
             }
         }
         // The phone has no third column, so the note screen itself carries the section's
@@ -337,13 +344,14 @@ struct NoteEditorView: View {
     }
 
     /// The markdown itself: the raw text, the rendered version, or both side by side.
-    private var editorPane: some View {
+    private func editorPane(scrolls: Bool) -> some View {
         HStack(spacing: 0) {
             if mode != .preview {
                 MarkdownSyntaxEditor(text: $text, tint: note?.tint ?? .accentColor,
                                      linkDraft: $linkDraft, completion: $linkCompletion,
                                      openLink: { model.openWikiLink($0, from: path) },
-                                     onLinkKey: handleLinkKey)
+                                     onLinkKey: handleLinkKey,
+                                     scrolls: scrolls)
                     .onChange(of: text) { _, newValue in
                         scheduleSave(newValue)
                     }
@@ -409,6 +417,21 @@ struct NoteEditorView: View {
 
     private var addTaskBar: some View {
         HStack {
+            // Which mode you are in used to be a Picker three taps deep in the ⋯ menu, and a
+            // note left in Preview looks exactly like an editor that refuses to type — it
+            // cost a day to work that out (build 127). One button, always on screen, saying
+            // what it will switch to. No Split on the phone: he asked for it gone.
+            if isPhone {
+                Button {
+                    mode = mode == .edit ? .preview : .edit
+                } label: {
+                    Label(mode == .edit ? "Read" : "Edit",
+                          systemImage: mode == .edit ? "eye" : "pencil")
+                        .font(.footnote)
+                }
+                .buttonStyle(.bordered)
+                .fixedSize()
+            }
             TextField("Add a task… (>2026-09-10 or >2026-09-10T14:30 for a date, !! for priority, #tag)", text: $newTask)
                 .textFieldStyle(.roundedBorder)
                 .onSubmit(addTask)

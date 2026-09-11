@@ -2,10 +2,14 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
-## Build 124 · 11 September 2026
+## Build 127 · 11 September 2026
 
-- **Build 123 is undone.** Letting the note text size itself to the whole page made the text area collapse on the iPhone, so notes could not be edited at all. Editing works again exactly as it did in 122.
-- The original problem — needing to press and hold rather than tap to start typing — is still there, and still worth fixing. It needs a safer approach than 123 took.
+- **A Read / Edit button on the iPhone**, in the bar at the bottom of the note where it is always in reach. It says what it will switch to. A note left in Read looks exactly like an editor that refuses to type — which is what went wrong yesterday — so it is one tap now instead of a setting buried in the ⋯ menu. Split is gone from the phone; it was never useful on a screen that size.
+- **The note text is no longer penned into a small window while you edit.** It grows to its full height and the page scrolls as one thing, so a long note reads properly instead of showing a slice of itself.
+
+## Builds 123 to 126 · 11 September 2026
+
+- Four builds spent chasing a fault that was not there. Typing in a note on the iPhone appeared to be broken; it was in fact set to Read, where there is nothing to type into. The changes made and undone in between left the app exactly where it started. Build 127 fixes the real inconvenience — and makes Read impossible to be stuck in without noticing.
 
 ## Build 122 · 11 September 2026
 
