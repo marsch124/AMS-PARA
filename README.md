@@ -23,12 +23,12 @@ Both are bundled into the app: Help menu on the Mac, Settings › Help on the iP
 
 | Part | Where | What it does |
 | --- | --- | --- |
-| `AMSParaCore` | `Core/Sources/AMSParaCore` | Swift package, no UI. Markdown notes with frontmatter, NotePlan style task lines, the PARA vault on disk, a note index (backlinks, tags, open tasks) and the two-way Reminders sync engine. |
-| Unit tests | `Core/Tests/AMSParaCoreTests` | Cover parsing, note editing, the vault and every sync scenario (create, edit, complete, delete, conflicts, second device). |
-| `AMSPara` app | `App/AMSPara` | SwiftUI app for macOS 14 and iOS 17. Sidebar (Inbox, Today, Calendar, Weekly review, Projects, Areas, Resources, Archive), note list, markdown editor with rendered preview and clickable wikilinks, task checklist, Reminders sync via EventKit, settings. |
+| `ParagonCore` | `Core/Sources/ParagonCore` | Swift package, no UI. Markdown notes with frontmatter, NotePlan style task lines, the PARA vault on disk, a note index (backlinks, tags, open tasks) and the two-way Reminders sync engine. |
+| Unit tests | `Core/Tests/ParagonCoreTests` | Cover parsing, note editing, the vault and every sync scenario (create, edit, complete, delete, conflicts, second device). |
+| `Paragon` app | `App/Paragon` | SwiftUI app for macOS 14 and iOS 17. Sidebar (Inbox, Today, Calendar, Weekly review, Projects, Areas, Resources, Archive), note list, markdown editor with rendered preview and clickable wikilinks, task checklist, Reminders sync via EventKit, settings. |
 | `project.yml` | repository root | XcodeGen spec that produces the Xcode project for the app. |
 | `Example Vault` | `Example Vault/` | A small sample vault to try the app with. |
-| App icon | `Tools/make_icon.py` | Redraws `App/AMSPara/Assets.xcassets/AppIcon.appiconset` (needs Pillow). |
+| App icon | `Tools/make_icon.py` | Redraws `App/Paragon/Assets.xcassets/AppIcon.appiconset` (needs Pillow). |
 
 ## Building on the Mac
 
@@ -38,13 +38,13 @@ Requirements: Xcode 15.4 or newer (Xcode 16 recommended), and [XcodeGen](https:/
 brew install xcodegen
 cd AMS-PARA
 swift test --package-path Core   # runs the core tests (no Xcode project needed)
-xcodegen generate           # creates AMSPara.xcodeproj from project.yml
-open AMSPara.xcodeproj      # select the AMSPara scheme, set your Team under Signing, run
+xcodegen generate           # creates Paragon.xcodeproj from project.yml
+open Paragon.xcodeproj      # select the Paragon scheme, set your Team under Signing, run
 ```
 
 If you prefer not to use XcodeGen: create a new multiplatform SwiftUI app in Xcode, add the files under
-`App/AMSPara`, add the local package (File › Add Package Dependencies › Add Local, pick this folder) and
-link `AMSParaCore`. Add `NSRemindersFullAccessUsageDescription` to the Info.plist and enable the
+`App/Paragon`, add the local package (File › Add Package Dependencies › Add Local, pick this folder) and
+link `ParagonCore`. Add `NSRemindersFullAccessUsageDescription` to the Info.plist and enable the
 Calendars personal-information entitlement plus user-selected file access under App Sandbox.
 
 The app and the iOS share extension share the App Group `group.com.schabbauer.amspara`. With automatic
@@ -158,7 +158,7 @@ note headers, tasks, search results, the review and the calendar.
 | Weekly review | teal |
 
 A task takes the colour of the note it lives in, so a list mixing several notes stays readable.
-The colours are defined as colour sets in `App/AMSPara/Assets.xcassets`, each with a light and a
+The colours are defined as colour sets in `App/Paragon/Assets.xcassets`, each with a light and a
 dark variant; edit them there to change the scheme.
 
 ### Search

@@ -31,12 +31,12 @@ jobs:
         include:
           - label: the iPhone app
             destination: generic/platform=iOS
-            archive: AMSPara-iOS
+            archive: Paragon-iOS
             # Unsigned: the App Store profile supplies the entitlements at export.
             signing: CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
           - label: the Mac app
             destination: generic/platform=macOS
-            archive: AMSPara-macOS
+            archive: Paragon-macOS
             # Ad-hoc ("-") costs no certificate but does embed the entitlements, which a
             # Mac App Store upload insists on: without them Apple answers "App sandbox not
             # enabled". The export replaces the placeholder with the real signature.
@@ -82,22 +82,22 @@ jobs:
           # Use the app's own build number, the one shown in the sidebar and in
           # Help, so TestFlight and the app never disagree. A second upload of the
           # same build number is refused by Apple, so the run number is appended.
-          STAMP=$(sed -n 's/.*static let number = \([0-9][0-9]*\).*/\1/p' App/AMSPara/AppModel.swift | head -1)
+          STAMP=$(sed -n 's/.*static let number = \([0-9][0-9]*\).*/\1/p' App/Paragon/AppModel.swift | head -1)
           if [ -z "$STAMP" ]; then
-            echo "Could not read BuildStamp.number from App/AMSPara/AppModel.swift"
+            echo "Could not read BuildStamp.number from App/Paragon/AppModel.swift"
             exit 1
           fi
           echo "App build number: $STAMP"
           BUILD="$STAMP.${{ github.run_number }}"
           echo "STAMP=$STAMP" >> $GITHUB_ENV
-          for plist in App/Config/AMSPara/Info.plist App/Config/AMSParaShare/Info.plist; do
+          for plist in App/Config/Paragon/Info.plist App/Config/ParagonShare/Info.plist; do
             /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD" "$plist"
             /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 1.0.$STAMP" "$plist"
           done
           # Says the app uses no encryption beyond what Apple exempts, so TestFlight
           # does not ask the same question on every upload.
-          /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" App/Config/AMSPara/Info.plist \
-            || /usr/libexec/PlistBuddy -c "Set :ITSAppUsesNonExemptEncryption false" App/Config/AMSPara/Info.plist
+          /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" App/Config/Paragon/Info.plist \
+            || /usr/libexec/PlistBuddy -c "Set :ITSAppUsesNonExemptEncryption false" App/Config/Paragon/Info.plist
 
       - name: Write the App Store Connect key
         env:
@@ -122,8 +122,8 @@ jobs:
           # certificate until the account hit its limit (build 61). How little signing each
           # platform can get away with is in the matrix above.
           xcodebuild archive \
-            -project AMSPara.xcodeproj \
-            -scheme AMSPara \
+            -project Paragon.xcodeproj \
+            -scheme Paragon \
             -destination '${{ matrix.destination }}' \
             -archivePath "$PWD/build/${{ matrix.archive }}.xcarchive" \
             DEVELOPMENT_TEAM="$TEAM_ID" \

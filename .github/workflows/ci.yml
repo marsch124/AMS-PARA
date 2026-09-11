@@ -31,13 +31,13 @@ jobs:
       - name: Build for macOS
         run: |
           set -o pipefail
-          xcodebuild -project AMSPara.xcodeproj -scheme AMSPara -destination 'platform=macOS' \
+          xcodebuild -project Paragon.xcodeproj -scheme Paragon -destination 'platform=macOS' \
             CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" build 2>&1 | tee build-macos.log | grep -E "error:|warning:|\*\* BUILD" || true
           grep -q "\*\* BUILD SUCCEEDED \*\*" build-macos.log
       - name: Build for iOS Simulator
         run: |
           set -o pipefail
-          xcodebuild -project AMSPara.xcodeproj -scheme AMSPara -destination 'generic/platform=iOS Simulator' \
+          xcodebuild -project Paragon.xcodeproj -scheme Paragon -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" build 2>&1 | tee build-ios.log | grep -E "error:|warning:|\*\* BUILD" || true
           grep -q "\*\* BUILD SUCCEEDED \*\*" build-ios.log
       - name: Upload build logs
@@ -52,7 +52,7 @@ jobs:
     runs-on: macos-15
     needs: [core-tests, app-build]
     # Only when the project definition itself changed, so a developer's local
-    # signing settings in AMSPara.xcodeproj are never overwritten by a pull.
+    # signing settings in Paragon.xcodeproj are never overwritten by a pull.
     if: github.event_name == 'push'
     permissions:
       contents: write
@@ -80,7 +80,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add AMSPara.xcodeproj App/Config
+          git add Paragon.xcodeproj App/Config
           if git diff --cached --quiet; then
             echo "Xcode project is up to date."
             exit 0

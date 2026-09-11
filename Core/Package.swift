@@ -2,20 +2,20 @@
 import PackageDescription
 
 let package = Package(
-    name: "AMSPara",
+    name: "Paragon",
     platforms: [.macOS(.v14), .iOS(.v17)],
     products: [
-        .library(name: "AMSParaCore", targets: ["AMSParaCore"]),
+        .library(name: "ParagonCore", targets: ["ParagonCore"]),
     ],
     targets: [
         .target(
-            name: "AMSParaCore",
-            path: "Sources/AMSParaCore"
+            name: "ParagonCore",
+            path: "Sources/ParagonCore"
         ),
         .testTarget(
-            name: "AMSParaCoreTests",
-            dependencies: ["AMSParaCore"],
-            path: "Tests/AMSParaCoreTests"
+            name: "ParagonCoreTests",
+            dependencies: ["ParagonCore"],
+            path: "Tests/ParagonCoreTests"
         ),
     ],
     swiftLanguageVersions: [.v5]

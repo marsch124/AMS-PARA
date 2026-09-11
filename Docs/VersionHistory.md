@@ -2,6 +2,11 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 131 · 11 September 2026
+
+- **Housekeeping only — nothing in the app changed.** The folders, targets and the Swift package inside the project were still called AMSPara; they are now called Paragon, so the project reads the same way the app does.
+- You will not see any difference. If anything at all looks different from build 130, it is a mistake and worth telling me about.
+
 ## Build 130 · 11 September 2026
 
 - **The app is called PARAGON.** The name under the icon, the window title, the Mac menu bar, the Help window, the share sheet on the iPhone, the permission prompts, the exported map's file name and this manual.

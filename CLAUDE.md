@@ -18,9 +18,9 @@ the phone and on the Mac. Xcode is no longer part of his routine.
 
 ## Layout
 
-- `Core/` – Swift package `AMSParaCore` (models, markdown, vault, sync engine, search, capture). `swift test --package-path Core`.
-- `App/AMSPara/` – SwiftUI app (macOS + iOS). `App/AMSParaShare/` – iOS share extension.
-- `project.yml` – XcodeGen spec. `AMSPara.xcodeproj/` is committed; CI regenerates it only when `project.yml` changes (keeps his signing Team).
+- `Core/` – Swift package `ParagonCore` (models, markdown, vault, sync engine, search, capture). `swift test --package-path Core`.
+- `App/Paragon/` – SwiftUI app (macOS + iOS). `App/ParagonShare/` – iOS share extension.
+- `project.yml` – XcodeGen spec. `Paragon.xcodeproj/` is committed; CI regenerates it only when `project.yml` changes (keeps his signing Team).
 - `Example Vault/` – sample vault incl. Goals, Calendar, Templates.
 - `.github/workflows/ci.yml` – macOS runner: package tests, xcodegen, xcodebuild macOS + iOS Simulator.
 
@@ -30,7 +30,7 @@ the phone and on the Mac. Xcode is no longer part of his routine.
 - GitHub repo is still `AMS-PARA` and session access is scoped to it; his local folder is
   still "AMS PARA". Both are renamed in phase 4 of the rebrand, below — not before.
 - No Swift toolchain in the remote container: verify via CI (`mcp__github__actions_list`, `get_job_logs`).
-- Bump `BuildStamp.number` in `App/AMSPara/AppModel.swift` on every push; it shows at the bottom of the sidebar so we know which build he runs.
+- Bump `BuildStamp.number` in `App/Paragon/AppModel.swift` on every push; it shows at the bottom of the sidebar so we know which build he runs.
 - Add a section for that build to `Docs/VersionHistory.md` (user-facing wording) on every push. `Docs/HowItWorks.md` is the manual; update it when behaviour changes. Both are bundled (project.yml `Docs` resources) and shown by `HelpView`.
 - Build N = CI run N, *usually*: a docs-only push spends a run without bumping the stamp, so
   the two drift apart (first at build 123, CI run 124). `BuildStamp.number` in the app and in
@@ -200,7 +200,7 @@ App: `TaskActions.swift` has `TaskTransfer` (UTType
 sidebar Inbox, month cells, week headers, weekly-note day rows. `DoneView`
 (sidebar Done). `AppModel`: `setDueDate/setRepeat/makeNextAction/
 clearNextAction/moveTask/blockTime/task(for:)`, `timeBlockDraft`.
-Project: `type: syncedFolder` for App/AMSPara and App/AMSParaShare (Xcode 16
+Project: `type: syncedFolder` for App/Paragon and App/ParagonShare (Xcode 16
 synchronized groups) so new source files need no regeneration; Info.plist and
 entitlements live in `App/Config/<target>/`; CI commits `App/Config`.
 
@@ -253,14 +253,14 @@ bar so that mode can never again be a hidden setting three taps deep.
 **Testing the phone layouts on this Mac.** Xcode 26.6 is installed, so the simulator is
 usable without CI:
 
-- `xcodebuild -scheme AMSPara -destination 'platform=iOS Simulator,name=iPhone 17 Pro' -derivedDataPath /tmp/amspara-dd build`
+- `xcodebuild -scheme Paragon -destination 'platform=iOS Simulator,name=iPhone 17 Pro' -derivedDataPath /tmp/amspara-dd build`
 - the vault is a security-scoped bookmark, so there is no path to set — generate one with
   `URL.bookmarkData()` on the Mac and write it into the app's
   `Library/Preferences/com.schabbauer.AMSPara.plist` as `vaultBookmark`. It resolves in the
   simulator, which shares the Mac's filesystem.
-- every route to a note is a tap, so `ContentView.onAppear` reads `AMSPARA_OPEN_NOTE`
+- every route to a note is a tap, so `ContentView.onAppear` reads `PARAGON_OPEN_NOTE`
   (DEBUG only) and opens that note through the existing `amspara://` handler:
-  `SIMCTL_CHILD_AMSPARA_OPEN_NOTE=Inbox xcrun simctl launch booted com.schabbauer.AMSPara`
+  `SIMCTL_CHILD_PARAGON_OPEN_NOTE=Inbox xcrun simctl launch booted com.schabbauer.AMSPara`
 - `@AppStorage` values (`editorMode`) can be preset in the same plist to reach a mode.
 - Screenshots with `xcrun simctl io booted screenshot`. Taps need the Simulator MCP, which
   wants `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer` on his Mac;
@@ -351,7 +351,7 @@ enabled", build 64). Both App IDs
 need the App Group `group.com.schabbauer.amspara` enabled in the developer portal,
 and `project.yml` declares `UISupportedInterfaceOrientations` (all four), without
 which Apple rejects the binary. macOS signs with its own
-`App/Config/AMSPara/AMSPara-macOS.entitlements` (via
+`App/Config/Paragon/Paragon-macOS.entitlements` (via
 `CODE_SIGN_ENTITLEMENTS[sdk=macosx*]`) which drops the App Group: the Mac App Store wants
 team-prefixed groups, the share extension is iOS only, and `outboxURL` already falls back to
 Application Support. The macOS platform must be added to the app record in App Store Connect
@@ -736,14 +736,21 @@ one its own build so a red light means one thing:
    measuring the PNG. Never draw the icon anywhere but that file.
 2. **The name everywhere he sees it** (build 130, done). Also `PRODUCT_NAME: PARAGON` on the
    app target — on the Mac, Finder and the Dock read the bundle's *file* name, so
-   `CFBundleDisplayName` alone leaves "AMSPara" on screen; the target and folder are
+   `CFBundleDisplayName` alone leaves "Paragon" on screen; the target and folder are
    untouched, and `PRODUCT_BUNDLE_IDENTIFIER` is now pinned explicitly so it can never
    follow a target rename. `CFBundleDisplayName`/`CFBundleName`, every visible
    string in the app, the permission prompts, the share extension's name, `Docs/HowItWorks.md`,
    `Docs/VersionHistory.md`, `README.md`, `TESTFLIGHT.md`, this file, the Example Vault.
-3. **The name inside the code.** `App/AMSPara/` → `App/Paragon/`, `AMSParaCore` → `ParagonCore`,
-   the targets, the scheme, `AMSPara.xcodeproj`, both workflows. Invisible to him; ~70 files;
-   CI is the only check, so it goes alone.
+3. **The name inside the code** (build 131, done). `App/AMSPara/` → `App/Paragon/`,
+   `App/AMSParaShare/` → `App/ParagonShare/`, `App/Config/*` and the entitlements files with
+   them, `AMSParaCore` → `ParagonCore` (and its tests), the two targets, the scheme, the
+   project (`Paragon.xcodeproj`), `AMSParaApp` → `ParagonApp`, both workflows, and the debug
+   `AMSPARA_OPEN_NOTE` → `PARAGON_OPEN_NOTE`. One substitution did nearly all of it, because
+   `AMSParaCore`/`AMSParaShare`/`AMSParaApp` all fall out of `AMSPara` → `Paragon`; the bundle
+   ids were held back behind a sentinel so they could not be caught by it. The diagnostics
+   filter that picks our own stack frames is now case-insensitive on "paragon": the app's
+   module is `PARAGON` (from `PRODUCT_NAME`) and the package's is `ParagonCore`, so a single
+   spelling would have quietly matched half of them.
 4. **Outside the app**, his own three jobs, in browsers and Finder: the App Store Connect name,
    the iCloud vault folder, and the GitHub repository (`ams-para` → `paragon`). The repo rename
    is genuinely last: session access here is scoped to the old name and will be lost with it.

@@ -107,7 +107,7 @@ def render(size, rounded):
     return base.resize((size, size), Image.LANCZOS)
 
 
-OUT = "App/AMSPara/Assets.xcassets/AppIcon.appiconset"
+OUT = "App/Paragon/Assets.xcassets/AppIcon.appiconset"
 for s in (16, 32, 64, 128, 256, 512, 1024):
     render(s, rounded=True).save(f"{OUT}/icon-mac-{s}.png")
 render(1024, rounded=False).convert("RGB").save(f"{OUT}/icon-ios-1024.png")

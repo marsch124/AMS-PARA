@@ -1,0 +1,767 @@
+import SwiftUI
+import ParagonCore
+
+/// The link map: goals at the top, the areas and projects that serve them below, their open
+/// tasks and resources under those, then unlinked notes and the archive. Clicking a box
+/// lights up everything it serves and everything that serves it, and opens its note.
+struct MapView: View {
+    @EnvironmentObject private var model: AppModel
+    @State private var map = LinkMap(roots: [])
+    @State private var selectedID: String?
+    @State private var zoom: CGFloat = 1
+    /// While on, dragging a box moves it instead of linking it.
+    @State private var arranging = false
+    @State private var confirmResetAll = false
+    /// Boxes marked while arranging, so several can be moved with one drag.
+    @State private var marked: Set<String> = []
+    #if !os(macOS)
+    @State private var shared: SharedFile?
+    #endif
+
+    private static let zoomSteps: [CGFloat] = [0.6, 0.75, 0.9, 1, 1.15, 1.3, 1.5]
+
+    var body: some View {
+        VStack(spacing: 0) {
+            if arranging {
+                arrangingBanner
+                Divider()
+            }
+            if map.isEmpty {
+                ContentUnavailableView("Nothing to map yet", systemImage: SidebarSection.map.systemImage,
+                                       description: Text("Create a goal, then give your projects and areas a goal: line. They show up here, top down."))
+            } else {
+                let layout = MapLayout(map: map, zoom: zoom, pinned: model.pinnedMapPositions)
+                let lit = selectedID.map { map.neighbourhood(of: $0) }
+                ScrollView([.horizontal, .vertical]) {
+                    MapCanvas(layout: layout, lit: lit, selectedID: selectedID,
+                              select: { node in select(node) },
+                              onDrop: { transfer, node in link(transfer, onto: node) },
+                              arranging: arranging,
+                              marked: $marked,
+                              onMove: { moved in
+                                  for (node, point) in moved { park(node, at: point) }
+                              },
+                              onUnpin: { nodes in
+                                  for node in nodes { park(node, at: nil) }
+                              })
+                    .frame(width: layout.size.width, height: layout.size.height)
+                    .padding(28)
+                }
+                Divider()
+                MapFooter(map: map, selectedID: selectedID)
+            }
+        }
+        .toolbar {
+            // On the left, where the eye starts: how the map is shown and how it behaves.
+            ToolbarItemGroup(placement: .navigation) {
+                Button { step(-1) } label: { Label("Zoom out", systemImage: "minus.magnifyingglass") }
+                    .disabled(zoom <= Self.zoomSteps.first!)
+                Button { step(1) } label: { Label("Zoom in", systemImage: "plus.magnifyingglass") }
+                    .disabled(zoom >= Self.zoomSteps.last!)
+                Toggle(isOn: $arranging) {
+                    Label("Arrange", systemImage: "hand.draw")
+                }
+                .toggleStyle(.button)
+                .onChange(of: arranging) { _, on in if !on { marked = [] } }
+                .help(arranging ? "Tap boxes to mark them, then drag any one to move them all."
+                                : "Turn on to drag boxes where you want them")
+            }
+            ToolbarItemGroup {
+                Menu {
+                    Button("PDF\u{2026}") { export(MapExport.pdfData(for: map), extension: "pdf") }
+                    Button("PNG\u{2026}") { export(MapExport.pngData(for: map), extension: "png") }
+                    Divider()
+                    Button("Copy image") { MapExport.copyImage(for: map) }
+                    Button("Copy as outline") { MapExport.copyToPasteboard(map.outline()) }
+                } label: {
+                    Label("Export", systemImage: "square.and.arrow.up")
+                }
+                .disabled(map.isEmpty)
+                .help("Save the map as a PDF or a picture, or copy it")
+            }
+        }
+        #if !os(macOS)
+        .sheet(item: $shared) { file in
+            ShareSheet(url: file.url)
+        }
+        #endif
+        .confirmationDialog("Place every box automatically again?", isPresented: $confirmResetAll) {
+            Button("Reset all", role: .destructive) { model.clearMapPositions() }
+        } message: {
+            Text("The `map:` line is taken out of every note. Nothing else changes.")
+        }
+        .onAppear { rebuild() }
+        .onChange(of: model.notes) { _, _ in rebuild() }
+        .onChange(of: model.selectedNotePath) { _, path in
+            // Follow a note chosen elsewhere; a task chip keeps its own selection.
+            guard let path, map.node(path) != nil, selectedID.flatMap(map.node)?.notePath != path else { return }
+            selectedID = path
+        }
+    }
+
+    private func rebuild() {
+        map = model.index.linkMap()
+        if let selectedID, map.node(selectedID) == nil { self.selectedID = nil }
+    }
+
+    /// Dropping one box on another is how the map is wired up. Only the pairs that mean
+    /// something are taken; anything else is refused and the drag springs back.
+    private func link(_ transfer: TaskTransfer, onto node: MapNode) -> Bool {
+        guard let target = node.note else { return false }
+        guard transfer.isNote == true else {
+            guard let ref = model.task(for: transfer),
+                  [.project, .area, .inbox].contains(target.kind),
+                  ref.notePath != target.relativePath else { return false }
+            model.moveTask(ref, to: target.relativePath)
+            return true
+        }
+        guard let dragged = model.note(at: transfer.notePath),
+              dragged.relativePath != target.relativePath else { return false }
+        switch (dragged.kind, target.kind) {
+        case (.project, .goal), (.area, .goal), (.goal, .goal):
+            model.setGoal(dragged, to: target)
+        case (.project, .area):
+            model.setArea(dragged, to: target)
+        case (.area, .area):
+            model.setParent(dragged, to: target)
+        default:
+            return false
+        }
+        return true
+    }
+
+    /// Impossible to be in this mode without noticing: a strip across the top says so, says
+    /// what a drag will do, and offers the way out.
+    private var arrangingBanner: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "hand.draw")
+            Text(arrangingHint)
+            Spacer(minLength: 8)
+            Button("Reset all") { confirmResetAll = true }
+                .disabled(model.pinnedMapPositions.isEmpty)
+                .help("Let the app place every box again")
+            Button("Done") { arranging = false }
+                .keyboardShortcut(.escape, modifiers: [])
+        }
+        .font(.callout)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(Color.accentColor.opacity(0.12))
+    }
+
+    private var arrangingHint: String {
+        if marked.isEmpty {
+            return "Arranging — drag a box to move it, or tap boxes to mark several."
+        }
+        return marked.count == 1 ? "Arranging — 1 marked. Drag it, or mark more."
+                                 : "Arranging — \(marked.count) marked. Drag any one to move them all."
+    }
+
+    /// Remembers where a box was let go, or hands it back to the automatic layout with nil.
+    private func park(_ node: MapNode, at point: CGPoint?) {
+        guard let note = node.note else { return }
+        model.setMapPosition(note, to: point)
+    }
+
+    /// The Mac asks where to put the file; the phone hands it to the share sheet.
+    private func export(_ data: Data?, extension ext: String) {
+        guard let data else {
+            model.errorMessage = "The map could not be drawn into a \(ext.uppercased())."
+            return
+        }
+        #if os(macOS)
+        MapExport.save(data, extension: ext)
+        #else
+        guard let url = MapExport.temporaryFile(data, extension: ext) else {
+            model.errorMessage = "The \(ext.uppercased()) could not be written."
+            return
+        }
+        shared = SharedFile(url: url)
+        #endif
+    }
+
+    private func step(_ direction: Int) {
+        let steps = Self.zoomSteps
+        let current = steps.firstIndex(of: zoom) ?? steps.firstIndex(of: 1)!
+        let next = min(max(current + direction, 0), steps.count - 1)
+        zoom = steps[next]
+    }
+
+    private func select(_ node: MapNode) {
+        selectedID = node.id
+        model.log("map: selected \(node.id)")
+        if let path = node.notePath, model.selectedNotePath != path {
+            model.selectedNotePath = path
+        }
+    }
+}
+
+// MARK: - Layout
+
+/// Positions for every node and every line, computed once per map and zoom level. Parents
+/// are centred over their subtrees; tasks and resources stack under their note.
+struct MapLayout {
+    struct Item: Identifiable {
+        let node: MapNode
+        let frame: CGRect
+        var id: String { node.id }
+    }
+
+    struct Edge: Identifiable {
+        let from: String
+        let to: String
+        let start: CGPoint
+        let end: CGPoint
+        /// A second link (dashed) rather than the tree line.
+        let dashed: Bool
+        var id: String { from + " > " + to }
+    }
+
+    let zoom: CGFloat
+    let items: [Item]
+    let edges: [Edge]
+    let size: CGSize
+
+    init(map: LinkMap, zoom: CGFloat, pinned: [String: CGPoint] = [:]) {
+        self.zoom = zoom
+        let card = CGSize(width: 180 * zoom, height: 50 * zoom)
+        let chip = CGSize(width: 180 * zoom, height: 26 * zoom)
+        let gapX = 20 * zoom, rootGap = 48 * zoom, rowGap = 46 * zoom, chipGap = 4 * zoom
+
+        var widths: [String: CGFloat] = [:]
+        func measure(_ node: MapNode) -> CGFloat {
+            let chips = node.children.filter(\.isChip)
+            var columns = node.children.filter { !$0.isChip }.map(measure)
+            if !chips.isEmpty { columns.insert(card.width, at: 0) }
+            let total = columns.reduce(0, +) + gapX * CGFloat(max(columns.count - 1, 0))
+            let width = max(card.width, total)
+            widths[node.id] = width
+            return width
+        }
+        map.roots.forEach { _ = measure($0) }
+
+        struct Pending {
+            let node: MapNode
+            let row: Int
+            let x: CGFloat
+            let offsetY: CGFloat
+        }
+        var pending: [Pending] = []
+        var rowHeights: [Int: CGFloat] = [:]
+        func place(_ node: MapNode, x: CGFloat, row: Int) {
+            let width = widths[node.id] ?? card.width
+            pending.append(Pending(node: node, row: row, x: x + (width - card.width) / 2, offsetY: 0))
+            rowHeights[row] = max(rowHeights[row] ?? 0, card.height)
+            let chips = node.children.filter(\.isChip)
+            let branches = node.children.filter { !$0.isChip }
+            var columns = branches.map { widths[$0.id] ?? card.width }
+            if !chips.isEmpty { columns.insert(card.width, at: 0) }
+            let total = columns.reduce(0, +) + gapX * CGFloat(max(columns.count - 1, 0))
+            var cursor = x + (width - total) / 2
+            if !chips.isEmpty {
+                var y: CGFloat = 0
+                for chipNode in chips {
+                    pending.append(Pending(node: chipNode, row: row + 1, x: cursor, offsetY: y))
+                    y += chip.height + chipGap
+                }
+                rowHeights[row + 1] = max(rowHeights[row + 1] ?? 0, y - chipGap)
+                cursor += card.width + gapX
+            }
+            for branch in branches {
+                place(branch, x: cursor, row: row + 1)
+                cursor += (widths[branch.id] ?? card.width) + gapX
+            }
+        }
+        var x: CGFloat = 0
+        for root in map.roots {
+            place(root, x: x, row: 0)
+            x += (widths[root.id] ?? card.width) + rootGap
+        }
+
+        var rowY: [Int: CGFloat] = [:]
+        var y: CGFloat = 0
+        for row in 0...(rowHeights.keys.max() ?? 0) {
+            rowY[row] = y
+            y += (rowHeights[row] ?? card.height) + rowGap
+        }
+        // A box that has been parked keeps its own place; everything else stays where the
+        // layout put it. Positions are stored unzoomed, so they hold at every zoom level.
+        let placed = pending.map { p in
+            let automatic = CGRect(x: p.x, y: (rowY[p.row] ?? 0) + p.offsetY,
+                                   width: card.width, height: p.node.isChip ? chip.height : card.height)
+            guard let path = p.node.note?.relativePath, let point = pinned[path] else {
+                return Item(node: p.node, frame: automatic)
+            }
+            return Item(node: p.node,
+                        frame: CGRect(x: point.x * zoom, y: point.y * zoom,
+                                      width: automatic.width, height: automatic.height))
+        }
+        items = placed
+        size = CGSize(width: max(placed.map(\.frame.maxX).max() ?? 0, card.width),
+                      height: max(placed.map(\.frame.maxY).max() ?? 0, card.height))
+
+        let frames = Dictionary(placed.map { ($0.id, $0.frame) }, uniquingKeysWith: { a, _ in a })
+        var lines: [Edge] = []
+        for item in placed {
+            for child in item.node.children {
+                guard let target = frames[child.id] else { continue }
+                lines.append(Edge(from: child.id, to: item.id,
+                                  start: CGPoint(x: target.midX, y: target.minY),
+                                  end: CGPoint(x: item.frame.midX, y: item.frame.maxY), dashed: false))
+            }
+        }
+        for link in map.links {
+            guard let source = frames[link.from], let target = frames[link.to] else { continue }
+            lines.append(Edge(from: link.from, to: link.to,
+                              start: CGPoint(x: source.midX, y: source.minY),
+                              end: CGPoint(x: target.midX, y: target.maxY), dashed: true))
+        }
+        edges = lines
+    }
+}
+
+// MARK: - Drawing
+
+struct MapCanvas: View {
+    let layout: MapLayout
+    /// Nodes to draw at full strength; nil lights everything.
+    let lit: Set<String>?
+    let selectedID: String?
+    let select: (MapNode) -> Void
+    /// Dropping one box on another links them. Nil while the map is only being drawn.
+    var onDrop: ((TaskTransfer, MapNode) -> Bool)? = nil
+    /// While arranging, a drag moves the box instead of linking it.
+    var arranging = false
+    /// The boxes marked while arranging, by node id. They move together.
+    var marked: Binding<Set<String>> = .constant([])
+    /// Where the boxes were let go, in unzoomed points from the top left.
+    var onMove: (([(MapNode, CGPoint)]) -> Void)? = nil
+    var onUnpin: (([MapNode]) -> Void)? = nil
+    @State private var targetedID: String?
+    /// The boxes being dragged right now, and how far they have come.
+    @State private var movingIDs: Set<String> = []
+    @State private var liveShift: CGSize = .zero
+    /// The rectangle being dragged across the background to mark everything inside it.
+    @State private var band: CGRect?
+
+    /// Sweeping the empty background marks what the rectangle touches; a click on it with no
+    /// movement clears the marks. One gesture does both, so neither can swallow the other.
+    private var bandGesture: some Gesture {
+        DragGesture(minimumDistance: 0)
+            .onChanged { value in
+                guard MapNodeBox.isDrag(value.translation) else { return }
+                band = CGRect(x: min(value.startLocation.x, value.location.x),
+                              y: min(value.startLocation.y, value.location.y),
+                              width: abs(value.location.x - value.startLocation.x),
+                              height: abs(value.location.y - value.startLocation.y))
+            }
+            .onEnded { value in
+                guard MapNodeBox.isDrag(value.translation) else {
+                    band = nil
+                    marked.wrappedValue = []
+                    return
+                }
+                if let band {
+                    // Added to what is already marked, not instead of it, so tapping boxes
+                    // and sweeping a rectangle can be used together.
+                    marked.wrappedValue.formUnion(layout.items
+                        .filter { $0.node.note != nil && $0.frame.intersects(band) }
+                        .map(\.id))
+                }
+                band = nil
+            }
+    }
+
+    /// A drag moves everything marked when it starts on a marked box, otherwise that box alone.
+    private func group(around node: MapNode) -> Set<String> {
+        guard marked.wrappedValue.contains(node.id) else { return [node.id] }
+        return marked.wrappedValue
+    }
+
+    private func dragChanged(_ node: MapNode, _ translation: CGSize) {
+        if movingIDs.isEmpty { movingIDs = group(around: node) }
+        liveShift = translation
+    }
+
+    private func dragEnded(_ node: MapNode, _ translation: CGSize) {
+        let moving = movingIDs.isEmpty ? group(around: node) : movingIDs
+        let moved = layout.items.filter { moving.contains($0.id) && $0.node.note != nil }.map { item in
+            (item.node, CGPoint(x: (item.frame.minX + translation.width) / layout.zoom,
+                                y: (item.frame.minY + translation.height) / layout.zoom))
+        }
+        movingIDs = []
+        liveShift = .zero
+        guard !moved.isEmpty else { return }
+        onMove?(moved)
+    }
+
+    /// Tapping a box while arranging marks it, or unmarks it if it was already marked.
+    private func toggleMark(_ node: MapNode) {
+        if marked.wrappedValue.contains(node.id) {
+            marked.wrappedValue.remove(node.id)
+        } else {
+            marked.wrappedValue.insert(node.id)
+        }
+    }
+
+    private func unpinGroup(_ node: MapNode) {
+        let ids = group(around: node)
+        onUnpin?(layout.items.filter { ids.contains($0.id) }.map(\.node))
+    }
+
+    var body: some View {
+        let tints = Dictionary(layout.items.map { ($0.id, $0.node.tint) }, uniquingKeysWith: { a, _ in a })
+        ZStack(alignment: .topLeading) {
+            Canvas { context, _ in
+                for edge in layout.edges {
+                    var path = Path()
+                    path.move(to: edge.start)
+                    let midY = (edge.start.y + edge.end.y) / 2
+                    path.addCurve(to: edge.end,
+                                  control1: CGPoint(x: edge.start.x, y: midY),
+                                  control2: CGPoint(x: edge.end.x, y: midY))
+                    let bright = lit.map { $0.contains(edge.from) && $0.contains(edge.to) } ?? true
+                    let color = (tints[edge.from] ?? .secondary).opacity(bright ? 0.85 : 0.18)
+                    context.stroke(path, with: .color(color),
+                                   style: StrokeStyle(lineWidth: (edge.dashed ? 1.2 : 1.8) * layout.zoom,
+                                                      dash: edge.dashed ? [5 * layout.zoom, 4 * layout.zoom] : []))
+                }
+            }
+            .contentShape(Rectangle())
+            // The rectangle is a Mac thing: on the phone a drag across the background scrolls
+            // the map, so there a plain tap is all the background does.
+            #if os(macOS)
+            .gesture(bandGesture, including: arranging ? .all : .subviews)
+            #else
+            .onTapGesture { if arranging { marked.wrappedValue = [] } }
+            #endif
+            ForEach(layout.items) { item in
+                MapNodeBox(item: item, zoom: layout.zoom,
+                           dimmed: lit.map { !$0.contains(item.id) } ?? false,
+                           selected: arranging ? marked.wrappedValue.contains(item.id) : item.id == selectedID,
+                           targeted: targetedID == item.id,
+                           arranging: arranging,
+                           shift: movingIDs.contains(item.id) ? liveShift : .zero,
+                           markedCount: marked.wrappedValue.count,
+                           select: {
+                               if arranging { toggleMark(item.node) } else { select(item.node) }
+                           },
+                           drop: { transfer in onDrop?(transfer, item.node) ?? false },
+                           targeting: { over in
+                               if over {
+                                   targetedID = item.id
+                               } else if targetedID == item.id {
+                                   targetedID = nil
+                               }
+                           },
+                           dragging: { translation in dragChanged(item.node, translation) },
+                           dropped: { translation in dragEnded(item.node, translation) },
+                           unpin: { unpinGroup(item.node) })
+            }
+            if let band {
+                Rectangle()
+                    .fill(Color.accentColor.opacity(0.12))
+                    .overlay(Rectangle().strokeBorder(Color.accentColor, lineWidth: 1))
+                    .frame(width: band.width, height: band.height)
+                    .offset(x: band.minX, y: band.minY)
+                    .allowsHitTesting(false)
+            }
+        }
+    }
+}
+
+/// One box: it either links things by being dragged onto another, or — while arranging —
+/// moves, along with everything else that is marked. Its own view so the list stays readable.
+struct MapNodeBox: View {
+    let item: MapLayout.Item
+    let zoom: CGFloat
+    let dimmed: Bool
+    let selected: Bool
+    let targeted: Bool
+    let arranging: Bool
+    /// How far the box has been dragged so far. Held by the canvas, because a whole group
+    /// of boxes moves with one drag and they all need the same number.
+    let shift: CGSize
+    let markedCount: Int
+    let select: () -> Void
+    let drop: (TaskTransfer) -> Bool
+    let targeting: (Bool) -> Void
+    let dragging: (CGSize) -> Void
+    let dropped: (CGSize) -> Void
+    let unpin: () -> Void
+
+    private var canMove: Bool { item.node.note != nil }
+
+    private var unpinTitle: String {
+        selected && markedCount > 1 ? "Place these \(markedCount) automatically" : "Place this one automatically"
+    }
+
+    /// Placed with `.offset` inside a top-leading stack, never `.position`: a positioned view
+    /// takes its parent's whole size, so every box's touch area covered the entire map and
+    /// the topmost one swallowed every click (build 85).
+    private func placed(_ extra: CGSize) -> some View {
+        MapNodeView(node: item.node, zoom: zoom, dimmed: dimmed, selected: selected, targeted: targeted)
+            .frame(width: item.frame.width, height: item.frame.height)
+            .offset(x: item.frame.minX + extra.width, y: item.frame.minY + extra.height)
+    }
+
+    /// A tap and a drag through one gesture rather than two: two gestures on the same box
+    /// argue about which of them a click belongs to, and the tap loses.
+    private var moveGesture: some Gesture {
+        DragGesture(minimumDistance: 0)
+            .onChanged { value in
+                guard Self.isDrag(value.translation) else { return }
+                dragging(value.translation)
+            }
+            .onEnded { value in
+                if Self.isDrag(value.translation) { dropped(value.translation) } else { select() }
+            }
+    }
+
+    static func isDrag(_ translation: CGSize) -> Bool {
+        abs(translation.width) > 3 || abs(translation.height) > 3
+    }
+
+    var body: some View {
+        if arranging, canMove {
+            placed(shift)
+                .gesture(moveGesture)
+                .contextMenu {
+                    Button(unpinTitle, action: unpin)
+                }
+        } else {
+            placed(.zero)
+                .onTapGesture(perform: select)
+                .draggable(MapCanvas.transfer(for: item.node))
+                .dropDestination(for: TaskTransfer.self) { transfers, _ in
+                    guard let first = transfers.first else { return false }
+                    return drop(first)
+                } isTargeted: { targeting($0) }
+        }
+    }
+}
+
+extension MapCanvas {
+    /// What a box carries when it is dragged: its note, or the task on a chip.
+    static func transfer(for node: MapNode) -> TaskTransfer {
+        switch node.content {
+        case .note(let note): return TaskTransfer(note: note)
+        case .task(let ref, _): return TaskTransfer(ref)
+        case .more, .group: return .nothing
+        }
+    }
+}
+
+extension MapNode {
+    var tint: Color {
+        switch content {
+        case .note(let note): return note.tint
+        case .task(_, let noteKind): return noteKind.tint
+        case .more(_, let path): return path.hasPrefix("Areas/") ? ParaKind.area.tint : ParaKind.project.tint
+        case .group(let group): return group == .archive ? ParaKind.archive.tint : Color.secondary
+        }
+    }
+
+    var paraKind: ParaKind? {
+        switch content {
+        case .note(let note): return note.kind
+        case .group(let group): return group == .archive ? .archive : nil
+        case .task, .more: return nil
+        }
+    }
+}
+
+struct MapNodeView: View {
+    let node: MapNode
+    let zoom: CGFloat
+    let dimmed: Bool
+    let selected: Bool
+    /// Something is being dragged over this box and it would take it.
+    var targeted = false
+
+    var body: some View {
+        Group {
+            switch node.content {
+            case .note(let note) where note.kind == .resource && !note.isArchived:
+                chip(icon: SidebarSection.kind(.resource).systemImage, title: note.title, detail: nil, tint: ParaKind.resource.tint)
+            case .note(let note):
+                card(note)
+            case .task(let ref, _):
+                chip(icon: ref.task.priority >= 2 ? "exclamationmark.circle" : "circle", title: ref.task.title,
+                     detail: ref.task.dueDate?.description, tint: node.tint)
+            case .more:
+                chip(icon: "ellipsis", title: node.title, detail: nil, tint: node.tint)
+            case .group(let group):
+                groupCard(group)
+            }
+        }
+        .opacity(dimmed ? 0.28 : 1)
+        .contentShape(Rectangle())
+        .overlay {
+            RoundedRectangle(cornerRadius: 10 * zoom)
+                .strokeBorder(Color.accentColor, lineWidth: targeted ? 2.5 : 0)
+        }
+        .help(node.title)
+        .animation(.easeInOut(duration: 0.15), value: dimmed)
+        .animation(.easeInOut(duration: 0.12), value: targeted)
+    }
+
+    private func card(_ note: Note) -> some View {
+        HStack(spacing: 8 * zoom) {
+            KindBadge(kind: note.kind, size: 20 * zoom)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(note.displayTitle)
+                    .font(.system(size: 12.5 * zoom, weight: .semibold))
+                    .lineLimit(1)
+                Text(subtitle(for: note))
+                    .font(.system(size: 10 * zoom))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 8 * zoom)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(note.tint.opacity(0.13), in: RoundedRectangle(cornerRadius: 8 * zoom))
+        .overlay(RoundedRectangle(cornerRadius: 8 * zoom).strokeBorder(note.tint, lineWidth: (selected ? 2.5 : 1) * zoom))
+    }
+
+    private func groupCard(_ group: MapNode.Group) -> some View {
+        HStack(spacing: 8 * zoom) {
+            Image(systemName: group == .archive ? "archivebox" : "questionmark.folder")
+                .font(.system(size: 12 * zoom, weight: .semibold))
+                .foregroundStyle(node.tint)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(group.title)
+                    .font(.system(size: 12 * zoom, weight: .semibold))
+                    .lineLimit(2)
+                Text("\(node.children.count) note\(node.children.count == 1 ? "" : "s")")
+                    .font(.system(size: 10 * zoom))
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 8 * zoom)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .overlay(RoundedRectangle(cornerRadius: 8 * zoom)
+            .strokeBorder(node.tint.opacity(0.7), style: StrokeStyle(lineWidth: (selected ? 2.5 : 1) * zoom, dash: [4 * zoom, 3 * zoom])))
+    }
+
+    private func chip(icon: String, title: String, detail: String?, tint: Color) -> some View {
+        HStack(spacing: 6 * zoom) {
+            Image(systemName: icon)
+                .font(.system(size: 10 * zoom))
+                .foregroundStyle(tint)
+            Text(title)
+                .font(.system(size: 11 * zoom))
+                .lineLimit(1)
+            Spacer(minLength: 0)
+            if let detail {
+                Text(detail)
+                    .font(.system(size: 9 * zoom))
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.horizontal, 7 * zoom)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(tint.opacity(0.07), in: RoundedRectangle(cornerRadius: 6 * zoom))
+        .overlay(RoundedRectangle(cornerRadius: 6 * zoom).strokeBorder(tint.opacity(selected ? 1 : 0.45), lineWidth: (selected ? 2 : 1) * zoom))
+    }
+
+    private func subtitle(for note: Note) -> String {
+        var parts: [String] = []
+        if let horizon = note.horizon { parts.append(horizon.label) }
+        if let status = note.status, status != "active" { parts.append(status.capitalized) }
+        if note.kind.isTaskKind {
+            let open = note.openTasks.count
+            parts.append(open == 0 ? "no open tasks" : "\(open) open")
+        }
+        if let due = note.dueDate { parts.append("due \(due)") }
+        if let target = note.targetDate { parts.append("by \(target)") }
+        if parts.isEmpty { parts.append(note.isArchived ? "Archived" : String(note.kind.displayName.dropLast())) }
+        return parts.joined(separator: " · ")
+    }
+}
+
+// MARK: - Footer
+
+/// The legend, and for the chosen box: what it serves and what serves it.
+struct MapFooter: View {
+    @EnvironmentObject private var model: AppModel
+    let map: LinkMap
+    let selectedID: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 14) {
+                legend(ParaKind.goal.tint, "Goals")
+                legend(ParaKind.area.tint, "Areas")
+                legend(ParaKind.project.tint, "Projects, their actions")
+                legend(ParaKind.resource.tint, "Resources")
+                legend(ParaKind.archive.tint, "Archive")
+                Text("Solid line: sits under.  Dashed: also serves.")
+                    .foregroundStyle(.secondary)
+            }
+            .font(.caption)
+            if let selectedID, let node = map.node(selectedID) {
+                let up = names(map.upstream(of: selectedID))
+                let down = names(map.downstream(of: selectedID))
+                HStack(alignment: .top, spacing: 8) {
+                    if let kind = node.paraKind {
+                        KindBadge(kind: kind, size: 18)
+                    }
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(node.title).font(.subheadline.weight(.semibold))
+                        Text("Serves: " + (up.isEmpty ? "nothing above it" : up.joined(separator: " › ")))
+                        Text("Served by: " + (down.isEmpty ? "nothing yet" : down.joined(separator: ", ")))
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                }
+            } else {
+                Text("Click a box to see what it serves and what serves it. The note opens on the right.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+    }
+
+    private func legend(_ color: Color, _ text: String) -> some View {
+        HStack(spacing: 4) {
+            Circle().fill(color).frame(width: 8, height: 8)
+            Text(text)
+        }
+    }
+
+    /// Titles ordered top down: goals, areas, projects, then tasks and resources.
+    private func names(_ ids: Set<String>) -> [String] {
+        let order = map.allNodes.filter { ids.contains($0.id) }
+        func rank(_ node: MapNode) -> Int {
+            switch node.content {
+            case .note(let note):
+                switch note.kind {
+                case .goal: return 0
+                case .area: return 1
+                case .project: return 2
+                case .inbox: return 3
+                case .archive: return 4
+                case .resource: return 6
+                case .daily: return 7
+                }
+            case .task, .more: return 5
+            case .group: return 8
+            }
+        }
+        let sorted = order.sorted { a, b in
+            let ra = rank(a), rb = rank(b)
+            if ra != rb { return ra < rb }
+            return a.title.localizedCaseInsensitiveCompare(b.title) == .orderedAscending
+        }
+        var titles = sorted.prefix(10).map(\.title)
+        if sorted.count > 10 { titles.append("and \(sorted.count - 10) more") }
+        return titles
+    }
+}

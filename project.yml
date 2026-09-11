@@ -1,6 +1,6 @@
-# XcodeGen spec. Run `xcodegen generate` and open AMSPara.xcodeproj.
+# XcodeGen spec. Run `xcodegen generate` and open Paragon.xcodeproj.
 # Any change here makes CI regenerate the committed project (needed after adding source files).
-name: AMSPara
+name: Paragon
 options:
   bundleIdPrefix: com.schabbauer
   deploymentTarget:
@@ -10,30 +10,30 @@ options:
   generateEmptyDirectories: false
 
 packages:
-  AMSParaCore:
+  ParagonCore:
     # The package lives in its own folder: Xcode cannot reference a local
     # package that sits in the same directory as the .xcodeproj.
     path: Core
 
 targets:
-  AMSPara:
+  Paragon:
     type: application
     supportedDestinations: [macOS, iOS]
     sources:
       # Synchronized folder (Xcode 16+): new source files are picked up without
       # regenerating the project, so the committed project rarely changes.
-      - path: App/AMSPara
+      - path: App/Paragon
         type: syncedFolder
       # The built-in manual (Help window on the Mac, Settings › Help on iOS).
       - path: Docs
         buildPhase: resources
     dependencies:
-      - package: AMSParaCore
-        product: AMSParaCore
-      - target: AMSParaShare
+      - package: ParagonCore
+        product: ParagonCore
+      - target: ParagonShare
         platformFilter: iOS
     info:
-      path: App/Config/AMSPara/Info.plist
+      path: App/Config/Paragon/Info.plist
       properties:
         CFBundleDisplayName: PARAGON
         CFBundleName: PARAGON
@@ -67,7 +67,7 @@ targets:
         UISupportsDocumentBrowser: true
         LSSupportsOpeningDocumentsInPlace: true
     entitlements:
-      path: App/Config/AMSPara/AMSPara.entitlements
+      path: App/Config/Paragon/Paragon.entitlements
       properties:
         com.apple.security.app-sandbox: true
         com.apple.security.files.user-selected.read-write: true
@@ -76,7 +76,7 @@ targets:
         com.apple.security.application-groups: [group.com.schabbauer.amspara]
     settings:
       base:
-        # The built app is PARAGON.app, not AMSPara.app: on the Mac, Finder and the Dock
+        # The built app is PARAGON.app, not Paragon.app: on the Mac, Finder and the Dock
         # show the bundle's file name, so CFBundleDisplayName alone would leave the old
         # name on screen. The target, the folder and the bundle id are untouched.
         PRODUCT_NAME: PARAGON
@@ -88,23 +88,23 @@ targets:
         CURRENT_PROJECT_VERSION: 1
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: D24ENP83QQ
-        CODE_SIGN_ENTITLEMENTS[sdk=macosx*]: App/Config/AMSPara/AMSPara-macOS.entitlements
+        CODE_SIGN_ENTITLEMENTS[sdk=macosx*]: App/Config/Paragon/Paragon-macOS.entitlements
         GENERATE_INFOPLIST_FILE: false
         ENABLE_HARDENED_RUNTIME: true
         TARGETED_DEVICE_FAMILY: "1,2"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
 
-  AMSParaShare:
+  ParagonShare:
     type: app-extension
     platform: iOS
     sources:
-      - path: App/AMSParaShare
+      - path: App/ParagonShare
         type: syncedFolder
     dependencies:
-      - package: AMSParaCore
-        product: AMSParaCore
+      - package: ParagonCore
+        product: ParagonCore
     info:
-      path: App/Config/AMSParaShare/Info.plist
+      path: App/Config/ParagonShare/Info.plist
       properties:
         CFBundleDisplayName: PARAGON
         NSExtension:
@@ -116,7 +116,7 @@ targets:
               NSExtensionActivationSupportsWebURLWithMaxCount: 1
               NSExtensionActivationSupportsWebPageWithMaxCount: 1
     entitlements:
-      path: App/Config/AMSParaShare/AMSParaShare.entitlements
+      path: App/Config/ParagonShare/ParagonShare.entitlements
       properties:
         com.apple.security.application-groups: [group.com.schabbauer.amspara]
     settings:
@@ -131,10 +131,10 @@ targets:
         SKIP_INSTALL: true
 
 schemes:
-  AMSPara:
+  Paragon:
     build:
       targets:
-        AMSPara: all
+        Paragon: all
     run:
       config: Debug
     test:
