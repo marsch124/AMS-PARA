@@ -126,3 +126,70 @@ extension View {
     /// Marks a column with the colour of the section it belongs to.
     func modeAccent(_ tint: Color) -> some View { modifier(ModeAccent(tint: tint)) }
 }
+
+/// The one way to choose a date in PARAGON: write it, or pick it.
+///
+/// Both are always offered because the dates this app deals in run from tomorrow to a goal
+/// five years out, and a calendar you have to press forty times is no way to reach 2031 —
+/// which is exactly what he counted when asked to try the "due after its goal" check
+/// (build 136). The field is what **Set** reads; the calendar only writes into it.
+///
+/// Used by the project deadline in the note header and by a task's date. The New Note sheet's
+/// target date is deliberately left as a plain field: that screen was designed with him and
+/// takes one short line per row.
+struct DateChoiceView: View {
+    /// The date already set, if any. It is what the field and the calendar open on.
+    let current: DateOnly?
+    /// Shown on the clearing button. Leave it nil for no such button.
+    var clearTitle: String? = nil
+    /// Shown as **Cancel** when given. A sheet needs it; a popover can also be dismissed by
+    /// clicking away, but the button does no harm there.
+    var cancel: (() -> Void)? = nil
+    /// The chosen date, or nil when the clearing button was pressed.
+    let choose: (DateOnly?) -> Void
+
+    @State private var typed = ""
+    @State private var date = Date()
+
+    private var parsed: DateOnly? { DateOnly(typed.trimmingCharacters(in: .whitespaces)) }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            TextField("2031-12-01", text: $typed)
+                .textFieldStyle(.roundedBorder)
+                .font(.body.monospacedDigit())
+                .onSubmit(set)
+            Text(parsed == nil ? "Write the date as 2031-12-01." : "Or pick it below.")
+                .font(.caption)
+                .foregroundStyle(parsed == nil ? Color.red : Color.secondary)
+            DatePicker("Date", selection: $date, displayedComponents: .date)
+                .datePickerStyle(.graphical)
+                .labelsHidden()
+                .onChange(of: date) { _, picked in typed = DateOnly(picked).description }
+            HStack {
+                if let clearTitle {
+                    Button(clearTitle, role: .destructive) { choose(nil) }
+                }
+                Spacer()
+                if let cancel {
+                    Button("Cancel", action: cancel)
+                }
+                Button("Set", action: set)
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(parsed == nil)
+            }
+        }
+        .padding(12)
+        .frame(width: 300)
+        .onAppear {
+            let start = current ?? DateOnly(Date())
+            typed = start.description
+            date = start.date() ?? Date()
+        }
+    }
+
+    private func set() {
+        guard let parsed else { return }
+        choose(parsed)
+    }
+}

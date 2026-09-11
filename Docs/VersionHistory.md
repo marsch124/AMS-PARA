@@ -2,6 +2,11 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 137 · 11 September 2026
+
+- **One date chooser, used everywhere a date is picked.** The same panel now opens for a project's deadline and for a task's date: a field at the top where you write 2031-12-01, a calendar underneath for dates close at hand, and **Clear**, **Cancel** and **Set**.
+- Picking in the calendar fills the field in, and **Set** always reads the field. While the text is not a date the app can read, the hint under it turns red and **Set** is greyed out.
+
 ## Build 136 · 11 September 2026
 
 - **A project's deadline can be typed.** The **Due** button now opens with a field at the top: write 2031-12-01 and press Return. The calendar is still there underneath for dates close at hand, and picking in it fills the field in.

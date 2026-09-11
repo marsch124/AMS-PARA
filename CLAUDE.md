@@ -842,9 +842,14 @@ navigate away.**
 to set a project deadline to 2031-12-01 and counted about forty presses. `ProjectDeadlineChip`
 now leads with a `TextField` (the app's existing `YYYY-MM-DD` convention, as in the New Note
 sheet's target date and the add-task bar's `>2026-09-10`); the calendar stays below and writes
-into the field, and **Set reads the field, not the calendar**. `TaskDatePicker` in
-TaskActions.swift still has the old shape — tasks are usually near at hand, but it is the same
-fault waiting.
+into the field, and **Set reads the field, not the calendar**. **Build 137** made it one component at his suggestion: `DateChoiceView` in `Views/Theme.swift`
+(`current`, optional `clearTitle`, optional `cancel`, and one `choose: (DateOnly?) -> Void`
+where nil means cleared). `ProjectDeadlineChip` and `TaskDatePicker` are both thin wrappers
+around it now. `cancel` exists because `TaskDatePicker` is presented as a `.sheet` in
+`InboxView` and a `.popover` in `NoteEditorView`, and a sheet cannot be dismissed by clicking
+away. **Left alone deliberately:** the Time Blocks pickers (a day *and* a time, and never more
+than 60 days out) and the New Note sheet's target field, which he designed with me and which
+is one short row per line.
 
 Still open, in the order agreed: roll-up progress from projects to a goal; then Goals and
 Aspirations screens if the one review is not enough; then the status vocabulary

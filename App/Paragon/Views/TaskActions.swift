@@ -164,25 +164,13 @@ struct TaskDatePicker: View {
     @EnvironmentObject private var model: AppModel
     let ref: TaskRef
     @Binding var isPresented: Bool
-    @State private var date = Date()
 
     var body: some View {
-        VStack(spacing: 10) {
-            DatePicker("Due", selection: $date, displayedComponents: .date)
-                .datePickerStyle(.graphical)
-                .labelsHidden()
-            HStack {
-                Button("Cancel") { isPresented = false }
-                Spacer()
-                Button("Set date") {
-                    model.setDueDate(ref, DateOnly(date))
-                    isPresented = false
-                }
-                .keyboardShortcut(.defaultAction)
-            }
+        DateChoiceView(current: ref.task.dueDate,
+                       clearTitle: ref.task.dueDate == nil ? nil : "No date",
+                       cancel: { isPresented = false }) { chosen in
+            model.setDueDate(ref, chosen)
+            isPresented = false
         }
-        .padding(12)
-        .frame(width: 300)
-        .onAppear { date = ref.task.dueDate?.date() ?? Date() }
     }
 }

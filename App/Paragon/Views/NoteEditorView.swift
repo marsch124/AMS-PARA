@@ -550,21 +550,9 @@ struct ProjectDeadlineChip: View {
     @ObservedObject var model: AppModel
     let note: Note
     @State private var picking = false
-    @State private var date = Date()
-    /// What the field holds. A goal can be years out — build 136 was asked for because
-    /// reaching December 2031 through the calendar is about forty presses — so the typed
-    /// date is what "Set" reads, and the calendar only writes into it.
-    @State private var typed = ""
-
-    private var parsed: DateOnly? { DateOnly(typed.trimmingCharacters(in: .whitespaces)) }
 
     var body: some View {
-        Button {
-            let start = note.dueDate ?? DateOnly(Date())
-            date = start.date() ?? Date()
-            typed = start.description
-            picking = true
-        } label: {
+        Button { picking = true } label: {
             Label(note.dueDate.map { "Due \($0.description)" } ?? "Set a deadline\u{2026}",
                   systemImage: "calendar")
         }
@@ -572,40 +560,13 @@ struct ProjectDeadlineChip: View {
         .foregroundStyle(note.dueDate == nil ? Color.secondary : ParaKind.project.tint)
         .help("When this project has to be finished. The weekly review compares it with the goal it serves.")
         .popover(isPresented: $picking) {
-            VStack(alignment: .leading, spacing: 10) {
-                TextField("2031-12-01", text: $typed)
-                    .textFieldStyle(.roundedBorder)
-                    .font(.body.monospacedDigit())
-                    .onSubmit(commit)
-                Text(parsed == nil ? "Write the date as 2031-12-01." : "Or pick it below.")
-                    .font(.caption)
-                    .foregroundStyle(parsed == nil ? Color.red : Color.secondary)
-                DatePicker("Deadline", selection: $date, displayedComponents: .date)
-                    .datePickerStyle(.graphical)
-                    .labelsHidden()
-                    .onChange(of: date) { _, picked in typed = DateOnly(picked).description }
-                HStack {
-                    if note.dueDate != nil {
-                        Button("Clear", role: .destructive) {
-                            model.setDeadline(note, nil)
-                            picking = false
-                        }
-                    }
-                    Spacer()
-                    Button("Set", action: commit)
-                        .keyboardShortcut(.defaultAction)
-                        .disabled(parsed == nil)
-                }
+            DateChoiceView(current: note.dueDate,
+                           clearTitle: note.dueDate == nil ? nil : "Clear",
+                           cancel: { picking = false }) { chosen in
+                model.setDeadline(note, chosen)
+                picking = false
             }
-            .padding(12)
-            .frame(width: 300)
         }
-    }
-
-    private func commit() {
-        guard let parsed else { return }
-        model.setDeadline(note, parsed)
-        picking = false
     }
 }
 
