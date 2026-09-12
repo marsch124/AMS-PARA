@@ -340,6 +340,9 @@ it: write `#next-week`, not `#next week`.
 
 #### The three ways to add one
 
+There are three ways to put one on something, and the Tags screen can also make, rename and
+delete tags on their own.
+
 **1. The Tags… button at the top of a note.** This is the easy one. Open the note and press
 the button in the top row. It says **Tags…** when the note has none and lists them once it
 has. A small panel opens:
@@ -374,6 +377,28 @@ words:
 
 A task's tag belongs to that task, not to the note it sits in. That is why the Tags screen
 counts notes and tasks separately.
+
+#### Making a tag before you use it
+
+The **Tags** screen has a field at the top. Write a word there and press **Make**. The tag is
+kept even though nothing carries it yet, so it is offered in the **Tags…** panel of every note
+from then on. It is marked **not used yet** in the list until something takes it.
+
+#### Renaming a tag, and deleting one
+
+Right-click a tag in the **Tags** screen (long-press on the iPhone):
+
+- **Rename…** changes it in every note and every task that carries it, in one go. Both places
+  are rewritten: the `tags:` lines and the `#tag` words.
+- **Delete…** takes it out of every note and every task. The notes and the tasks themselves are
+  kept — only the tag is removed.
+
+Two things are left alone on purpose. `#next`, which is how the app marks a next action, cannot
+be renamed or deleted; doing so would break that. And a longer tag that starts with the same
+letters is never touched: renaming `#travel` leaves `#travelling` as it is.
+
+If a note cannot be written — it is open elsewhere, or iCloud has not finished with it — the app
+says which ones still carry the old tag rather than letting it pass.
 
 #### The Tags screen
 

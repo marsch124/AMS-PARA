@@ -10,8 +10,17 @@ public struct TagUse: Identifiable, Equatable, Sendable {
     /// Tasks carrying it that are done or cancelled (`TaskItem.isDone` covers both).
     public let finishedTaskCount: Int
 
+    public init(tag: String, noteCount: Int = 0, openTaskCount: Int = 0, finishedTaskCount: Int = 0) {
+        self.tag = tag
+        self.noteCount = noteCount
+        self.openTaskCount = openTaskCount
+        self.finishedTaskCount = finishedTaskCount
+    }
+
     public var id: String { tag }
     public var total: Int { noteCount + openTaskCount + finishedTaskCount }
+    /// Made but not yet put on anything. Only a tag from `Vault.knownTags()` can be this.
+    public var isUnused: Bool { total == 0 }
 }
 
 public extension NoteIndex {
@@ -89,5 +98,122 @@ public extension NoteIndex {
         tag.trimmingCharacters(in: .whitespaces)
             .trimmingCharacters(in: .init(charactersIn: "#"))
             .lowercased()
+    }
+}
+
+// MARK: Renaming and removing a tag
+
+public extension Note {
+    /// This note with one tag renamed, or removed when `new` is nil. Returns nil when the note
+    /// never carried it, so a caller can write only the files that really changed — the same
+    /// shape as `retargeting(_:to:)` for a renamed note.
+    ///
+    /// Both places a tag can live are rewritten: the `tags:` line, and `#tag` in the text. The
+    /// text is matched with the *same* pattern the task parser uses, so what is renamed is
+    /// exactly what the app counts as a tag — a `## Heading` is untouched, and `#travelling`
+    /// is not a match for `#travel`.
+    func changingTag(_ old: String, to new: String?) -> Note? {
+        let wanted = NoteIndex.normalized(old)
+        guard !wanted.isEmpty else { return nil }
+        var updated = self
+        var changed = false
+
+        let existing = tags
+        if existing.contains(where: { $0.lowercased() == wanted }) {
+            var seen = Set<String>()
+            var rebuilt: [String] = []
+            for tag in existing {
+                let replacement = tag.lowercased() == wanted ? new : tag
+                guard let replacement, !replacement.isEmpty else { continue }
+                if seen.insert(replacement.lowercased()).inserted { rebuilt.append(replacement) }
+            }
+            updated.frontmatter.set("tags", list: rebuilt)
+            changed = true
+        }
+
+        if let rewritten = Self.rewrite(body, tag: wanted, to: new) {
+            updated.body = rewritten
+            changed = true
+        }
+        return changed ? updated : nil
+    }
+
+    /// The body with `#old` rewritten, or nil when it does not appear.
+    private static func rewrite(_ text: String, tag old: String, to new: String?) -> String? {
+        guard let regex = tagPattern(old) else { return nil }
+        var lines = text.components(separatedBy: "\n")
+        var changed = false
+        let template = new.map { "#" + NSRegularExpression.escapedTemplate(for: $0) } ?? ""
+        for (index, line) in lines.enumerated() {
+            let ns = line as NSString
+            let whole = NSRange(location: 0, length: ns.length)
+            guard regex.firstMatch(in: line, options: [], range: whole) != nil else { continue }
+            var rewritten = regex.stringByReplacingMatches(in: line, options: [], range: whole, withTemplate: template)
+            // Taking a tag out leaves "Book the ferry  #summer" or a trailing space.
+            if new == nil { rewritten = tidySpaces(rewritten) }
+            lines[index] = rewritten
+            changed = true
+        }
+        return changed ? lines.joined(separator: "\n") : nil
+    }
+
+    /// `#tag`, as the task parser reads one: not glued to the word before it, and not matching
+    /// a longer tag that starts with the same letters.
+    private static func tagPattern(_ tag: String) -> NSRegularExpression? {
+        let escaped = NSRegularExpression.escapedPattern(for: tag)
+        return try? NSRegularExpression(pattern: #"(?<!\S)#"# + escaped + #"(?![\p{L}\p{N}_/\-])"#,
+                                        options: [.caseInsensitive])
+    }
+
+    /// Keeps the indent, squeezes the gap a removed tag left, drops a trailing space.
+    private static func tidySpaces(_ line: String) -> String {
+        let leading = line.prefix { $0 == " " || $0 == "\t" }
+        var rest = String(line.dropFirst(leading.count))
+        while rest.contains("  ") { rest = rest.replacingOccurrences(of: "  ", with: " ") }
+        return String(leading) + rest.trimmingCharacters(in: .whitespaces)
+    }
+}
+
+public extension Vault {
+    /// Renames a tag everywhere in the vault, or removes it when `new` is nil.
+    ///
+    /// Work notes are deliberately left alone: they are kept out of `allNotes()` on purpose
+    /// (build 112), so nothing about them is ever shown in the Tags screen either.
+    @discardableResult
+    func changeTag(_ old: String, to new: String?) throws -> MultiSaveResult {
+        saveEach(try allNotes()) { $0.changingTag(old, to: new) }
+    }
+
+    // MARK: Tags made but not used yet
+
+    /// A tag with nothing on it has nowhere to live in a markdown vault, so the few that have
+    /// been made and not used yet are kept here, beside the vault's other bookkeeping.
+    var knownTagsURL: URL { stateFolderURL.appendingPathComponent("tags.json") }
+
+    func knownTags() -> [String] {
+        guard let data = try? Data(contentsOf: knownTagsURL),
+              let list = try? JSONDecoder().decode([String].self, from: data) else { return [] }
+        return list
+    }
+
+    func rememberTag(_ tag: String) {
+        let clean = tag.trimmingCharacters(in: .whitespaces).trimmingCharacters(in: .init(charactersIn: "#"))
+        guard !clean.isEmpty else { return }
+        var list = knownTags()
+        guard !list.contains(where: { $0.lowercased() == clean.lowercased() }) else { return }
+        list.append(clean)
+        writeKnownTags(list)
+    }
+
+    func forgetTag(_ tag: String) {
+        let wanted = NoteIndex.normalized(tag)
+        let list = knownTags().filter { $0.lowercased() != wanted }
+        writeKnownTags(list)
+    }
+
+    private func writeKnownTags(_ list: [String]) {
+        try? FileManager.default.createDirectory(at: stateFolderURL, withIntermediateDirectories: true)
+        guard let data = try? JSONEncoder().encode(list) else { return }
+        try? data.write(to: knownTagsURL, options: .atomic)
     }
 }

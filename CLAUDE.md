@@ -975,6 +975,30 @@ control that writes it. If there isn't one, that control is part of the same bui
   `tags:` line (inline or indented — the button rewrites to inline, and that is stated), and
   `#tag` on a task. `Docs/HowItWorks.md` has them in one place under **Tools**.
 
+**Build 145: a tag can be renamed, deleted, and made before it is used.** All three were
+missing and he asked for all three in one message.
+- `Note.changingTag(_:to:)` (Core, Tags.swift) returns nil when the note never carried the tag,
+  so `Vault.changeTag` writes only what really changed — the same shape as build 77's
+  `retargeting(_:to:)`, and it goes through `saveEach`, so an outside edit is re-applied and a
+  note that still cannot be written is **named**, never swallowed (build 99).
+- **The body is rewritten with the task parser's own pattern**, `(?<!\S)#tag(?![\p{L}\p{N}_/\-])`,
+  case-insensitive. That is the only way rename and parse can agree: `#travelling` is not
+  `#travel`, and `## Heading` is not a tag. Removing a tag calls `tidySpaces`, which keeps the
+  indent and squeezes the gap the tag left.
+- **`#next` is refused.** It is `Note.nextActionTag`; renaming it would silently break every
+  next action. Any tag the app gives meaning to needs the same guard.
+- **Work notes are deliberately not touched** by a rename: `allNotes()` excludes them by
+  design (build 112) and the Tags screen never shows them, so including them here would be the
+  one place that leaks.
+- **A tag with nothing on it has nowhere to live in a markdown vault**, so `Vault.knownTags()`
+  keeps the made-but-unused ones in `.ams-para/tags.json`. `AppModel.allTagNames` and
+  `tagUses()` merge them in, and `TagUse.isUnused` draws them as "not used yet". A remembered
+  tag is *not* forgotten when it comes into use — it stays offered, which is what you want from
+  a tag you deliberately made.
+- `TagsView` gained the make-bar (`.safeAreaInset(edge: .top)`), a **Rename…**/**Delete…**
+  context menu, and the `.alert` + `.confirmationDialog` pair copied from `TemplatesView` —
+  a macOS alert silently drops everything that is not a TextField (build 93).
+
 Still open, in the order agreed: Goals and Aspirations screens if the one review is not
 enough; then the status vocabulary (reached / missed / dropped), last because it edits his
 notes. Also queued: **spread `StateToggle`** to the other two-state controls (Hide finished,

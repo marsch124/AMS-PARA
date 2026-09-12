@@ -16,9 +16,13 @@ struct TagsView: View {
     /// Tags folded shut, by their lower-case name. Everything starts folded: the list is the
     /// point, and forty open tags is not a list.
     @State private var opened: Set<String> = []
+    @State private var newTag = ""
+    @State private var renaming: String?
+    @State private var renameDraft = ""
+    @State private var deleting: String?
 
     private var uses: [TagUse] {
-        let all = model.index.tagUses()
+        let all = model.tagUses()
         let needle = NoteIndex.normalized(filter)
         guard !needle.isEmpty else { return all }
         return all.filter { $0.tag.lowercased().contains(needle) }
@@ -26,10 +30,10 @@ struct TagsView: View {
 
     var body: some View {
         Group {
-            if model.index.allTags.isEmpty {
+            if model.allTagNames.isEmpty {
                 EmptyStateView(title: "No tags yet",
                                systemImage: SidebarSection.tags.systemImage,
-                               message: "Write #travel, #waiting or any other word with a # in front of it, in a note or in a task. Every tag you use turns up here.",
+                               message: "Write #travel, #waiting or any other word with a # in front of it, in a note or in a task. Or make one here and put it on a note later.",
                                tint: SidebarSection.tags.tint)
             } else {
                 // A plain List, and every row a Button. Nothing is tagged for selection: one
@@ -49,7 +53,53 @@ struct TagsView: View {
                 .searchable(text: $filter, prompt: "Find a tag")
             }
         }
+        .safeAreaInset(edge: .top, spacing: 0) { makeBar }
         .navigationTitle("Tags")
+        // The same pair Templates has used since build 93: an alert whose only content is a
+        // TextField (a macOS alert silently drops anything else), and a confirmation dialog
+        // for the destructive one.
+        .alert("Rename #\(renaming ?? "")",
+               isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {
+            TextField("New name", text: $renameDraft)
+            Button("Cancel", role: .cancel) { renaming = nil }
+            Button("Rename") {
+                if let renaming { model.changeTag(renaming, to: renameDraft) }
+                renaming = nil
+            }
+        } message: {
+            Text("Every note and every task that carries it is changed.")
+        }
+        .confirmationDialog("Delete #\(deleting ?? "") everywhere?",
+                            isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } })) {
+            Button("Delete", role: .destructive) {
+                if let deleting { model.changeTag(deleting, to: nil) }
+                deleting = nil
+            }
+            Button("Cancel", role: .cancel) { deleting = nil }
+        } message: {
+            Text("The tag is taken out of every note and every task. The notes and the tasks themselves are kept.")
+        }
+    }
+
+    /// Making a tag before anything carries it. A tag with nothing on it has nowhere to live
+    /// in a markdown vault, so the app remembers it in the vault's own state folder until a
+    /// note or a task picks it up.
+    private var makeBar: some View {
+        HStack(spacing: 8) {
+            TextField("New tag", text: $newTag)
+                .textFieldStyle(.roundedBorder)
+                .onSubmit(make)
+            Button("Make", action: make)
+                .disabled(AppModel.cleanTag(newTag) == nil)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(.bar)
+    }
+
+    private func make() {
+        model.makeTag(newTag)
+        newTag = ""
     }
 
     private func header(for use: TagUse) -> some View {
@@ -77,6 +127,12 @@ struct TagsView: View {
         .buttonStyle(.plain)
         .textCase(nil)
         .contextMenu {
+            Button("Rename\u{2026}") {
+                renameDraft = use.tag
+                renaming = use.tag
+            }
+            Button("Delete\u{2026}", role: .destructive) { deleting = use.tag }
+            Divider()
             Button("Search for #\(use.tag)") {
                 model.queryText = "#\(use.tag)"
                 model.show(section: .search, notePath: nil)
@@ -86,6 +142,7 @@ struct TagsView: View {
 
     /// Built outside the ViewBuilder, where a `var` is allowed.
     private func summary(of use: TagUse) -> String {
+        guard !use.isUnused else { return "not used yet" }
         var parts: [String] = []
         if use.noteCount > 0 { parts.append("\(use.noteCount) \(use.noteCount == 1 ? "note" : "notes")") }
         if use.openTaskCount > 0 { parts.append("\(use.openTaskCount) open") }
@@ -278,7 +335,7 @@ struct NoteTagsChip: View {
         for tag in live.tags where seen.insert(tag.lowercased()).inserted {
             result.append(tag)
         }
-        for tag in model.index.allTags where seen.insert(tag.lowercased()).inserted {
+        for tag in model.allTagNames where seen.insert(tag.lowercased()).inserted {
             result.append(tag)
         }
         return result

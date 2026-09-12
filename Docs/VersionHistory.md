@@ -2,6 +2,15 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 145 · 12 September 2026
+
+- **A tag can be renamed everywhere at once.** Right-click a tag in **Tags** (long-press on the iPhone) › **Rename…**. Every note and every task that carries it is changed — both the `tags:` lines and the `#tag` words.
+- **A tag can be deleted everywhere.** Same menu › **Delete…**. The tag is taken out; the notes and the tasks themselves are kept.
+- **A tag can be made before anything uses it.** The **Tags** screen has a field at the top: write a word, press **Make**. It is offered in every note's **Tags…** panel from then on, and the list shows it as **not used yet**.
+- `#next` cannot be renamed or deleted: it is how the app marks a next action.
+- A longer tag that starts the same way is never caught — renaming `#travel` leaves `#travelling` alone. Nor is a `## Heading`.
+- If a note cannot be written, the app names the notes that still carry the old tag instead of letting it pass quietly.
+
 ## Build 144 · 12 September 2026
 
 - **A note's tags can be set from the note.** The top row of every note now has a **Tags…** button. It opens a small panel: a field for a new tag, and under it every tag you already use, with a circle you press to put one on this note or take it off.

@@ -99,7 +99,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 144
+    static let number = 145
 }
 
 @MainActor
@@ -1316,6 +1316,9 @@ final class AppModel: ObservableObject {
 
     /// The blocks of task lines from `Templates/Snippets.md`.
     @Published private(set) var snippets: [Snippet] = []
+    /// Tags made but not put on anything yet. A tag with nothing carrying it has nowhere to
+    /// live in a markdown vault, so those few are kept in the vault's own state folder.
+    @Published private(set) var knownTags: [String] = []
     /// Which template the Templates section is showing, shared by its two columns.
     @Published var templateSelection: String?
 
@@ -1384,6 +1387,7 @@ final class AppModel: ObservableObject {
     func refreshSnippets() {
         snippets = vault?.snippets() ?? []
         templates = vault?.templates() ?? []
+        knownTags = vault?.knownTags() ?? []
     }
 
     /// Drops a snippet's lines into a note's Tasks, dates and answers filled in.
@@ -1482,6 +1486,71 @@ final class AppModel: ObservableObject {
             tags.append(clean)
         }
         setTags(tags, on: note)
+    }
+
+    /// Every tag the app will offer: the ones in use, plus the ones made and not used yet.
+    var allTagNames: [String] {
+        var seen = Set<String>()
+        var result: [String] = []
+        for tag in index.allTags + knownTags where seen.insert(tag.lowercased()).inserted {
+            result.append(tag)
+        }
+        return result.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
+    }
+
+    /// Every tag with its counts, the unused ones included so a tag you made is not invisible.
+    func tagUses() -> [TagUse] {
+        var uses = index.tagUses()
+        let used = Set(uses.map { $0.tag.lowercased() })
+        for tag in knownTags where !used.contains(tag.lowercased()) {
+            uses.append(TagUse(tag: tag))
+        }
+        return uses.sorted { a, b in
+            a.total == b.total
+                ? a.tag.localizedCaseInsensitiveCompare(b.tag) == .orderedAscending
+                : a.total > b.total
+        }
+    }
+
+    /// Makes a tag without putting it on anything. It is remembered until it is used, and
+    /// forgotten again the moment a note or a task carries it.
+    func makeTag(_ raw: String) {
+        guard let clean = AppModel.cleanTag(raw), let vault else { return }
+        guard !allTagNames.contains(where: { $0.lowercased() == clean.lowercased() }) else {
+            flash("#\(clean) already exists")
+            return
+        }
+        vault.rememberTag(clean)
+        refreshSnippets()
+        flash("Made #\(clean)")
+    }
+
+    /// Renames a tag everywhere, or removes it everywhere when `to` is nil.
+    func changeTag(_ old: String, to new: String?) {
+        flushPendingEdits()
+        guard let vault else { return }
+        guard AppModel.cleanTag(old)?.lowercased() != Note.nextActionTag else {
+            errorMessage = "#\(Note.nextActionTag) is how the app marks a next action. Renaming or removing it would break that."
+            return
+        }
+        let target = new.flatMap(AppModel.cleanTag)
+        if new != nil, target == nil { return }
+        do {
+            let result = try vault.changeTag(old, to: target)
+            vault.forgetTag(old)
+            // Only worth remembering when nothing carried the old name: if notes were
+            // written, the new name is in the vault already and needs no bookkeeping.
+            if let target, result.saved.isEmpty { vault.rememberTag(target) }
+            reload()
+            if result.isComplete {
+                let where_ = result.saved.count == 1 ? "1 note" : "\(result.saved.count) notes"
+                flash(target == nil ? "Removed #\(old) from \(where_)" : "Renamed #\(old) to #\(target!) in \(where_)")
+            } else {
+                errorMessage = "These notes could not be written and still have #\(old): " + result.failed.joined(separator: ", ")
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 
     /// A tag as it can be written in both places it is allowed: the `tags:` line and `#tag`
