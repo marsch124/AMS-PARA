@@ -33,10 +33,13 @@ struct NoteEditorView: View {
     private var isPhone: Bool { false }
     #endif
 
+    /// Edit or Read, and nothing else. Split was a third choice he never used and asked to
+    /// have removed (build 142). A stored "split" no longer decodes and falls back to Edit,
+    /// so there is nothing to migrate.
     enum EditorMode: String, CaseIterable, Identifiable {
-        case edit, split, preview
+        case edit, preview
         var id: String { rawValue }
-        var label: String { rawValue.capitalized }
+        var label: String { self == .edit ? "Edit" : "Read" }
     }
 
     private var note: Note? { model.note(at: path) }
@@ -160,13 +163,13 @@ struct NoteEditorView: View {
                 .help("Forward again (\u{2303}\u{2318}\u{2192})")
             }
             ToolbarItemGroup {
-                Picker("Mode", selection: $mode) {
-                    ForEach(EditorMode.allCases) { m in
-                        Text(m.label).tag(m)
-                    }
+                // The same control as the phone's, for the same reason: one symbol whose
+                // state you can see, rather than a row of words where the selected one is
+                // easy to miss.
+                StateToggle(systemImage: "pencil", title: "Edit", isOn: mode == .edit,
+                            tint: note?.tint ?? .accentColor) {
+                    mode = mode == .edit ? .preview : .edit
                 }
-                .pickerStyle(.segmented)
-                .help("Edit the markdown, see it rendered, or both")
                 if let note, model.canArchive(note) {
                     Button {
                         flushSave()
@@ -343,7 +346,7 @@ struct NoteEditorView: View {
         }
     }
 
-    /// The markdown itself: the raw text, the rendered version, or both side by side.
+    /// The markdown itself: the raw text, or the rendered version.
     private func editorPane(scrolls: Bool) -> some View {
         HStack(spacing: 0) {
             if mode != .preview {
@@ -358,9 +361,6 @@ struct NoteEditorView: View {
                     // The list of titles sits over the editor, under the caret.
                     .overlay(alignment: .topLeading) { linkSuggestions }
                     .onChange(of: linkDraft) { _, _ in linkChoice = 0 }
-            }
-            if mode == .split {
-                Divider()
             }
             if mode != .edit, let note {
                 MarkdownPreview(note: note, beforeToggle: flushSave)
@@ -416,42 +416,68 @@ struct NoteEditorView: View {
     }
 
     private var addTaskBar: some View {
-        HStack {
+        HStack(spacing: 8) {
             // Which mode you are in used to be a Picker three taps deep in the ⋯ menu, and a
             // note left in Preview looks exactly like an editor that refuses to type — it
-            // cost a day to work that out (build 127). One button, always on screen, saying
-            // what it will switch to. No Split on the phone: he asked for it gone.
+            // cost a day to work that out (build 127). One button, always on screen.
+            //
+            // Build 142 stopped swapping the symbol. It was an eye in Edit and a pencil in
+            // Read — the thing you would get, not the thing you are in — and an eye reads
+            // just as easily as "you are reading now". It is always a pencil now, lit while
+            // Edit is on. No Split on the phone: he asked for it gone.
             if isPhone {
-                Button {
+                StateToggle(systemImage: "pencil", title: "Edit", isOn: mode == .edit,
+                            tint: note?.tint ?? .accentColor) {
                     mode = mode == .edit ? .preview : .edit
-                } label: {
-                    Label(mode == .edit ? "Read" : "Edit",
-                          systemImage: mode == .edit ? "eye" : "pencil")
-                        .labelStyle(.iconOnly)
-                        .frame(width: 22, height: 22)
                 }
-                .buttonStyle(.bordered)
-                .fixedSize()
-                .accessibilityLabel(mode == .edit ? "Read" : "Edit")
             }
-            TextField("Add a task… (>2026-09-10 or >2026-09-10T14:30 for a date, !! for priority, #tag)", text: $newTask)
+            // Three words, not eighty-four characters. What can be typed here moved behind
+            // the ⓘ: the old placeholder was cut off after "for a" on the phone, and it
+            // vanished the moment he started typing anyway.
+            TextField("Add a task…", text: $newTask)
                 .textFieldStyle(.roundedBorder)
                 .onSubmit(addTask)
-            Button("Add", action: addTask)
-                .disabled(newTask.trimmingCharacters(in: .whitespaces).isEmpty)
-            Menu {
-                ForEach(model.snippets) { snippet in
-                    Button(snippet.name) { start(snippet) }
+            TaskSyntaxButton()
+            if isPhone {
+                // The phone has no room for two words beside the field. Both become symbols,
+                // and Add only takes its colour once there is something to add.
+                snippetMenu(iconOnly: true)
+                Button(action: addTask) {
+                    Image(systemName: "arrow.up.circle.fill")
+                        .font(.system(size: 22))
+                        .foregroundStyle(canAdd ? ParaKind.project.tint : Color.secondary.opacity(0.35))
                 }
-            } label: {
-                Label("Snippet", systemImage: "text.append")
+                .buttonStyle(.plain)
+                .disabled(!canAdd)
+                .accessibilityLabel("Add")
+            } else {
+                Button("Add", action: addTask)
+                    .disabled(!canAdd)
+                snippetMenu(iconOnly: false)
             }
-            .menuIndicator(.hidden)
-            .fixedSize()
-            .disabled(model.snippets.isEmpty)
-            .help("Add a ready-made block of tasks. Edit them in Templates › Snippets.")
         }
         .padding(8)
+    }
+
+    private var canAdd: Bool { !newTask.trimmingCharacters(in: .whitespaces).isEmpty }
+
+    private func snippetMenu(iconOnly: Bool) -> some View {
+        Menu {
+            ForEach(model.snippets) { snippet in
+                Button(snippet.name) { start(snippet) }
+            }
+        } label: {
+            if iconOnly {
+                Label("Snippet", systemImage: "text.append")
+                    .labelStyle(.iconOnly)
+            } else {
+                Label("Snippet", systemImage: "text.append")
+            }
+        }
+        .menuIndicator(.hidden)
+        .fixedSize()
+        .disabled(model.snippets.isEmpty)
+        .help("Add a ready-made block of tasks. Edit them in Templates › Snippets.")
     }
 
     /// A snippet with nothing to ask goes straight in; otherwise the sheet collects the
@@ -1056,5 +1082,78 @@ struct WikiLinkList: View {
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: Theme.radius))
         .overlay(RoundedRectangle(cornerRadius: Theme.radius).strokeBorder(tint.opacity(0.35)))
         .shadow(radius: 12, y: 4)
+    }
+}
+
+/// The ⓘ beside the add-a-task field.
+///
+/// What can be typed there used to be the field's own placeholder: eighty-four characters that
+/// fit nowhere on a phone — it was cut off at "for a" — and that disappeared the moment he
+/// started typing. A button keeps it available instead of almost readable once.
+struct TaskSyntaxButton: View {
+    @State private var showing = false
+
+    var body: some View {
+        Button {
+            showing = true
+        } label: {
+            Image(systemName: "info.circle")
+                .font(.system(size: 14))
+                .foregroundStyle(.secondary)
+                .frame(width: 22, height: 22)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("What can I type here?")
+        .help("What can I type here?")
+        // Its own presentation on its own button, never a second `.sheet` on the note screen:
+        // two sheet modifiers on one view is what build 44 paid for.
+        .popover(isPresented: $showing) { TaskSyntaxHelp() }
+    }
+}
+
+/// The one place the task syntax is written out for the reader.
+private struct TaskSyntaxHelp: View {
+    /// A struct, not a tuple: a `ForEach` id is a key path, and a key path cannot address a
+    /// tuple member (the lesson of build 61's `PlacedItem`).
+    private struct Row: Identifiable {
+        let code: String
+        let meaning: String
+        var id: String { code }
+    }
+
+    private static let rows = [
+        Row(code: ">2026-09-10", meaning: "A date"),
+        Row(code: ">2026-09-10T14:30", meaning: "A date and a time"),
+        Row(code: "!  !!  !!!", meaning: "Priority, lowest to highest"),
+        Row(code: "#tag", meaning: "A tag"),
+        Row(code: "@repeat(weekly)", meaning: "Comes back every week. Also 2w, monthly, yearly"),
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("What can I type here?")
+                .font(.subheadline.weight(.semibold))
+            Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 12, verticalSpacing: 7) {
+                ForEach(Self.rows) { row in
+                    GridRow {
+                        Text(row.code)
+                            .font(.system(.caption, design: .monospaced))
+                            .foregroundStyle(ParaKind.project.tint)
+                        Text(row.meaning)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+            Text("Write them in any order, after the task's own words. What you add here becomes a task in this note and a reminder in Apple Reminders.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(14)
+        .frame(maxWidth: 320, alignment: .leading)
+        .presentationCompactAdaptation(.popover)
     }
 }

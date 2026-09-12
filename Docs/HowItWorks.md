@@ -114,6 +114,17 @@ Right-click any task, anywhere in the app — long-press on the phone — for th
 
 You can also **drag** a task: onto a note in the middle column or onto Inbox to move it, onto a day in the Calendar's month grid or week list to set its date, or onto a day in the weekly note.
 
+### Adding a task at the bottom of a note
+
+The field says **Add a task…**. Type the words and press Return, or press the arrow.
+
+The **ⓘ** beside the field opens the list of what else you can write in it: a date, a date and a
+time, a priority, a tag, a repeat. Up to build 141 that list was the grey text inside the field,
+where it was too long to read on the phone and disappeared as soon as you typed.
+
+Beside it: **Snippet**, a ready-made block of tasks from Templates › Snippets, and on the phone
+the **pencil** that turns writing on and off.
+
 ## The Inbox
 
 Everything you capture lands here, and the screen is built for emptying it.
@@ -331,7 +342,7 @@ Every new note is a copy of the matching file, with `{{title}}` and `{{date}}` f
 
 ### The snippets
 
-Pick one from the **Snippet** button beside **Add a task** in any note, and its lines are added to that note's Tasks. The ones the app starts with:
+Pick one from the **Snippet** button beside **Add a task** in any note (a symbol rather than the word on the phone), and its lines are added to that note's Tasks. The ones the app starts with:
 
 - **Delegate** — "Ask {{who}} to {{what}}" due tomorrow, with a subtask to check they have it in a week.
 - **Waiting for** — one line tagged `#waiting`, dated a week out, so it turns up in a review rather than being forgotten.
@@ -384,12 +395,12 @@ Time Machine covers the rest: these backups sit inside the vault folder, so they
 
 ## On the iPhone
 
-**Reading or writing.** A note opens ready to write in. The **Read** button at the bottom of the note shows it rendered instead — headings, bold, tappable links — and turns into **Edit** to bring the cursor back. If a note ever seems to refuse your typing, look at that button: you are in Read.
+**Reading or writing.** A note opens ready to write in. The **pencil** button at the bottom of the note (in the toolbar on the Mac) turns writing on and off. When the pencil is lit and its frame is solid, you are writing. When it is grey with a dashed frame, you are reading: the note is shown rendered — headings, bold, tappable links — and there is no cursor. If a note ever seems to refuse your typing, look at that button.
 
 
 Sync with Reminders from the phone with the button in the top right of Today and Inbox, or Settings › Reminders sync › Sync now. The first sync is when iOS asks for permission to use Reminders.
 
-On the phone, a note's own actions — the Edit / Split / Preview switch, Rename, Archive and Delete — are behind the **⋯** button at the top right of the note. On the Mac they are buttons in the toolbar.
+On the phone, a note's own actions — Rename, Archive and Delete — are behind the **⋯** button at the top right of the note. On the Mac they are buttons in the toolbar. The pencil is not in there: it is always on screen.
 
 The phone shows four tabs. **Today** and **Inbox** are the same lists as on the Mac. **Browse** holds everything else: Goals, Projects, Areas, Resources, Archive, Calendar, Time Blocks, Done, Review, Map, Search, and Settings with Help. **Capture** opens the capture panel. Tap a note to open it and swipe from the left edge to go back. Long-press a task for the task menu. The share sheet in other apps has a PARAGON entry that sends text or a link to the Inbox.
 

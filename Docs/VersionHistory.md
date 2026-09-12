@@ -2,6 +2,15 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 142 · 12 September 2026
+
+- **The add-a-task field says just "Add a task…".** The old grey text was eighty-four characters long. On the iPhone you only ever saw the first few words, and it vanished as soon as you started typing.
+- **A new ⓘ button beside the field** opens what you can write there: a date, a date and a time, a priority, a tag, a repeat. It stays available instead of being almost readable once.
+- **On the iPhone, Add and Snippet are now symbols.** The field gets about twice the width. **Add** only takes its colour when there is something to add.
+- **The Edit / Read button is one pencil, not two symbols.** It used to show an eye while you were writing and a pencil while you were reading — the thing you would get, not the thing you were in. Now it is always a pencil: lit with a solid frame means you are writing, grey with a dashed frame means you are reading.
+- The Mac's toolbar has the same pencil in place of the old Edit / Split / Preview switch.
+- **Split view is gone**, on both the Mac and the iPhone. There are two modes now: writing and reading.
+
 ## Build 141 · 12 September 2026
 
 - **A goal now shows how far it has come.** A bar and a per cent, worked out from the projects under it. It appears on the goal's own page, in the Goals list, and on the goal's row in **Weekly review**.

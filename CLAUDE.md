@@ -901,8 +901,38 @@ computation over frontmatter, nothing written. The decisions worth keeping:
   and cannot roll up by itself, so `goalProgress` is passed in), and `GoalDashboardView`,
   which also now lists the finished projects, struck through.
 
-Still open, in the order agreed: Goals and Aspirations screens if the one review is not
-enough; then the status vocabulary (reached / missed / dropped), last because it edits his
+**Build 142: one symbol in two states, and the add-a-task bar.** Two things, and the first is
+a rule for the whole app.
+
+- **`StateToggle` (Theme.swift): a control shows the state you are in, never the state you
+  would get.** The mode button swapped its own symbol — an eye while editing, a pencil while
+  reading — and an eye reads just as naturally as "you are reading now". His words: *"Det
+  måste vara så man förstår vad som är valt."* It is always a pencil now; **on** is the tint
+  at 20% fill with a solid tinted border, **off** is grey with a **dashed** border (his idea,
+  and it matches what dashed already means on the Map: loose, not connected). Used by the
+  phone's bar and by the Mac's toolbar, which lost its segmented Picker. **Spread this to the
+  other two-state controls** (Hide finished, the Calendar's Schedule/Note switch, the Map's
+  Arrange) when next in that code.
+- **Split is gone**, at his request. `EditorMode` is `edit`/`preview` only; a stored
+  `"split"` no longer decodes and `@AppStorage` falls back to `.edit`, so nothing to migrate.
+- **The add-a-task field's placeholder is "Add a task…".** It was 84 characters of syntax,
+  which fits nowhere on a phone (cut at "for a") and disappears the moment he types. That
+  moved into `TaskSyntaxButton`/`TaskSyntaxHelp` behind a **ⓘ** — its own `.popover` on its
+  own button, never a second `.sheet` on the note screen (build 44). On the phone **Add** is
+  an arrow that only takes colour when there is text, and **Snippet** is a symbol, so the
+  field gets about twice the width. He picked this from a preview artifact
+  (https://claude.ai/code/artifact/41ce5a0b-ee32-459a-8c90-1b20fc5e9879) — the third time a
+  preview before any code has been the cheap way to get a layout right.
+
+**A naming rule earned twice in two days.** I offered "Building blocks" for a sidebar group
+holding Templates, Snippets and Tags. He rejected it *for the right reason*: "tags är ju inte
+buildingblocks. Det är snarare ett system för att filtrera eller gruppera." A group name has
+to be true of every member, or it is the same fault as "Hobby or homeless?" wearing a plainer
+coat. **"Blocks" alone is also out** — the sidebar already has **Time Blocks**.
+
+Still open, in the order agreed: the sidebar group for Templates/Snippets/Tags plus a real
+**Tags** screen (name not settled); then Goals and Aspirations screens if the one review is
+not enough; then the status vocabulary (reached / missed / dropped), last because it edits his
 notes.
 
 ## Not built (by choice)

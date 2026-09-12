@@ -290,3 +290,48 @@ struct GoalProgressBar: View {
         return parts.joined(separator: " \u{00b7} ")
     }
 }
+
+/// One symbol in two states.
+///
+/// The mode button used to swap the symbol itself — an eye for Read, a pencil for Edit — and
+/// there is no way to read that: an eye means both "you are reading" and "press to read". One
+/// symbol that is either lit or not has a single reading, and it is the reading everything
+/// else in the app already uses: a tinted fill is "on", grey is "off". The dashed border says
+/// the same thing a second way, which is what the Map's dashed boxes have always meant here.
+struct StateToggle: View {
+    let systemImage: String
+    /// What the symbol stands for, e.g. "Edit". Read aloud and shown as the tooltip.
+    let title: String
+    let isOn: Bool
+    var tint: Color = .accentColor
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.system(size: 13, weight: .semibold))
+                .frame(width: 30, height: 26)
+                .foregroundStyle(isOn ? tint : Color.secondary)
+                .background { fill }
+                .overlay { border }
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(isOn ? "\(title), on" : "\(title), off")
+        .accessibilityAddTraits(isOn ? [.isSelected] : [])
+        .help(isOn ? "\(title) is on. Press to turn it off." : "\(title) is off. Press to turn it on.")
+    }
+
+    @ViewBuilder
+    private var fill: some View {
+        if isOn {
+            RoundedRectangle(cornerRadius: 6).fill(tint.opacity(0.20))
+        }
+    }
+
+    private var border: some View {
+        RoundedRectangle(cornerRadius: 6)
+            .strokeBorder(isOn ? tint.opacity(0.55) : Color.secondary.opacity(0.35),
+                          style: StrokeStyle(lineWidth: 1, dash: isOn ? [] : [3, 2]))
+    }
+}
