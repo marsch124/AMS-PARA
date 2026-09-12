@@ -70,7 +70,7 @@ A name another note already uses is refused. In Apple Reminders the list follows
 
 ### Which aspiration an area serves
 
-An area can say which aspiration it belongs to: **Serves…** at the top of the area note, or right-click the area in the list. That is what makes Endurance the home of "an endurance athlete still racing at seventy" rather than leaving the aspiration floating on its own. An area is allowed to serve nothing — it is a standard you keep up, not a path to an outcome — so the review never asks about an area without one.
+An area can say which aspiration it belongs to, and a project which goal it delivers: **Serves…** at the top of the note, or right-click it in the list. A project is offered the dated goals first, an area the aspirations first. That is what makes Endurance the home of "an endurance athlete still racing at seventy" rather than leaving the aspiration floating on its own. An area is allowed to serve nothing — it is a standard you keep up, not a path to an outcome — so the review never asks about an area without one.
 
 ## Sub-areas
 
@@ -180,7 +180,7 @@ Two of those deserve a word.
 
 **"Due after its goal"** means the project's own deadline falls later than the target date of the goal it serves. That cannot be true and the goal still be reached, so either the project has to come forward or the goal has to move. Set a project's deadline from the **Due** button at the top of the project note. Write the date in the field as 2031-12-01, or pick it in the calendar below; press the button again to change or clear it. A goal can be years away, so typing is usually quicker than clicking.
 
-**"Hobby or homeless?"** is its own short list, above the inbox: the projects with no `goal:` line at all. Work with nothing above it is not an error — plenty of good work is simply something you want to do — so these are never counted as needing attention and never coloured as a problem. The review just asks, once, so you can give one a goal, decide it belongs to an area as a standing responsibility, or leave it exactly as it is.
+**"Projects with no goal"** is its own short list, above the inbox: the projects with no `goal:` line at all. Work with nothing above it is not an error — plenty of good work is simply something you want to do — so these are never counted as needing attention and never coloured as a problem. The review asks once. To answer, open the project and press **Serves…** at the top of the note; the same choice is on the right-click menu in the project list.
 
 A goal is flagged when nothing serves it, when its target date has passed, when nothing has moved for 30 days, or when the only thing serving it is an area. That last one, **"No project yet"**, is the difference between a dated goal and a wish: an area is a standard you keep up, not a path to an outcome on a date. It applies to dated goals only. A goal reached through dated sub-goals is fine — those carry the projects — and so is an aspiration held by an area, which is exactly where an aspiration belongs.
 

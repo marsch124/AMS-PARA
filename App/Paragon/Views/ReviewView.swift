@@ -38,11 +38,11 @@ struct ReviewView: View {
                         }
                     }
                 } header: {
-                    Text("Hobby or homeless?")
+                    Text("Projects with no goal")
                 } footer: {
                     // A Section footer in a narrow column is handed one line unless it is
                     // told it may grow downwards, and the sentence was cut at "Give one a g…".
-                    Text("Work with nothing above it. Give one a goal, decide it is a standing part of an area \u{2014} or leave it be. None of these counts as needing attention.")
+                    Text("These projects have nothing above them. That is fine for work you do for its own sake. If one should belong to a goal, open it and press Serves\u{2026} at the top. None of them counts as needing attention.")
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }

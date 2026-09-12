@@ -2,6 +2,12 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 140 · 12 September 2026
+
+- **"Hobby or homeless?" is now called "Projects with no goal".** The old heading was a piece of wordplay that meant nothing unless you already knew what it was getting at. The sentence under it now also says what to do.
+- **A project can be given a goal from the note itself.** Press **Serves…** at the top of a project, the same button an area already had, or right-click the project in the list. Until now the review asked which goal a project served and the only way to answer was dragging its box onto a goal on the Map.
+- A project is offered the dated goals first, an area the aspirations first.
+
 ## Build 139 · 12 September 2026
 
 - **The sentence under "Hobby or homeless?" is readable again.** It was cut off after a few words; it now wraps onto as many lines as it needs.

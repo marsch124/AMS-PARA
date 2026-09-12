@@ -860,6 +860,16 @@ each keeps its natural width and only whole items move to the next line. **Never
 modifier that matters on the container is `.lineLimit(1)`, which stops a child's own text from
 breaking mid-word. Titles in those rows are `.lineLimit(2)`.
 
+**Build 140.** "Hobby or homeless?" was my own wordplay, taken from the Cowork spec, and he
+asked what it meant — exactly what the language rule at the top of this file forbids. The
+section is **"Projects with no goal"**. More important, the heading asked a question the app
+could not answer: a project had no way to be given a `goal:` except the Map drag. `AreaGoal*`
+is now `NoteGoal*` and serves both kinds, ordering the menu by kind (a project delivers a dated
+goal, so those first; an area holds an aspiration, so those first), wired into the note header
+and the list's context menu for `.project` as well as `.area`. **Third time a rule read a line
+nothing convenient could write.** When a screen asks a question, check the answer is one click
+away from where it is asked.
+
 Still open, in the order agreed: roll-up progress from projects to a goal; then Goals and
 Aspirations screens if the one review is not enough; then the status vocabulary
 (reached / missed / dropped), last because it edits his notes.

@@ -596,7 +596,11 @@ struct NoteHeader: View {
             }
             if note.kind == .area {
                 AreaParentChip(model: model, note: note)
-                AreaGoalChip(model: model, note: note)
+            }
+            if note.kind == .area || note.kind == .project {
+                // The weekly review asks which goal a project serves; before build 140 the
+                // only way to answer was dragging its box onto a goal on the Map.
+                NoteGoalChip(model: model, note: note)
             } else if let goal = note.goal {
                 Label(goal, systemImage: "star")
                     .foregroundStyle(ParaKind.goal.tint)
