@@ -40,7 +40,10 @@ struct ReviewView: View {
                 } header: {
                     Text("Hobby or homeless?")
                 } footer: {
+                    // A Section footer in a narrow column is handed one line unless it is
+                    // told it may grow downwards, and the sentence was cut at "Give one a g…".
                     Text("Work with nothing above it. Give one a goal, decide it is a standing part of an area \u{2014} or leave it be. None of these counts as needing attention.")
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
 

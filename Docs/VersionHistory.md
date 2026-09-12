@@ -2,6 +2,10 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 139 · 12 September 2026
+
+- **The sentence under "Hobby or homeless?" is readable again.** It was cut off after a few words; it now wraps onto as many lines as it needs.
+
 ## Build 138 · 11 September 2026
 
 - **The rows in Weekly review no longer squash their own text.** In a narrow middle column the counts were being crushed until the words broke apart — "projects" became "project s" and a date came out over three lines. Each count now stays whole and moves down to the next line when it does not fit.
