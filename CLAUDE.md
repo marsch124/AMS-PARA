@@ -870,9 +870,40 @@ and the list's context menu for `.project` as well as `.area`. **Third time a ru
 nothing convenient could write.** When a screen asks a question, check the answer is one click
 away from where it is asked.
 
-Still open, in the order agreed: roll-up progress from projects to a goal; then Goals and
-Aspirations screens if the one review is not enough; then the status vocabulary
-(reached / missed / dropped), last because it edits his notes.
+**Build 141: roll-up progress.** `Core/Vault/GoalProgress.swift` — `GoalProgress`
+(projectsDone/Total, tasksDone/Total, `fraction`) and `NoteIndex.progress(of:)`, pure
+computation over frontmatter, nothing written. The decisions worth keeping:
+
+- **One share per project, not one per task.** A goal's figure is the *average* of its
+  projects' shares, so a project with forty small tasks cannot drown one with three big ones.
+  A finished project is 1; a running one is done/total top-level tasks; a project with no
+  tasks yet is 0 (it is a project that has not started, which is a real answer).
+- **Areas are excluded.** An area never finishes, so counting one would hold its goal below
+  full for ever. This is the same reasoning as `noProjectYet`.
+- **`fraction` is `nil`, not 0, when there is nothing to measure**, and `GoalProgressBar`
+  draws nothing at all in that case. An empty bar would say "no progress"; the truth is "no
+  projects yet". Same family as build 100's rule — never let an absence look like a zero.
+- **`percent` never rounds to 100 below 1.0, nor to 0 above 0.** Both read as an answer.
+- **A goal is finished by its `status:`, not by its boxes** (`Note.isFinishedProject`): he
+  marks a project done from the review, and the last task is often one he decided not to do.
+- **`Note.declaredKind` reads `type:` and falls back to the folder.** Archiving moves the
+  file, so an archived project's `kind` is `.archive` and it would silently drop out of its
+  goal's totals. `DeletedNotes` already used this trick; it is now shared. An archived note
+  that was *not* marked done is skipped altogether: it was dropped, not left undone, and
+  counting it as 0 would hold its goal down for ever.
+- `NoteIndex.linked(to:)` is the whole set pointing at a goal, archived and finished
+  included; `serving(_:)` is now the live subset of it. That fixed a real fault:
+  a goal whose projects were all marked done read as **"No project or area serves this"**,
+  because `serving` filtered done projects out and `nothingServing` saw an empty list.
+- Shown by `GoalProgressBar` (Theme.swift) in three places, so they cannot drift: the
+  `GoalHealthRow` in the review (inside the build 138 `WrappingHStack`, as one item so the
+  bar and its per cent wrap together), `NoteRow` in the Goals list (the row holds one note
+  and cannot roll up by itself, so `goalProgress` is passed in), and `GoalDashboardView`,
+  which also now lists the finished projects, struck through.
+
+Still open, in the order agreed: Goals and Aspirations screens if the one review is not
+enough; then the status vocabulary (reached / missed / dropped), last because it edits his
+notes.
 
 ## Not built (by choice)
 

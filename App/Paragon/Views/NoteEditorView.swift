@@ -944,6 +944,9 @@ struct GoalDashboardView: View {
     var body: some View {
         let health = model.index.goalHealth(of: goal, today: .today())
         VStack(alignment: .leading, spacing: 8) {
+            // The roll-up first: one line that answers "how far have I come?" before any of
+            // the counts below explain it.
+            GoalProgressBar(progress: health.progress, width: 160)
             HStack(spacing: 14) {
                 stat("\(health.projects.count)", "projects")
                 stat("\(health.areas.count)", "areas")
@@ -971,7 +974,7 @@ struct GoalDashboardView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            let serving = health.subgoals + health.projects + health.areas
+            let serving = health.subgoals + health.projects + health.areas + health.finishedProjects
             if serving.isEmpty {
                 Text("Nothing serves this goal yet. Add `goal: \(goal.title)` to a project or area's frontmatter.")
                     .font(.caption)
@@ -982,11 +985,16 @@ struct GoalDashboardView: View {
                         model.show(note)
                     } label: {
                         HStack(spacing: 8) {
-                            KindBadge(kind: note.kind, size: 18)
+                            KindBadge(kind: note.declaredKind, size: 18)
                             Text(note.title)
+                                .strikethrough(note.isFinishedProject)
                             Spacer()
                             let open = note.openTasks.count
-                            if open > 0 {
+                            if note.isFinishedProject {
+                                Text("done")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            } else if open > 0 {
                                 Text("\(open) open")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)

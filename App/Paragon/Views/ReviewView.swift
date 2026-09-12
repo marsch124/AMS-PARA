@@ -203,7 +203,13 @@ struct GoalHealthRow: View {
                 }
             }
             WrappingHStack(spacing: 8, lineSpacing: 3) {
-                Label("\(health.projects.count) projects", systemImage: "flag")
+                // One item, so the bar and its per cent always move to a new line together.
+                GoalProgressBar(progress: health.progress, width: 54, showsCounts: false)
+                if health.progress.projectsTotal > 0 {
+                    Label("\(health.progress.projectsDone) of \(health.progress.projectsTotal) projects done", systemImage: "flag")
+                } else {
+                    Label("no projects yet", systemImage: "flag")
+                }
                 Label("\(health.areas.count) areas", systemImage: "circle.grid.2x2")
                 Label("\(health.openTaskCount) open", systemImage: "checklist")
                 Label("\(health.completedLast30Days) done in 30d", systemImage: "checkmark")

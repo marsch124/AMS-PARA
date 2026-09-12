@@ -252,3 +252,41 @@ struct WrappingHStack: Layout {
         return rows
     }
 }
+
+/// How far the work under a goal has come, drawn the same way everywhere it appears: the
+/// weekly review's row, the Goals list, and the goal's own dashboard.
+///
+/// Nothing is drawn when there is nothing to measure. A goal with no projects under it yet is
+/// not at zero per cent — there is no figure at all, and an empty bar would say the opposite.
+struct GoalProgressBar: View {
+    let progress: GoalProgress
+    var width: CGFloat? = nil
+    var showsCounts = true
+
+    var body: some View {
+        if let fraction = progress.fraction, let percent = progress.percent {
+            HStack(spacing: 6) {
+                ProgressView(value: fraction)
+                    .tint(ParaKind.goal.tint)
+                    .frame(width: width)
+                Text("\(percent)%")
+                    .foregroundStyle(ParaKind.goal.tint)
+                if showsCounts {
+                    Text(counts)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .font(.caption)
+            .lineLimit(1)
+        }
+    }
+
+    /// Built outside the ViewBuilder, where a `var` is allowed.
+    private var counts: String {
+        var parts = ["\(progress.projectsDone) of \(progress.projectsTotal) projects done"]
+        if progress.tasksTotal > 0 {
+            parts.append("\(progress.tasksDone) of \(progress.tasksTotal) tasks")
+        }
+        return parts.joined(separator: " \u{00b7} ")
+    }
+}

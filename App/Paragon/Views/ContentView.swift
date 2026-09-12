@@ -325,7 +325,7 @@ struct NoteListView: View {
             } else if model.section == .kind(.area), !searching {
                 Spacer().frame(width: 14)
             }
-            NoteRow(note: note)
+            NoteRow(note: note, goalProgress: note.kind == .goal ? model.index.progress(of: note) : nil)
         }
         .padding(.leading, model.index.parentArea(of: note) == nil ? 0 : 18)
         .tag(note.relativePath)
@@ -683,6 +683,9 @@ struct AreaParentChip: View {
 
 struct NoteRow: View {
     let note: Note
+    /// Filled in for goals only: how far the work under this goal has come. The row cannot
+    /// work it out itself — it holds one note, and the roll-up needs the whole index.
+    var goalProgress: GoalProgress? = nil
 
     var body: some View {
         HStack(spacing: 10) {
@@ -710,6 +713,8 @@ struct NoteRow: View {
                             .frame(width: 56)
                         Text("\(progress.done) of \(progress.total)")
                             .foregroundStyle(note.tint)
+                    } else if let roll = goalProgress, roll.fraction != nil {
+                        GoalProgressBar(progress: roll, width: 56, showsCounts: false)
                     } else if note.openTasks.count > 0 {
                         Label("\(note.openTasks.count)", systemImage: "checklist")
                             .foregroundStyle(note.tint)

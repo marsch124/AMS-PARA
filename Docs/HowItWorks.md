@@ -156,6 +156,24 @@ New › Goal creates a goal, and the **Horizon** you pick says which kind it is.
 
 **This year** and **Long term** are dated goals: a target date, a measure of what success looks like, and the aspiration they serve, chosen in the **Serves aspiration** box. Projects and areas link to a goal with the `goal:` line. The goal note shows how many projects and areas serve it, open tasks, activity in the last 30 days, and flags such as "Nothing serves this", "Past its target date" or "Achieved".
 
+### How far a goal has come
+
+Every goal shows a bar and a per cent, on its own page, in the Goals list and on its row in **Weekly review**. The figure is worked out from the projects under the goal. You never type it in.
+
+Every project counts the same, whatever its size, so a project with forty small tasks does not drown one with three big ones.
+
+- A project marked **done** counts as a whole one.
+- A project still running counts as the share of its tasks that are ticked. Sub-tasks and cancelled tasks are left out, and so a project with no tasks yet counts as nothing done.
+- The goal's figure is the average of its projects.
+
+**Areas are not counted.** An area is something you keep up, not something that finishes, so counting one would hold its goal below full for ever.
+
+**An aspiration counts through its goals.** Each dated goal under it brings its own figure, one share each, and those goals bring their projects.
+
+**No bar at all means there is nothing to measure yet** — no project under the goal. That is not the same as nought per cent, so the app draws nothing rather than an empty bar.
+
+The per cent never says 100 until everything really is finished, and never says 0 once something has moved.
+
 ## Today, Calendar, daily and weekly notes
 
 - **Today** shows the day's calendar events, one next action per active project, overdue tasks, tasks due today, and undated tasks marked `!!` or more.
@@ -182,7 +200,7 @@ Two of those deserve a word.
 
 **"Projects with no goal"** is its own short list, above the inbox: the projects with no `goal:` line at all. Work with nothing above it is not an error — plenty of good work is simply something you want to do — so these are never counted as needing attention and never coloured as a problem. The review asks once. To answer, open the project and press **Serves…** at the top of the note; the same choice is on the right-click menu in the project list.
 
-A goal is flagged when nothing serves it, when its target date has passed, when nothing has moved for 30 days, or when the only thing serving it is an area. That last one, **"No project yet"**, is the difference between a dated goal and a wish: an area is a standard you keep up, not a path to an outcome on a date. It applies to dated goals only. A goal reached through dated sub-goals is fine — those carry the projects — and so is an aspiration held by an area, which is exactly where an aspiration belongs.
+A goal is flagged when nothing serves it, when its target date has passed, when nothing has moved for 30 days, or when the only thing serving it is an area. A goal whose projects are all finished counts as served, not as neglected. That last one, **"No project yet"**, is the difference between a dated goal and a wish: an area is a standard you keep up, not a path to an outcome on a date. It applies to dated goals only. A goal reached through dated sub-goals is fine — those carry the projects — and so is an aspiration held by an area, which is exactly where an aspiration belongs.
 
 ## Map
 

@@ -68,6 +68,11 @@ public struct GoalHealth: Identifiable, Equatable, Sendable {
     public var areas: [Note]
     /// Dated goals that point at this (life) goal.
     public var subgoals: [Note]
+    /// Projects that served this goal and are over. They are not in `projects`, which is the
+    /// live work, but they are what the goal has already got done.
+    public var finishedProjects: [Note]
+    /// How far the work under this goal has come.
+    public var progress: GoalProgress
     public var openTaskCount: Int
     public var completedLast30Days: Int
     public var daysSinceActivity: Int?
@@ -151,20 +156,21 @@ public extension NoteIndex {
 
     // MARK: Goals
 
-    /// Notes whose `goal:` key resolves to this goal, split by kind.
+    /// The live notes whose `goal:` key resolves to this goal, split by kind. Archived and
+    /// finished notes are left out here; `linked(to:)` is the whole set.
     func serving(_ goal: Note) -> (projects: [Note], areas: [Note], subgoals: [Note]) {
-        let linked = notes.filter { candidate in
-            candidate.relativePath != goal.relativePath && !candidate.isArchived &&
-            candidate.goal.map { self.goal(matching: $0)?.relativePath == goal.relativePath } == true
-        }
-        return (linked.filter { $0.kind == .project && $0.status != "done" && $0.status != "completed" },
-                linked.filter { $0.kind == .area },
-                linked.filter { $0.kind == .goal })
+        let live = linked(to: goal).filter { !$0.isArchived }
+        // `!isFinishedProject`, not a list of status words, so this and `finishedProjects`
+        // can never both claim the same note and hand a ForEach two rows with one id.
+        return (live.filter { $0.kind == .project && !$0.isFinishedProject },
+                live.filter { $0.kind == .area },
+                live.filter { $0.kind == .goal })
     }
 
     func goalHealth(of goal: Note, today: DateOnly, calendar: Calendar = .current) -> GoalHealth {
         let (projects, areas, subgoals) = serving(goal)
         let servingNotes = projects + areas + subgoals
+        let finished = linked(to: goal).filter(\.isFinishedProject)
         let monthAgo = today.adding(days: -30, calendar: calendar)
         var open = 0
         var completed = 0
@@ -186,21 +192,23 @@ public extension NoteIndex {
         if goal.isAchieved {
             flags.append(.achieved)
         } else {
-            if servingNotes.isEmpty {
+            if servingNotes.isEmpty, finished.isEmpty {
                 flags.append(.nothingServing)
-            } else if goal.horizon != .life, projects.isEmpty, subgoals.isEmpty {
+            } else if goal.horizon != .life, projects.isEmpty, subgoals.isEmpty, finished.isEmpty {
                 // A *dated* goal served only by an area has no way of being reached: an area is
-                // a standard you keep up, not a path to an outcome on a date. Two things are
+                // a standard you keep up, not a path to an outcome on a date. Three things are
                 // deliberately not this case. A goal reached through dated sub-goals — those
-                // carry the projects. And an aspiration, whose whole job is to sit inside an area
-                // and say who you are becoming there; it is reached through dated goals, and
-                // having none yet is a question for the yearly review, not a fault.
+                // carry the projects. A goal whose projects are all finished, which has been
+                // served, not neglected. And an aspiration, whose whole job is to sit inside an
+                // area and say who you are becoming there; it is reached through dated goals,
+                // and having none yet is a question for the yearly review, not a fault.
                 flags.append(.noProjectYet)
             }
             if let target = goal.targetDate, target < today { flags.append(.pastTarget) }
             if let days = daysSinceActivity, days >= 30 { flags.append(.noRecentActivity) }
         }
         return GoalHealth(note: goal, projects: projects, areas: areas, subgoals: subgoals,
+                          finishedProjects: finished, progress: progress(of: goal),
                           openTaskCount: open, completedLast30Days: completed,
                           daysSinceActivity: daysSinceActivity, flags: flags)
     }

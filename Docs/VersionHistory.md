@@ -2,6 +2,16 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 141 · 12 September 2026
+
+- **A goal now shows how far it has come.** A bar and a per cent, worked out from the projects under it. It appears on the goal's own page, in the Goals list, and on the goal's row in **Weekly review**.
+- **How the figure is worked out.** Every project under the goal counts the same, whatever its size. A project that is marked done counts as a whole one; a project still running counts as the share of its tasks that are ticked. The goal's figure is the average.
+- **Areas are left out on purpose.** An area is something you keep up, not something that finishes, so counting one would hold its goal below full for ever.
+- **An aspiration counts through its goals.** Each dated goal under it contributes its own figure, one share each.
+- **A goal with nothing under it shows no bar at all.** That is not nought per cent; there is simply nothing to measure yet.
+- **A goal whose projects are all finished is no longer called unserved.** Before this, marking the last project done made the goal read "No project or area serves this".
+- A goal's page now also lists the finished projects under it, struck through and marked "done".
+
 ## Build 140 · 12 September 2026
 
 - **"Hobby or homeless?" is now called "Projects with no goal".** The old heading was a piece of wordplay that meant nothing unless you already knew what it was getting at. The sentence under it now also says what to do.
