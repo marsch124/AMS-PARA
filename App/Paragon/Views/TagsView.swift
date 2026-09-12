@@ -184,3 +184,113 @@ struct SnippetsView: View {
         return written.isEmpty ? "Empty" : written.joined(separator: " \u{00b7} ")
     }
 }
+
+/// The note's tags, in the note's own header — and the one control in the app that writes
+/// them.
+///
+/// Build 143 gave tags a screen of their own and left the same gap this project has now paid
+/// for four times: the screen asked a question nothing could answer. A tag could only be put
+/// on a note by typing the `tags:` line by hand. That still works; this writes the same line.
+struct NoteTagsChip: View {
+    @ObservedObject var model: AppModel
+    let note: Note
+    @State private var showing = false
+    @State private var draft = ""
+
+    /// Read back from the model rather than kept: a toggle saves and reloads, and the copy
+    /// handed to this view a moment ago is then one behind.
+    private var live: Note { model.note(at: note.relativePath) ?? note }
+
+    private var title: String {
+        live.tags.isEmpty ? "Tags\u{2026}" : live.tags.map { "#\($0)" }.joined(separator: " ")
+    }
+
+    var body: some View {
+        Button {
+            showing = true
+        } label: {
+            Label(title, systemImage: "number")
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(live.tags.isEmpty ? Color.secondary : SidebarSection.tags.tint)
+        .help("Add or remove this note's tags")
+        .popover(isPresented: $showing) { picker }
+    }
+
+    private var picker: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Tags on this note")
+                .font(.subheadline.weight(.semibold))
+            HStack(spacing: 6) {
+                TextField("New tag", text: $draft)
+                    .textFieldStyle(.roundedBorder)
+                    .onSubmit(addDraft)
+                Button("Add", action: addDraft)
+                    .disabled(AppModel.cleanTag(draft) == nil)
+            }
+            choices
+            Text("A tag can also be written straight into the note's tags: line, or as #tag on a task.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(14)
+        .frame(width: 290)
+        .presentationCompactAdaptation(.popover)
+    }
+
+    @ViewBuilder
+    private var choices: some View {
+        let tags = offered
+        if tags.isEmpty {
+            Text("No tags anywhere yet. Write the first one above.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        } else {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 2) {
+                    ForEach(tags, id: \.self) { tag in
+                        Button {
+                            model.toggleTag(tag, on: live)
+                        } label: {
+                            HStack(spacing: 8) {
+                                Image(systemName: isOn(tag) ? "checkmark.circle.fill" : "circle")
+                                    .foregroundStyle(isOn(tag) ? SidebarSection.tags.tint : Color.secondary)
+                                Text("#\(tag)")
+                                Spacer(minLength: 0)
+                            }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+            .frame(maxHeight: 200)
+        }
+    }
+
+    /// This note's tags first, in its own order, then every other tag in the vault. Built
+    /// outside the ViewBuilder, where a `var` is allowed.
+    private var offered: [String] {
+        var seen = Set<String>()
+        var result: [String] = []
+        for tag in live.tags where seen.insert(tag.lowercased()).inserted {
+            result.append(tag)
+        }
+        for tag in model.index.allTags where seen.insert(tag.lowercased()).inserted {
+            result.append(tag)
+        }
+        return result
+    }
+
+    private func isOn(_ tag: String) -> Bool {
+        live.tags.contains { $0.lowercased() == tag.lowercased() }
+    }
+
+    private func addDraft() {
+        guard let clean = AppModel.cleanTag(draft) else { return }
+        if !isOn(clean) { model.toggleTag(clean, on: live) }
+        draft = ""
+    }
+}

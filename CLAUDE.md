@@ -957,6 +957,24 @@ Since build 41 both app targets are `type: syncedFolder`; `DayScheduleView.swift
 `InboxView.swift` and now `TagsView.swift` were all added with no project change. It still
 holds for anything that is not a source file in those folders (Docs resources, Info.plist keys).
 
+**Build 144: `NoteTagsChip`, and the fourth time this has happened.** Build 143 shipped a Tags
+screen over a line **nothing in the app could write** — `tags:` had to be typed by hand. That
+is the same fault as `due:` (132), an area's `goal:` (134) and a project's `goal:` (140). The
+rule has earned a stronger form: **before shipping a screen that reads a field, find the
+control that writes it. If there isn't one, that control is part of the same build.**
+- `AppModel.setTags(_:on:)`/`toggleTag(_:on:)`/`cleanTag(_:)`. `cleanTag` strips a leading `#`
+  and turns spaces into hyphens, because a tag with a space could never be written as `#tag`
+  on a task line — the two ways of writing a tag have to stay interchangeable.
+- An empty list writes `tags:` rather than removing the key: the templates ship that line and
+  a note should not silently lose it.
+- `NoteTagsChip` (TagsView.swift) reads `live` back out of the model each time rather than
+  trusting the `note` it was handed: a toggle saves and reloads, so the passed copy is one
+  behind. A popover, not a Menu — a Menu cannot hold the TextField for a new tag, the same
+  limit that made build 93 replace an alert with a sheet.
+- He asked for **all three ways to stay** and to be written down together: the button, the
+  `tags:` line (inline or indented — the button rewrites to inline, and that is stated), and
+  `#tag` on a task. `Docs/HowItWorks.md` has them in one place under **Tools**.
+
 Still open, in the order agreed: Goals and Aspirations screens if the one review is not
 enough; then the status vocabulary (reached / missed / dropped), last because it edits his
 notes. Also queued: **spread `StateToggle`** to the other two-state controls (Hide finished,

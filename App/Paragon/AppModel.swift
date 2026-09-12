@@ -99,7 +99,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 143
+    static let number = 144
 }
 
 @MainActor
@@ -1455,6 +1455,44 @@ final class AppModel: ObservableObject {
         }
         guard save(updated) else { return }
         reload()
+    }
+
+    /// Rewrites a note's `tags:` line. The only thing in the app that writes it: until
+    /// build 144 the Tags screen listed tags and nothing could add one, so the line had to be
+    /// typed by hand. Typing it by hand still works — this writes the same line.
+    func setTags(_ tags: [String], on note: Note) {
+        flushPendingEdits()
+        guard var updated = self.note(at: note.relativePath) else { return }
+        var seen = Set<String>()
+        let cleaned = tags.compactMap(AppModel.cleanTag).filter { seen.insert($0.lowercased()).inserted }
+        // An empty list keeps the key and writes `tags:`, the convention the templates use,
+        // rather than taking the line out of a note that had one.
+        updated.frontmatter.set("tags", list: cleaned)
+        guard save(updated) else { return }
+        reload()
+    }
+
+    /// Adds the tag if the note lacks it, takes it away if it has it.
+    func toggleTag(_ tag: String, on note: Note) {
+        guard let clean = AppModel.cleanTag(tag) else { return }
+        var tags = note.tags
+        if let index = tags.firstIndex(where: { $0.lowercased() == clean.lowercased() }) {
+            tags.remove(at: index)
+        } else {
+            tags.append(clean)
+        }
+        setTags(tags, on: note)
+    }
+
+    /// A tag as it can be written in both places it is allowed: the `tags:` line and `#tag`
+    /// on a task. No leading `#`, and no spaces — a tag with a space could never be written
+    /// on a task line, so "next week" becomes "next-week" rather than two half tags.
+    static func cleanTag(_ raw: String) -> String? {
+        let trimmed = raw.trimmingCharacters(in: .whitespaces)
+            .trimmingCharacters(in: .init(charactersIn: "#"))
+            .trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return nil }
+        return trimmed.split(separator: " ").joined(separator: "-")
     }
 
     /// Puts an area under another one, or takes it back out with nil.

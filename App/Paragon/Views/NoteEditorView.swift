@@ -644,8 +644,11 @@ struct NoteHeader: View {
             } else if let due = note.dueDate {
                 Label("Due \(due.description)", systemImage: "calendar")
             }
-            if !note.tags.isEmpty {
-                Label(note.tags.map { "#\($0)" }.joined(separator: " "), systemImage: "number")
+            if note.kind != .inbox {
+                // A button, not a label: build 143's Tags screen listed tags that nothing in
+                // the app could write. Four times now a screen has asked a question the app
+                // could not answer.
+                NoteTagsChip(model: model, note: note)
             }
             Spacer()
             if note.kind.isTaskKind {

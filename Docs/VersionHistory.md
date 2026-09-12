@@ -2,6 +2,13 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 144 · 12 September 2026
+
+- **A note's tags can be set from the note.** The top row of every note now has a **Tags…** button. It opens a small panel: a field for a new tag, and under it every tag you already use, with a circle you press to put one on this note or take it off.
+- Build 143 gave tags a screen and left them unwritable: the only way to tag a note was to type the `tags:` line yourself. That still works, and so does `#tag` on a task — all three ways write the same thing.
+- A space in a new tag becomes a hyphen, and a leading `#` is added for you. A tag with a space in it could never be written as `#tag` on a task line.
+- **Docs › How PARAGON works** now sets out all three ways in one place, under **Tools: templates, snippets and tags**.
+
 ## Build 143 · 12 September 2026
 
 - **A new group in the sidebar, "Tools".** It holds **Templates**, **Snippets** and **Tags** — the three things you use *on* your notes rather than notes themselves. Press the word **Tools** to fold it away; it stays as you leave it.

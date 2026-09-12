@@ -47,6 +47,8 @@ tags: [sport, training]
 
 Useful keys: `status` (active, on hold, done), `area`, `goal`, `due`, `tags`, `related`, `reviewed`, `order` (where the note sits when you have arranged the list by hand), `reminders-list` to sync into a Reminders list with a different name, `sync: false` to keep a note out of Reminders.
 
+Several of these have a button at the top of the note as well, and it writes the same line: **Serves…** for `goal`, **Part of…** for `parent`, **Due** for `due`, and **Tags…** for `tags`.
+
 Links between notes use `[[Note title]]`; see **Linking notes with [[ ]]** below.
 
 ### Making one
@@ -332,11 +334,51 @@ themselves. Press the word **Tools** to fold the group away and again to open it
 
 ### Tags
 
-A tag is any word with a `#` in front of it, written in a note's `tags:` line or in a task:
-`- [ ] Book the ferry #travel`.
+A tag is a single word you put on a note or on a task, so that everything about one subject
+can be found together later. `#travel`, `#waiting`, `#next` are tags. A tag has no spaces in
+it: write `#next-week`, not `#next week`.
 
-**Tags** lists every tag you have used, the most used first, with how many notes and how many
-tasks carry each one. Press a tag to open it: the notes that carry it, then the tasks, open
+#### The three ways to add one
+
+**1. The Tags… button at the top of a note.** This is the easy one. Open the note and press
+the button in the top row. It says **Tags…** when the note has none and lists them once it
+has. A small panel opens:
+
+- A field at the top for a new tag. Write the word and press Return. The `#` is added for you,
+  and a space becomes a hyphen.
+- Under it, every tag you already use anywhere. Press one to put it on this note, press it
+  again to take it off. A filled circle means the note has it.
+
+**2. Typing the `tags:` line yourself.** Press the **pencil** so you are writing, go to the top
+of the note, and edit the line between the two `---`. Both of these work:
+
+```
+tags: [travel, summer]
+```
+
+```
+tags:
+  - travel
+  - summer
+```
+
+The button writes the first form, so a list you typed the second way is rewritten to one line
+the next time the button saves. Nothing is lost — the two mean the same thing.
+
+**3. On a task, with `#`.** Write the tag anywhere on the task's own line. Two tags is two
+words:
+
+```
+- [ ] Book the ferry #travel #summer
+```
+
+A task's tag belongs to that task, not to the note it sits in. That is why the Tags screen
+counts notes and tasks separately.
+
+#### The Tags screen
+
+**Tags** in the sidebar lists every tag you have used, the most used first, with how many notes
+and how many tasks carry each one. Press a tag to open it: the notes that carry it, then the tasks, open
 ones first. Press a note to open it, or tick a task where it stands — the list stays where it
 is. The field at the top finds a tag by name.
 
