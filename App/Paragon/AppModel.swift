@@ -18,6 +18,10 @@ enum SidebarSection: Hashable, Identifiable {
     case recent
     case deleted
     case templates
+    /// The blocks of tasks in Templates/Snippets.md, on a row of their own since build 143:
+    /// inside Templates they were one line in a group and he never found them.
+    case snippets
+    case tags
     case search
     /// Only in the sidebar once it has been asked for; see AppModel.workRevealed.
     case work
@@ -38,6 +42,8 @@ enum SidebarSection: Hashable, Identifiable {
         case .recent: return "Recent"
         case .deleted: return "Deleted"
         case .templates: return "Templates"
+        case .snippets: return "Snippets"
+        case .tags: return "Tags"
         case .search: return "Search"
         case .work: return "Work"
         case .kind(let kind): return kind.displayName
@@ -57,6 +63,8 @@ enum SidebarSection: Hashable, Identifiable {
         case .recent: return "clock.arrow.circlepath"
         case .deleted: return "trash"
         case .templates: return "doc.badge.gearshape"
+        case .snippets: return "text.append"
+        case .tags: return "number"
         case .search: return "magnifyingglass"
         case .work: return "briefcase"
         case .kind(.daily): return "calendar"
@@ -69,7 +77,12 @@ enum SidebarSection: Hashable, Identifiable {
         }
     }
 
-    static let all: [SidebarSection] = [.inbox, .today, .allActions, .recent, .calendar, .timeBlocks, .done, .review, .map, .deleted, .templates, .search, .kind(.goal), .kind(.project), .kind(.area), .kind(.resource), .kind(.archive)]
+    static let all: [SidebarSection] = [.inbox, .today, .allActions, .recent, .calendar, .timeBlocks, .done, .review, .map, .deleted, .templates, .snippets, .tags, .search, .kind(.goal), .kind(.project), .kind(.area), .kind(.resource), .kind(.archive)]
+
+    /// The three that are not notes: things you use *on* notes. Grouped in the sidebar under
+    /// "Tools" since build 143 — his idea, and he threw out "Building blocks" for it with the
+    /// right argument: a tag is not a building block, it is a way to filter and group.
+    static let tools: [SidebarSection] = [.templates, .snippets, .tags]
 }
 
 /// The sheets the main window can present.
@@ -86,7 +99,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 142
+    static let number = 143
 }
 
 @MainActor
@@ -663,6 +676,8 @@ final class AppModel: ObservableObject {
         case .recent: return recentNotes.count
         case .deleted: return deletedNotes.count
         case .templates: return 0
+        case .snippets: return snippets.count
+        case .tags: return index.allTags.count
         case .work: return workNotes.count
         case .allActions: return index.openTasks(includeArchived: false).count
         case .timeBlocks: return timeBlocks.filter { $0.day == .today() }.count

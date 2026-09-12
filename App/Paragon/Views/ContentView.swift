@@ -176,6 +176,9 @@ struct WelcomeView: View {
 
 struct SidebarView: View {
     @EnvironmentObject private var model: AppModel
+    /// Whether the Tools group is folded shut. Kept across launches: it is a shelf you open
+    /// now and then, not a list you work from.
+    @AppStorage("toolsFolded") private var toolsFolded = false
 
     var body: some View {
         List(selection: model.sectionSelection) {
@@ -191,8 +194,31 @@ struct SidebarView: View {
                 row(.review)
                 row(.map)
                 row(.deleted)
-                row(.templates)
                 row(.search)
+            }
+            Section {
+                // A fold button in the header, not a DisclosureGroup: those drew their rows
+                // over each other inside a List (build 93). A Section header is not a
+                // selectable row, so the button takes no click away from the list.
+                if !toolsFolded {
+                    ForEach(SidebarSection.tools) { section in
+                        row(section)
+                    }
+                }
+            } header: {
+                Button {
+                    toolsFolded.toggle()
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: toolsFolded ? "chevron.right" : "chevron.down")
+                            .font(.caption2)
+                        Text("Tools")
+                        Spacer(minLength: 0)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help(toolsFolded ? "Show Templates, Snippets and Tags" : "Hide Templates, Snippets and Tags")
             }
             Section("Goals") {
                 row(.kind(.goal))
@@ -373,6 +399,10 @@ struct NoteListView: View {
                 DeletedView()
             } else if model.section == .templates {
                 TemplatesView()
+            } else if model.section == .snippets {
+                SnippetsView()
+            } else if model.section == .tags {
+                TagsView()
             } else if model.section == .search {
                 SearchView()
             } else {
@@ -775,6 +805,15 @@ struct DetailView: View {
                                message: "On the left are the files a new note starts from, and the snippets you can drop into one. Choose one to edit it.",
                                tint: SidebarSection.templates.tint)
             }
+        } else if model.section == .snippets {
+            // No selection to make: the file is the thing you edit, and the list beside it
+            // says what is in it.
+            TemplateEditorView(name: Snippets.fileName).id(Snippets.fileName)
+        } else if model.section == .tags, model.selectedNotePath == nil {
+            EmptyStateView(title: "Tags",
+                           systemImage: SidebarSection.tags.systemImage,
+                           message: "Every tag in your notes, most used first. Open one to see the notes and tasks that carry it. Write a tag as #travel anywhere in a note or a task.",
+                           tint: SidebarSection.tags.tint)
         } else if model.section == .inbox, !model.inboxShowsNote {
             // Sorting happens in the middle column; this is where the lines can go.
             InboxFileItView()
@@ -859,6 +898,8 @@ extension SidebarSection {
         case .recent: return Color("ResourceTint")
         case .deleted: return Color("ArchiveTint")
         case .templates: return Color("ResourceTint")
+        case .snippets: return Color("InboxTint")
+        case .tags: return Color("AreaTint")
         case .review: return Color("ReviewTint")
         case .map: return Color("GoalTint")
         case .search: return Color("ResourceTint")

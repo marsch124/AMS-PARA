@@ -325,6 +325,24 @@ Filters can be typed straight into the query:
 - `is:open`, `is:done`, `is:task`
 - quotes for an exact phrase: `"race day"`
 
+## Tools: templates, snippets and tags
+
+The sidebar group **Tools** holds the three things you use *on* your notes rather than notes
+themselves. Press the word **Tools** to fold the group away and again to open it.
+
+### Tags
+
+A tag is any word with a `#` in front of it, written in a note's `tags:` line or in a task:
+`- [ ] Book the ferry #travel`.
+
+**Tags** lists every tag you have used, the most used first, with how many notes and how many
+tasks carry each one. Press a tag to open it: the notes that carry it, then the tasks, open
+ones first. Press a note to open it, or tick a task where it stands — the list stays where it
+is. The field at the top finds a tag by name.
+
+Right-click a tag (long-press on the iPhone) for **Search for #tag**, which hands it to the
+Search screen where you can combine it with anything else.
+
 ## Templates and snippets
 
 Two kinds of ready-made text, both ordinary markdown files in the `Templates` folder inside your vault. **Templates** are what a new note starts as; **snippets** are blocks of tasks you drop into a note you are already in. The **Templates** section in the sidebar lists them all and lets you edit them without leaving the app.
@@ -342,7 +360,7 @@ Every new note is a copy of the matching file, with `{{title}}` and `{{date}}` f
 
 ### The snippets
 
-Pick one from the **Snippet** button beside **Add a task** in any note (a symbol rather than the word on the phone), and its lines are added to that note's Tasks. The ones the app starts with:
+**Snippets** in the sidebar lists every block and what is in it; the file itself is edited beside the list on the Mac, and one tap down on the iPhone. Pick a block to use from the **Snippet** button beside **Add a task** in any note (a symbol rather than the word on the phone), and its lines are added to that note's Tasks. The ones the app starts with:
 
 - **Delegate** — "Ask {{who}} to {{what}}" due tomorrow, with a subtask to check they have it in a week.
 - **Waiting for** — one line tagged `#waiting`, dated a week out, so it turns up in a review rather than being forgotten.

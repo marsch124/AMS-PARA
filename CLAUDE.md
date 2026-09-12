@@ -930,10 +930,37 @@ buildingblocks. Det är snarare ett system för att filtrera eller gruppera." A 
 to be true of every member, or it is the same fault as "Hobby or homeless?" wearing a plainer
 coat. **"Blocks" alone is also out** — the sidebar already has **Time Blocks**.
 
-Still open, in the order agreed: the sidebar group for Templates/Snippets/Tags plus a real
-**Tags** screen (name not settled); then Goals and Aspirations screens if the one review is
-not enough; then the status vocabulary (reached / missed / dropped), last because it edits his
-notes.
+**Build 143: Tools.** A folding sidebar group (`SidebarSection.tools`, `@AppStorage
+"toolsFolded"`) holding **Templates**, **Snippets** and **Tags** — the three things you use
+*on* notes rather than notes themselves. He named it after rejecting "Building blocks"; note
+also that plain **"Blocks" is out** because **Time Blocks** already exists.
+- `Core/Vault/Tags.swift`: `TagUse` (tag + note/open/finished counts) and `NoteIndex.tagUses()`,
+  which counts in **one pass over the notes** — one pass per tag would be 60 × 400 scans every
+  time the list is drawn. `notesTagged(_:)` is frontmatter tags only and `tasksTagged(_:)` is
+  the tasks; the old `notes(tagged:)` mixed the two, which is why it could not back a readable
+  list. `NoteIndex.normalized(_:)` is the one place a tag is lower-cased and de-hashed.
+- `TagsView` is **one screen, not two columns**: a tag opens in place. A tag detail in a third
+  column would have needed a new `PhoneRoute` and a second layout to keep working. Plain
+  `List`, every row a `Button`, **nothing tagged for selection** — one note can carry two tags
+  and would appear twice, which is the builds 71–74 fault exactly. Folds are Section headers
+  with a button, never `DisclosureGroup` (build 93). Rows call
+  `show(section: .tags, notePath:)` so the list stays put (build 135).
+- `SnippetsView` needed no selection: the file *is* the thing, so `DetailView` shows
+  `TemplateEditorView(name: Snippets.fileName)` whenever the section is `.snippets`, and the
+  phone gets a `NavigationLink` to `PhoneRoute.template` instead (that enum is inside
+  `#if os(iOS)`, so the link is too).
+- `Snippet` carries `lines: [String]`, not a `body` — I assumed otherwise and caught it before
+  pushing.
+
+**The Rules line "adding a source file needs a `project.yml` change" is stale for App files.**
+Since build 41 both app targets are `type: syncedFolder`; `DayScheduleView.swift`,
+`InboxView.swift` and now `TagsView.swift` were all added with no project change. It still
+holds for anything that is not a source file in those folders (Docs resources, Info.plist keys).
+
+Still open, in the order agreed: Goals and Aspirations screens if the one review is not
+enough; then the status vocabulary (reached / missed / dropped), last because it edits his
+notes. Also queued: **spread `StateToggle`** to the other two-state controls (Hide finished,
+the Calendar's Schedule/Note switch, the Map's Arrange).
 
 ## Not built (by choice)
 

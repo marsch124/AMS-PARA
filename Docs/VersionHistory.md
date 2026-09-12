@@ -2,6 +2,14 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 143 · 12 September 2026
+
+- **A new group in the sidebar, "Tools".** It holds **Templates**, **Snippets** and **Tags** — the three things you use *on* your notes rather than notes themselves. Press the word **Tools** to fold it away; it stays as you leave it.
+- **Snippets has a row of its own.** It used to be one line inside Templates, where it was easy to miss. The list shows every block and what is in it, and the file is edited beside it (on the iPhone, one tap down).
+- **Tags is new.** Every tag in your notes, most used first, with how many notes and how many tasks carry it. Press a tag to open it: the notes carrying it, then the tasks, open ones first. Press a note or tick a task straight from there — the list stays where it is.
+- The field at the top finds a tag by name. Right-click a tag (long-press on the iPhone) for **Search for #tag**, which hands it to the Search screen.
+- **Templates left the Actions list** and is now the first row under Tools.
+
 ## Build 142 · 12 September 2026
 
 - **The add-a-task field says just "Add a task…".** The old grey text was eighty-four characters long. On the iPhone you only ever saw the first few words, and it vanished as soon as you started typing.
