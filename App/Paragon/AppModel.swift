@@ -659,7 +659,8 @@ final class AppModel: ObservableObject {
         case .kind(let kind)?: base = notes.filter { $0.kind == kind }
         case .calendar?: base = index.dailyNotes
         case .recent?: base = recentNotes
-        case .deleted?, .templates?: base = []
+        // Sections that are not a list of notes at all: they draw their own middle column.
+        case .deleted?, .templates?, .snippets?, .tags?: base = []
         case .work?: base = workNotes
         case .today?, .review?, .map?, .timeBlocks?, .done?, .allActions?, .search?, nil: base = notes
         }
