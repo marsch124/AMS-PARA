@@ -28,8 +28,13 @@ have run the test flight a large number of times. Is it possible that you run it
 when the CI is green? This would mean that I don't need to do it." So the routine is now: CI
 goes green, I dispatch the workflow with `mcp__github__actions_run_trigger` (`run_workflow`,
 `workflow_id: testflight.yml`, `ref: claude/ams-para-reminders-sync-s0ex53`, and a one-line
-`notes` input naming the build), and I tell him in **one** line that it is uploading and that
-his only step is **Update** in Apple's TestFlight app, on the phone and on the Mac. **Only for
+`notes` input naming the build), **then wait for that run to finish** and tell him in **one**
+line that the build is in TestFlight and his only step is **Update** in Apple's TestFlight app,
+on the phone and on the Mac. **Telling him it has started is the wrong moment** — he said so on
+13 September: *"Don't wait the 5 minutes because I can take care of that myself. I would like
+to know immediately when the TestFlight workflow is done."* So: no "it is uploading", no "give
+it five minutes"; poll the run and speak when it is green (about four minutes), or say so at
+once if it fails. **Only for
 a push that bumped `BuildStamp.number`** — a docs-only push must not spend a TestFlight run,
 and two uploads of the same build number are refused by Apple anyway. Still give him the
 **whole URL** when he wants to watch it —
