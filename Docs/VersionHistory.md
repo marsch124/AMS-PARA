@@ -2,6 +2,26 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 152 · 13 September 2026
+
+Your three points from the screenshot.
+
+- **A plan line is written as `TB: 12:45-13:45 special time block`**, not as a bullet. It no
+  longer renders as a list, and `TB:` says what the line is. Lines written before this still
+  read exactly as they did; the next time a day's plan is saved, they are tidied to the new
+  shape.
+- **Time blocks are orange**, not teal. The lane, the cards, the buttons that make a block and
+  the sheet all take the new colour.
+- **Drag a block to move it** (on the Mac). Pick it up and slide it; it snaps to five minutes
+  and shows its new time while you move. **Drag the grip at the foot of a block** to make it
+  longer or shorter. A click without moving still opens the block for editing.
+  On the iPhone a block is tapped, not dragged: the lane lives inside the page's scroll, and a
+  drag there belongs to the scroll.
+- **The block sheet is rebuilt.** The two long dropdowns are gone. There is a proper time field
+  with **−** and **+** for quarter hours, a row of lengths to press (15 min up to 4 h), and one
+  line underneath saying what it comes to: **09:30 – 11:00 · 1 h 30 min**.
+- If you drag a block that is also in Apple Calendar, the event moves with it.
+
 ## Build 151 · 13 September 2026
 
 - **A plan block can now be put into Apple Calendar, one block at a time.** Right-click a block

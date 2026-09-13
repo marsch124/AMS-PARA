@@ -12,8 +12,8 @@ import Foundation
 ///
 ///     ## Plan
 ///
-///     - 09:30-11:00 Deep work on the IM plan
-///     - 13:00-14:00 Pack for Granden
+///     TB: 09:30-11:00 Deep work on the IM plan
+///     TB: 13:00-14:00 Pack for Granden
 public struct PlanBlock: Identifiable, Equatable, Sendable {
     /// Minutes since midnight.
     public var start: Int
@@ -55,7 +55,16 @@ public struct PlanBlock: Identifiable, Equatable, Sendable {
     }
 
     /// The line as it is written into the note.
-    public var line: String { "- \(startText)-\(endText) \(title)" }
+    ///
+    /// **`TB:`, not a bullet.** He asked for it in build 152: a `- ` made the plan render as a
+    /// bulleted list, which says nothing about what the line is. `TB:` says "time block" and
+    /// reads as itself in any editor. Bulleted lines written before that still read — the
+    /// parser stayed liberal.
+    public var line: String { "\(PlanBlock.prefix) \(startText)-\(endText) \(title)" }
+
+    /// What a written plan line starts with.
+    public static let prefix = "TB:"
+
 }
 
 /// Reading and writing the `## Plan` section of a daily note.
@@ -65,12 +74,14 @@ public struct PlanBlock: Identifiable, Equatable, Sendable {
 public enum DayPlan {
     public static let heading = "## Plan"
 
-    /// `- 09:30-11:00 Title`. Liberal in what it reads: any dash, spaces around it or not, a
-    /// `*` bullet, a one-digit hour. Strict in what it writes, which is `PlanBlock.line`.
+    /// `TB: 09:30-11:00 Title`. Liberal in what it reads: with or without the `TB:`, with or
+    /// without a `-` or `*` bullet in front of it (which is how every line written before
+    /// build 152 looks), any kind of dash between the times, spaces around it or not, and a
+    /// one-digit hour. Strict in what it writes, which is `PlanBlock.line`.
     static let lineRegex = try! NSRegularExpression(
         // The dashes are written out as themselves: a Swift raw string passes a backslash-u
         // escape through as plain characters, so escaping here would quietly break the class.
-        pattern: #"^\s*[-*]\s*(\d{1,2}:\d{2})\s*[-–—]\s*(\d{1,2}:\d{2})\s+(\S.*)$"#)
+        pattern: #"^\s*(?:[-*]\s*)?(?:[Tt][Bb]:\s*)?(\d{1,2}:\d{2})\s*[-–—]\s*(\d{1,2}:\d{2})\s+(\S.*)$"#)
 
     /// The blocks in a note, earliest first.
     public static func blocks(in note: Note) -> [PlanBlock] {

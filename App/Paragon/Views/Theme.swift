@@ -13,6 +13,12 @@ enum Theme {
     /// The reading font of the note editor: proportional, not code.
     static let editorFont: Font = .system(.body, design: .default)
     static let editorLineSpacing: CGFloat = 3
+
+    /// The planner's own blocks: orange, at his request in build 152. They used to borrow the
+    /// review's teal, which put them in the same family as the Calendar column beside them —
+    /// the whole point of the two lanes is that they are different things. One place, so the
+    /// lane, the card, the "make a block" buttons and the sheet cannot drift apart.
+    static let planBlockTint = Color("PlanTint")
 }
 
 /// A quiet heading above a group, used instead of the default list section titles

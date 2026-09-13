@@ -56,7 +56,7 @@ final class DayPlanTests: XCTestCase {
         XCTAssertFalse(updated.body.contains("Old"))
         XCTAssertTrue(updated.body.contains("- [ ] Keep me"))
         XCTAssertTrue(updated.body.contains("Keep this too."))
-        XCTAssertTrue(updated.body.contains("- 13:00-14:00 Pack for Granden"))
+        XCTAssertTrue(updated.body.contains("TB: 13:00-14:00 Pack for Granden"))
     }
 
     func testThePlanSectionIsMadeAboveTasksWhenItIsMissing() {
@@ -157,5 +157,33 @@ final class DayPlanTests: XCTestCase {
         var longer = block
         longer.end = 720
         XCTAssertTrue(PlanBlockLink.belongs(PlanBlockLink.notes(for: block, on: day), to: longer, on: day))
+    }
+
+    // MARK: TB: rather than a bullet (build 152)
+
+    func testAPlanIsWrittenWithTBAndNoBullet() {
+        let block = PlanBlock(start: 9 * 60 + 30, end: 11 * 60, title: "Deep work")
+        XCTAssertEqual(block.line, "TB: 09:30-11:00 Deep work")
+        let note = daily("# Sunday\n").settingPlanBlocks([block])
+        XCTAssertTrue(note.body.contains("TB: 09:30-11:00 Deep work"))
+        XCTAssertFalse(note.body.contains("- 09:30"))
+    }
+
+    func testBulletedLinesWrittenBeforeBuild152StillRead() {
+        let note = daily("# Sunday\n\n## Plan\n\n- 09:30-11:00 Old bullet\n* 12:00-12:30 Star bullet\nTB: 14:00-15:00 New shape\n14:30-15:30 Bare line\n")
+        XCTAssertEqual(note.planBlocks.map(\.title),
+                       ["Old bullet", "Star bullet", "New shape", "Bare line"])
+    }
+
+    func testAMixedBulletAndPrefixStillReads() {
+        let note = daily("# Sunday\n\n## Plan\n\n- TB: 09:30-11:00 Both\n")
+        XCTAssertEqual(note.planBlocks.map(\.title), ["Both"])
+    }
+
+    func testRewritingAnOldPlanTidiesItToTheNewShape() {
+        let note = daily("# Sunday\n\n## Plan\n\n- 09:30-11:00 Old bullet\n")
+        let tidied = note.settingPlanBlocks(note.planBlocks)
+        XCTAssertTrue(tidied.body.contains("TB: 09:30-11:00 Old bullet"))
+        XCTAssertFalse(tidied.body.contains("- 09:30-11:00"))
     }
 }

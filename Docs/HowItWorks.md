@@ -223,8 +223,15 @@ On the iPhone the parts are one page instead: the day's hours first, the actions
 The **calendar** button at the top right of the day leads to the other kind of block, the ones
 that are real events in Apple Calendar.
 
-Press a block to change its name, its time or its length. Right-click it (long-press on the
-iPhone) for **Remove**. The arrows at the top move a day at a time.
+**On the Mac you can drag a block.** Pick it up and slide it up or down to move it in time; it
+snaps to five minutes and shows its new time as you go. Drag the small **grip** at the foot of a
+block to make it longer or shorter. A click without moving opens the block instead. On the
+iPhone a block is tapped, not dragged — the lane sits inside the page's scroll.
+
+Opening a block gives you its name, a time field with **−** and **+** for quarter hours, and a
+row of lengths to press. The line underneath says what it comes to, for example
+**09:30 – 11:00 · 1 h 30 min**. Right-click a block (long-press on the iPhone) for **Remove**.
+The arrows at the top of the day move a day at a time.
 
 **A block is only for you.** It says where you mean to be, or what you mean to work on. It
 never becomes a task, and nothing outside the app sees it — unless you ask for one to, which is
@@ -248,8 +255,8 @@ blocks go to**.
 ```
 ## Plan
 
-- 09:30-11:00 Deep work on the IM plan
-- 13:00-14:00 Pack for Granden
+TB: 09:30-11:00 Deep work on the IM plan
+TB: 13:00-14:00 Pack for Granden
 ```
 
 So they sync like everything else, and you can read and correct them by hand in any editor. If

@@ -172,11 +172,9 @@ struct PlannerDayView: View {
     private var lanesRow: some View {
         HStack(alignment: .top, spacing: 0) {
             hours
-            lane(title: "Calendar", tint: SidebarSection.calendar.tint,
-                 placements: placedEvents, filled: false)
+            lane(title: "Calendar", tint: SidebarSection.calendar.tint, placements: placedEvents)
             Divider()
-            lane(title: "Time blocks", tint: SidebarSection.review.tint,
-                 placements: placedBlocks, filled: true)
+            lane(title: "Time blocks", tint: Theme.planBlockTint, placements: placedBlocks)
         }
     }
 
@@ -199,7 +197,7 @@ struct PlannerDayView: View {
     /// Items are placed with `.offset` inside a top-leading stack, **never `.position`**: a
     /// positioned view claims its parent's whole size and swallows every click in it (build 85).
     /// Their width comes from `GeometryReader`, because two things at the same hour share it.
-    private func lane(title: String, tint: Color, placements: [PlannerPlacement], filled: Bool) -> some View {
+    private func lane(title: String, tint: Color, placements: [PlannerPlacement]) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             SectionLabel(title: title, count: nil, tint: tint)
                 .padding(.horizontal, 8)
@@ -215,7 +213,23 @@ struct PlannerDayView: View {
                     }
                     .frame(height: laneHeight)
                     ForEach(placements) { placed in
-                        item(placed, tint: tint, filled: filled, width: geometry.size.width)
+                        let box = slot(placed, width: geometry.size.width)
+                        if let block = placed.block {
+                            PlanBlockCard(block: block,
+                                          inCalendar: model.isInAppleCalendar(block, on: day),
+                                          x: box.x, width: box.width,
+                                          hourHeight: hourHeight,
+                                          firstHour: firstHour, lastHour: lastHour,
+                                          edit: { startEditing(block) },
+                                          change: { start, minutes in change(block, start: start, minutes: minutes) },
+                                          remove: { model.removePlanBlock(block, on: day) },
+                                          setInCalendar: { wanted in
+                                              Task { await model.setInAppleCalendar(wanted, for: block, on: day) }
+                                          },
+                                          openEvent: openEventAction(for: block))
+                        } else {
+                            item(placed, tint: tint, x: box.x, width: box.width)
+                        }
                     }
                 }
             }
@@ -224,70 +238,38 @@ struct PlannerDayView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// Two events at the same time stand side by side at half width, three at a third, and so
-    /// on — the same rule the Calendar section's schedule has used since build 61.
-    @ViewBuilder
-    private func item(_ placed: PlannerPlacement, tint: Color, filled: Bool, width: CGFloat) -> some View {
+    /// Where one item sits across the lane. Two events at the same time stand side by side at
+    /// half the width, three at a third, and so on — the same rule the Calendar section's
+    /// schedule has used since build 61.
+    private func slot(_ placed: PlannerPlacement, width: CGFloat) -> (x: CGFloat, width: CGFloat) {
         let usable = max(40, width - 12)
         let each = usable / CGFloat(max(1, placed.lanes))
-        // Named `box`, not `card`: a local called `card` would shadow the method of that name
-        // inside its own initial value.
-        let inCalendar = placed.block.map { model.isInAppleCalendar($0, on: day) } ?? false
-        let box = card(title: placed.title, time: placed.time, tint: tint, filled: filled, alsoAnEvent: inCalendar)
-            .frame(width: max(30, each - 3), height: placed.height)
-            .offset(x: 4 + each * CGFloat(placed.lane), y: placed.top)
-        if let block = placed.block {
-            Button { startEditing(block) } label: { box }
-                .buttonStyle(.plain)
-                .contextMenu {
-                    Button("Edit\u{2026}") { startEditing(block) }
-                    // A tick, not "Add to Apple Calendar": the control says which state you are
-                    // in, never the state you would get (build 142).
-                    Toggle("In Apple Calendar", isOn: Binding(
-                        get: { model.isInAppleCalendar(block, on: day) },
-                        set: { wanted in Task { await model.setInAppleCalendar(wanted, for: block, on: day) } }))
-                    if let event = model.calendarBlock(for: block, on: day) {
-                        Button("Open in Calendar") { model.openInCalendar(event) }
-                    }
-                    Divider()
-                    Button("Remove", role: .destructive) { model.removePlanBlock(block, on: day) }
-                }
-        } else {
-            box
-        }
+        return (4 + each * CGFloat(placed.lane), max(30, each - 3))
     }
 
-    /// `alsoAnEvent` puts a small calendar symbol on a block he has copied into Apple Calendar,
-    /// so the state can be seen without opening a menu — an action only a right-click reveals is
-    /// an action nobody finds (build 74).
-    private func card(title: String, time: String, tint: Color, filled: Bool, alsoAnEvent: Bool = false) -> some View {
-        VStack(alignment: .leading, spacing: 1) {
-            HStack(spacing: 3) {
-                Text(time)
-                    .font(.caption2.monospacedDigit())
-                    .foregroundStyle(tint.opacity(0.85))
-                if alsoAnEvent {
-                    Image(systemName: "calendar")
-                        .font(.caption2)
-                        .foregroundStyle(SidebarSection.calendar.tint)
-                        .help("Also an event in Apple Calendar")
-                }
-                Spacer(minLength: 0)
-            }
-            Text(title)
-                .font(.caption.weight(filled ? .semibold : .regular))
-                .foregroundStyle(tint)
-                .lineLimit(3)
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, 6)
-        .padding(.vertical, 4)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(tint.opacity(filled ? 0.18 : 0.12), in: RoundedRectangle(cornerRadius: 7))
-        .overlay(
-            RoundedRectangle(cornerRadius: 7)
-                .strokeBorder(tint.opacity(filled ? 0.5 : 0.28), lineWidth: 1)
-        )
+    /// An event from Apple Calendar. Read only: nothing here writes to the calendar.
+    private func item(_ placed: PlannerPlacement, tint: Color, x: CGFloat, width: CGFloat) -> some View {
+        PlanCardFace(title: placed.title, time: placed.time, tint: tint, filled: false)
+            .frame(width: width, height: placed.height)
+            .offset(x: x, y: placed.top)
+    }
+
+    /// "Open in Calendar", but only when the block really has a copy out there. Written as a
+    /// function rather than a `map` on the optional: a closure that returns a closure is the
+    /// kind of thing Swift's inference gives up on, and there is no compiler in this container.
+    private func openEventAction(for block: PlanBlock) -> (() -> Void)? {
+        guard let event = model.calendarBlock(for: block, on: day) else { return nil }
+        return { model.openInCalendar(event) }
+    }
+
+    /// Moves or resizes a block and keeps its Apple Calendar copy with it, through the one
+    /// sequential path (build 151): a move rewrites the key the event is found by.
+    private func change(_ block: PlanBlock, start: Int, minutes: Int) {
+        var moved = block
+        moved.start = start
+        moved.end = start + minutes
+        let wanted = model.isInAppleCalendar(block, on: day)
+        Task { await model.savePlanBlock(moved, on: day, replacing: block, inAppleCalendar: wanted) }
     }
 
     // MARK: Where things sit
@@ -386,18 +368,41 @@ struct PlannerDayView: View {
                 .font(.headline)
             TextField("What is this time for?", text: $draftTitle)
                 .textFieldStyle(.roundedBorder)
+            // Build 152, at his word: "the time editing process is very crude". Two long
+            // dropdowns became the system's own time field, a row of lengths, and one line
+            // saying what that adds up to — so the answer is visible without opening anything.
             HStack(spacing: 10) {
-                Picker("Starts", selection: $draftStart) {
-                    ForEach(startChoices, id: \.self) { minutes in
-                        Text(PlanBlock.clock(minutes)).tag(minutes)
-                    }
+                Text("Starts")
+                    .foregroundStyle(.secondary)
+                DatePicker("", selection: startTime, displayedComponents: .hourAndMinute)
+                    .labelsHidden()
+                Button {
+                    draftStart = max(firstHour * 60, draftStart - 15)
+                } label: {
+                    Image(systemName: "minus")
                 }
-                Picker("For", selection: $draftMinutes) {
-                    ForEach(PlannerDayView.durations, id: \.self) { minutes in
-                        Text(PlannerDayView.durationLabel(minutes)).tag(minutes)
-                    }
+                Button {
+                    draftStart = min((lastHour + 1) * 60 - 15, draftStart + 15)
+                } label: {
+                    Image(systemName: "plus")
                 }
+                Spacer(minLength: 0)
             }
+            .buttonStyle(.borderless)
+            VStack(alignment: .leading, spacing: 6) {
+                Text("For how long")
+                    .foregroundStyle(.secondary)
+                WrappingHStack(spacing: 6, lineSpacing: 6) {
+                    ForEach(lengthChoices, id: \.self) { minutes in
+                        LengthChip(title: PlannerDayView.durationLabel(minutes),
+                                   isOn: draftMinutes == minutes) { draftMinutes = minutes }
+                    }
+                }
+                .lineLimit(1)
+            }
+            Text(draftSummary)
+                .font(.callout.weight(.semibold))
+                .foregroundStyle(Theme.planBlockTint)
             Toggle("Also put this block in Apple Calendar", isOn: $draftInCalendar)
             Text(draftInCalendar
                  ? "An event is written to the calendar under Settings \u{203a} Apple Calendar \u{203a} Time blocks go to. Change the block here and the event follows it; remove the block, or take the tick off, and the event goes."
@@ -438,13 +443,40 @@ struct PlannerDayView: View {
         .frame(minWidth: 420, minHeight: 460)
     }
 
-    private var startChoices: [Int] {
-        stride(from: firstHour * 60, through: lastHour * 60 + 30, by: 15).map { $0 }
+    /// The start time as a `Date` on this day, for the system's own time field. Written back as
+    /// minutes since midnight, which is all a `PlanBlock` ever holds.
+    private var startTime: Binding<Date> {
+        Binding(get: { dateOnDay(minutes: draftStart) ?? Date() },
+                set: { chosen in
+                    let parts = WeekRef.calendar.dateComponents([.hour, .minute], from: chosen)
+                    draftStart = (parts.hour ?? 0) * 60 + (parts.minute ?? 0)
+                })
     }
 
-    private static let durations = [15, 30, 45, 60, 90, 120, 180, 240]
+    private func dateOnDay(minutes: Int) -> Date? {
+        guard let midnight = day.date() else { return nil }
+        return WeekRef.calendar.date(byAdding: .minute, value: minutes, to: midnight)
+    }
 
-    private static func durationLabel(_ minutes: Int) -> String {
+    /// "09:30 \u2013 11:00 \u00b7 1 h 30 min". Built outside the ViewBuilder.
+    private var draftSummary: String {
+        "\(PlanBlock.clock(draftStart)) \u{2013} \(PlanBlock.clock(draftStart + draftMinutes)) \u{00b7} \(PlannerDayView.durationLabel(draftMinutes))"
+    }
+
+    static let durations = [15, 30, 45, 60, 90, 120, 180, 240]
+
+    /// The lengths offered, plus the block's own if a drag left it on something in between —
+    /// otherwise no chip would be lit and the row would look like it had lost the answer.
+    private var lengthChoices: [Int] {
+        var all = PlannerDayView.durations
+        if !all.contains(draftMinutes) {
+            all.append(draftMinutes)
+            all.sort()
+        }
+        return all
+    }
+
+    static func durationLabel(_ minutes: Int) -> String {
         minutes < 60 ? "\(minutes) min"
             : (minutes % 60 == 0 ? "\(minutes / 60) h" : "\(minutes / 60) h \(minutes % 60) min")
     }
@@ -460,6 +492,213 @@ struct PlannerDayView: View {
         let wanted = draftInCalendar
         Task { await model.savePlanBlock(made, on: day, replacing: previous, inAppleCalendar: wanted) }
         sheet = nil
+    }
+}
+
+// MARK: The cards
+
+/// What a block or an event looks like. One view for both lanes, so they cannot drift apart.
+private struct PlanCardFace: View {
+    let title: String
+    let time: String
+    let tint: Color
+    let filled: Bool
+    var alsoAnEvent: Bool = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            HStack(spacing: 3) {
+                Text(time)
+                    .font(.caption2.monospacedDigit())
+                    .foregroundStyle(tint.opacity(0.85))
+                if alsoAnEvent {
+                    Image(systemName: "calendar")
+                        .font(.caption2)
+                        .foregroundStyle(SidebarSection.calendar.tint)
+                }
+                Spacer(minLength: 0)
+            }
+            Text(title)
+                .font(.caption.weight(filled ? .semibold : .regular))
+                .foregroundStyle(tint)
+                .lineLimit(3)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(tint.opacity(filled ? 0.18 : 0.12), in: RoundedRectangle(cornerRadius: 7))
+        .overlay(
+            RoundedRectangle(cornerRadius: 7)
+                .strokeBorder(tint.opacity(filled ? 0.5 : 0.28), lineWidth: 1)
+        )
+    }
+}
+
+/// One of his own blocks, which can be picked up and moved.
+///
+/// **Its own view because a live drag needs `@GestureState`** — the shape `MapNodeBox` has had
+/// since build 83.
+///
+/// **One gesture on the card, not two** (build 85): a single `DragGesture(minimumDistance: 0)`
+/// that decides in `onEnded` — no movement is a tap, which opens the sheet. The grip at the
+/// foot is a *different* view, so its own drag never argues with the card's; it takes the press
+/// with `highPriorityGesture` because it sits on top of the card.
+///
+/// **Dragging is macOS only, deliberately.** On the phone the lane is inside the page's scroll
+/// view and a vertical drag belongs to that scroll. Taking it would be builds 71 to 74 in a new
+/// place, and CI cannot catch it. The phone edits a block in the sheet, which is what build 152
+/// rebuilt.
+private struct PlanBlockCard: View {
+    let block: PlanBlock
+    let inCalendar: Bool
+    let x: CGFloat
+    let width: CGFloat
+    let hourHeight: CGFloat
+    let firstHour: Int
+    let lastHour: Int
+    let edit: () -> Void
+    /// New start and new length, both in minutes.
+    let change: (Int, Int) -> Void
+    let remove: () -> Void
+    let setInCalendar: (Bool) -> Void
+    /// Set only when the block really has a copy in Apple Calendar.
+    let openEvent: (() -> Void)?
+
+    @GestureState private var shift: CGFloat = 0
+    @GestureState private var stretch: CGFloat = 0
+
+    #if os(macOS)
+    private let canDrag = true
+    #else
+    private let canDrag = false
+    #endif
+
+    var body: some View {
+        face
+            .frame(width: width, height: height)
+            .offset(x: x, y: top)
+            .contextMenu { menu }
+    }
+
+    @ViewBuilder
+    private var face: some View {
+        let card = PlanCardFace(title: block.title, time: liveTime,
+                                tint: Theme.planBlockTint, filled: true, alsoAnEvent: inCalendar)
+        if canDrag {
+            card
+                .gesture(carry)
+                .overlay(alignment: .bottom) { grip }
+                .shadow(color: .black.opacity(moving ? 0.18 : 0), radius: moving ? 4 : 0, y: moving ? 2 : 0)
+        } else {
+            Button(action: edit) { card }
+                .buttonStyle(.plain)
+        }
+    }
+
+    @ViewBuilder
+    private var menu: some View {
+        Button("Edit\u{2026}", action: edit)
+        // A tick, not "Add to Apple Calendar": a control says which state you are in, never the
+        // state you would get (build 142).
+        Toggle("In Apple Calendar", isOn: Binding(get: { inCalendar }, set: setInCalendar))
+        if let openEvent {
+            Button("Open in Calendar", action: openEvent)
+        }
+        Divider()
+        Button("Remove", role: .destructive, action: remove)
+    }
+
+    /// Picking the whole block up. No movement at all is a tap, and a tap opens the sheet.
+    private var carry: some Gesture {
+        DragGesture(minimumDistance: 0)
+            .updating($shift) { value, state, _ in state = value.translation.height }
+            .onEnded { value in
+                if abs(value.translation.height) < 4 {
+                    edit()
+                } else {
+                    change(start(movedBy: value.translation.height), block.minutes)
+                }
+            }
+    }
+
+    /// The grip along the foot of the card: drag it to make the block longer or shorter.
+    private var grip: some View {
+        Capsule()
+            .fill(Theme.planBlockTint.opacity(stretching ? 0.9 : 0.45))
+            .frame(width: 26, height: 3)
+            .padding(.bottom, 2)
+            .frame(maxWidth: .infinity, minHeight: 10)
+            .contentShape(Rectangle())
+            .highPriorityGesture(
+                DragGesture(minimumDistance: 2)
+                    .updating($stretch) { value, state, _ in state = value.translation.height }
+                    .onEnded { value in
+                        change(block.start, length(changedBy: value.translation.height))
+                    }
+            )
+    }
+
+    // MARK: What it looks like right now
+
+    private var moving: Bool { shift != 0 }
+    private var stretching: Bool { stretch != 0 }
+
+    private var liveStart: Int { moving ? start(movedBy: shift) : block.start }
+    private var liveMinutes: Int { stretching ? length(changedBy: stretch) : block.minutes }
+    private var liveTime: String {
+        "\(PlanBlock.clock(liveStart)) \u{2013} \(PlanBlock.clock(liveStart + liveMinutes))"
+    }
+
+    private var top: CGFloat { CGFloat(liveStart - firstHour * 60) / 60 * hourHeight }
+    private var height: CGFloat { max(22, CGFloat(liveMinutes) / 60 * hourHeight) }
+
+    /// Where the block would start after a drag of this many points, snapped to five minutes
+    /// and kept inside the hours the lane draws.
+    private func start(movedBy points: CGFloat) -> Int {
+        let wanted = snapped(block.start + minutes(in: points))
+        return max(firstHour * 60, min(wanted, (lastHour + 1) * 60 - block.minutes))
+    }
+
+    /// How long the block would be after the grip is dragged this far. Never under a quarter of
+    /// an hour, and never past the foot of the lane.
+    private func length(changedBy points: CGFloat) -> Int {
+        let wanted = snapped(block.minutes + minutes(in: points))
+        return max(15, min(wanted, (lastHour + 1) * 60 - block.start))
+    }
+
+    private func minutes(in points: CGFloat) -> Int {
+        Int((points / hourHeight * 60).rounded())
+    }
+
+    private func snapped(_ minutes: Int) -> Int {
+        Int((Double(minutes) / 5).rounded()) * 5
+    }
+}
+
+/// One of the lengths offered in the block sheet. A filled capsule when it is the one chosen,
+/// a dashed outline when it is not — the same two states `StateToggle` uses everywhere else
+/// (build 142): the control shows which one you are on, never which one you would get.
+private struct LengthChip: View {
+    let title: String
+    let isOn: Bool
+    let choose: () -> Void
+
+    var body: some View {
+        Button(action: choose) {
+            Text(title)
+                .font(.caption.weight(isOn ? .semibold : .regular))
+                .foregroundStyle(isOn ? Theme.planBlockTint : Color.secondary)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(Theme.planBlockTint.opacity(isOn ? 0.2 : 0), in: Capsule())
+                .overlay(
+                    Capsule().strokeBorder(isOn ? Theme.planBlockTint.opacity(0.7) : Color.secondary.opacity(0.4),
+                                           style: StrokeStyle(lineWidth: 1, dash: isOn ? [] : [3, 3]))
+                )
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -553,7 +792,7 @@ struct PlannerActionsView: View {
                                                on: day)
                         } label: {
                             Image(systemName: "plus.circle")
-                                .foregroundStyle(SidebarSection.review.tint)
+                                .foregroundStyle(Theme.planBlockTint)
                         }
                         .buttonStyle(.plain)
                         .help("Make an hour's block for this")

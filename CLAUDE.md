@@ -1136,7 +1136,36 @@ action nobody finds (build 74).
 - Removing a block removes its event: the tick said "this block is also in Apple Calendar", and
   with the block gone there is nothing for the event to be.
 
-Still open, in the order agreed: dragging and resizing a plan block; then Goals and Aspirations
+**Build 152: `TB:`, orange, and the drag.** Three things he asked for from one screenshot.
+- **A plan line is `TB: 09:30-11:00 Title`, not `- 09:30-11:00 Title`.** His words: the bullet
+  made it a list and said nothing about what the line was. `PlanBlock.prefix` is the one place
+  it is spelled. The parser stayed **liberal** — an optional bullet *and* an optional `TB:`, in
+  either order — so every line written from build 147 to 151 still reads, and a save tidies it.
+  `DayPlanTests` covers the old shape, the new one, both together, and a bare line.
+- **`Theme.planBlockTint` (`PlanTint` in the asset catalogue), orange.** Blocks used to borrow
+  the review's teal, which is the same family as the Calendar lane next to them — the whole
+  point of two lanes is that they are two different things. One constant, so the lane, the
+  cards, the make-a-block buttons and the sheet cannot drift. A new `.colorset` inside
+  `Assets.xcassets` needs no `project.yml` change (the app target is a `syncedFolder`).
+- **`PlanBlockCard` is its own view** because a live drag needs `@GestureState` (build 83).
+  **One gesture on the card** — a single `DragGesture(minimumDistance: 0)` that decides in
+  `onEnded`, no movement being a tap (build 85). The resize grip is a **different** view at the
+  foot, so its drag never argues with the card's; it uses `highPriorityGesture` because it sits
+  on top. Movement snaps to five minutes and is clamped to the drawn hours, and the card shows
+  its live time while it moves.
+- **Dragging is macOS only, on purpose.** On the phone the lane is inside the page's scroll view
+  and a vertical drag belongs to that scroll; taking it would be builds 71–74 in a new place and
+  CI cannot catch it. The phone gets the rebuilt sheet instead.
+- A drag goes through `savePlanBlock(…replacing:inAppleCalendar:)`, so a block that is also an
+  event in Apple Calendar takes the event with it (build 151's one sequential path).
+- **The sheet**: he called the old one "very crude" — two long `Picker`s. Now a `DatePicker`
+  (`.hourAndMinute`) with −/+ quarter-hour buttons, a `WrappingHStack` of `LengthChip`s, and one
+  line saying what it comes to. `lengthChoices` adds the block's own length when a drag left it
+  between the offered ones, or no chip would be lit.
+- `openEventAction(for:)` is a function rather than `optional.map { event in { … } }`: a closure
+  that returns a closure is where Swift's inference gives up, and there is no compiler here.
+
+Still open, in the order agreed: Goals and Aspirations
 screens if the one review is not enough; then the status vocabulary (reached / missed / dropped), last because it edits his
 notes. Also queued: **spread `StateToggle`** to the other two-state controls (Hide finished,
 the Calendar's Schedule/Note switch, the Map's Arrange).
