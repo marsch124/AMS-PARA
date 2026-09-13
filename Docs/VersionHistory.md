@@ -2,6 +2,15 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 147 · 13 September 2026
+
+- **Plan the day.** A new screen with three parts side by side: the day's **Calendar** on the left, your own **Time blocks** in the middle, and the day's **Actions** on the right. Calendar and blocks hang on the same hours, so you see at once whether a block lands inside something already booked.
+- **A block is only for you.** It says where you mean to be or what you mean to work on. It is never written to Apple Calendar and never becomes a task.
+- **Blocks are kept in the daily note**, under a heading called **Plan**, as plain lines like `- 09:30-11:00 Deep work`. They sync with everything else, and you can read or correct them by hand in any editor.
+- Press an action on the right to make a block for it. Press a block to change it, or right-click it (long-press on the iPhone) to remove it.
+- **How to get there:** on the Mac, **Go › Plan the Day…** (⇧⌘P) opens it in its own window; on the iPhone, **Time Blocks › Plan the day…**.
+- **The old Time Blocks are untouched.** Those are still real events in Apple Calendar, and the section still works exactly as before. The two kinds sit next to each other so the difference is visible.
+
 ## Build 146 · 13 September 2026
 
 - **The month grid in Calendar › Day is off until you ask for it.** Thirty-one dated cells took more of the column than the day itself. A **calendar** button in the day's top row turns it on and off, lit when it is on, and it stays as you leave it.

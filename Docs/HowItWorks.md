@@ -201,6 +201,38 @@ The app reads events from the calendars you choose in Settings › Apple Calenda
 
 The Calendar section shows the day's schedule in the right-hand column: hours down the side, events in place, your time blocks on top, a red line for now, and a strip at the top for all-day events and tasks with no time. Press "Block time" or double-click an hour to reserve time; click a block to change or delete it; drag a task onto an hour to block that hour for it. The switch at the top of the column swaps between the schedule and the daily note.
 
+### Plan the day
+
+There is a second kind of block, and it is the opposite of a Time Block: it stays inside
+PARAGON. Open it with **Go › Plan the Day…** (⇧⌘P) on the Mac, which gives it a window of its
+own, or with **Plan the day…** at the top of the **Time Blocks** section on the iPhone.
+
+The screen has three parts:
+
+- **Calendar** on the left: what is already booked that day, read from Apple Calendar.
+- **Time blocks** in the middle: your own blocks. They hang on the same hours as the calendar,
+  so you can see whether a block lands inside something already booked.
+- **Actions** on the right: what is due that day, then your next actions. Press one to make a
+  block for it.
+
+Press a block to change its name, its time or its length. Right-click it (long-press on the
+iPhone) for **Remove**. The arrows at the top move a day at a time.
+
+**A block is only for you.** It says where you mean to be, or what you mean to work on. It is
+never written to Apple Calendar, it never becomes a task, and nothing outside the app sees it.
+
+**Where the blocks are kept.** In that day's daily note, under a heading called **Plan**:
+
+```
+## Plan
+
+- 09:30-11:00 Deep work on the IM plan
+- 13:00-14:00 Pack for Granden
+```
+
+So they sync like everything else, and you can read and correct them by hand in any editor. If
+the daily note does not exist yet, the first block makes it.
+
 Time Blocks are the one thing the app writes to Calendar. They are blocks of time you reserve, separate from tasks. Add one in the Time Blocks section: it becomes an ordinary event in the calendar chosen under "Time blocks go to", and shows on all your devices. Click a block to edit it, right-click (long-press on the phone) to open it in Calendar or delete it. Nothing else in your calendars is ever changed.
 
 ## Weekly review

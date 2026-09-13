@@ -1015,8 +1015,47 @@ missing and he asked for all three in one message.
   **`cleanTag` lives in the App target and has no tests.** Anything that decides the shape of
   a stored value belongs in Core where it can be tested — move it there next time it changes.
 
-Still open, in the order agreed: Goals and Aspirations screens if the one review is not
-enough; then the status vocabulary (reached / missed / dropped), last because it edits his
+## Plan the day (build 147)
+
+His own idea, drawn as a sketch and then chosen from a preview artifact
+(https://claude.ai/code/artifact/82be810e-11ca-4c7b-8fc2-3863ff07cfbd): three parts side by
+side — the day's Calendar, his own blocks, the day's actions. He picked shape **B** (calendar
+and blocks on a shared hour ruler, actions a plain list) and **the daily note** as the home.
+
+**A plan block is deliberately not a Time Block.** Build 35's Time Blocks *are* events in Apple
+Calendar; a plan block never leaves PARAGON. Both are kept, side by side in the Time Blocks
+section, precisely so the difference stays visible — swapping one silently for the other was
+the thing to avoid.
+
+- `Core/Vault/DayPlan.swift`: `PlanBlock` (minutes since midnight, a title, and an `index` that
+  is its position in the sorted plan) and `DayPlan`, which owns the `## Plan` section of a daily
+  note. **Liberal in what it reads** (any dash, spaces or not, `*` bullets, one-digit hours),
+  **strict in what it writes** (`- 09:30-11:00 Title`). The section is created above `## Tasks`
+  when missing and nothing else in the note is touched.
+- **The dashes in `lineRegex` are written as themselves.** A Swift raw string passes a
+  backslash-u escape through as plain characters, so `[-\u{2013}\u{2014}]` would have been a
+  character class of backslashes and braces. Caught while writing, not by CI.
+- `DayPlanTests` covers reading, writing, the section being made, emptying it, and the
+  round trip. That is the answer to build 146's note: **anything that decides the shape of a
+  stored value goes in Core.**
+- `AppModel.planBlocks(for:)` never writes — asking for a plan must not make a daily note.
+  `savePlan(_:for:)` is the only writer and creates the note when a first block is added.
+- `PlannerView`: an hour ruler, two lanes, an actions list. Items are placed with `.offset`
+  inside a `ZStack(alignment: .topLeading)`, **never `.position`** (build 85). `PlacedEvent` is
+  a struct because a `ForEach` id is a key path and a key path cannot address a tuple member
+  (build 61). One `.sheet` for both a new block and an existing one (build 44).
+- **macOS gets a `Window` scene**, `ParagonApp.plannerWindowID`, opened by ⇧⌘P from **Go** and
+  from the Time Blocks section. Two things went wrong in one edit and are worth remembering:
+  a scene placed between the `WindowGroup` and its `.commands` breaks the modifier chain, so
+  extra scenes belong beside `MenuBarExtra` at the end; and `@Environment(\.openWindow)` is
+  read by a **View**, not by the `App` struct — hence `PlannerMenuButton`, the same shape as
+  `HelpMenuButtons`.
+- iOS has no windows: `PhoneRoute.planner` pushes the same view.
+- **Not built yet, by choice:** dragging a block to move it in time or to change its length.
+  That is the second round; the columns had to work first.
+
+Still open, in the order agreed: dragging and resizing a plan block; then Goals and Aspirations
+screens if the one review is not enough; then the status vocabulary (reached / missed / dropped), last because it edits his
 notes. Also queued: **spread `StateToggle`** to the other two-state controls (Hide finished,
 the Calendar's Schedule/Note switch, the Map's Arrange).
 

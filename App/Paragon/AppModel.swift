@@ -99,7 +99,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 146
+    static let number = 147
 }
 
 @MainActor
@@ -1645,6 +1645,62 @@ final class AppModel: ObservableObject {
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    // MARK: The day's plan
+
+    /// The blocks in a day's `## Plan`. Empty when that daily note does not exist yet — asking
+    /// for a plan must never write a file.
+    func planBlocks(for day: DateOnly) -> [PlanBlock] {
+        guard let vault, let note = note(at: vault.dailyNotePath(for: day)) else { return [] }
+        return note.planBlocks
+    }
+
+    /// Rewrites a day's plan, making the daily note if there is none yet. This is the only
+    /// place a plan is written; everything else goes through it.
+    func savePlan(_ blocks: [PlanBlock], for day: DateOnly) {
+        flushPendingEdits()
+        guard let vault else { return }
+        do {
+            let existed = vault.dailyNoteExists(for: day)
+            let note = try vault.dailyNote(for: day)
+            guard save(note.settingPlanBlocks(blocks)) else { return }
+            if !existed { reload() }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func addPlanBlock(_ block: PlanBlock, on day: DateOnly) {
+        savePlan(planBlocks(for: day) + [block], for: day)
+    }
+
+    func removePlanBlock(_ block: PlanBlock, on day: DateOnly) {
+        var blocks = planBlocks(for: day)
+        guard blocks.indices.contains(block.index) else { return }
+        blocks.remove(at: block.index)
+        savePlan(blocks, for: day)
+    }
+
+    func replacePlanBlock(_ block: PlanBlock, on day: DateOnly) {
+        var blocks = planBlocks(for: day)
+        guard blocks.indices.contains(block.index) else { return }
+        blocks[block.index] = block
+        savePlan(blocks, for: day)
+    }
+
+    /// What the planner offers on the right: what is due on or before the day, then the next
+    /// actions that are not already in that list.
+    func actionsForPlanning(on day: DateOnly) -> [TaskRef] {
+        var seen = Set<String>()
+        var result: [TaskRef] = []
+        for ref in index.openTasks(dueOnOrBefore: day) where seen.insert(ref.id).inserted {
+            result.append(ref)
+        }
+        for ref in index.nextActions() where seen.insert(ref.id).inserted {
+            result.append(ref)
+        }
+        return result
     }
 
     /// Follows a `[[wikilink]]` or `related:` reference. Unknown titles become a new resource note.

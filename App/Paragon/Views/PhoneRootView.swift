@@ -93,6 +93,9 @@ struct PhoneStack<Content: View>: View {
                         TemplateEditorView(name: name)
                             .id(name)
                             .navigationBarTitleDisplayMode(.inline)
+                    case .planner:
+                        PlannerView()
+                            .navigationBarTitleDisplayMode(.inline)
                     case .settings:
                         SettingsView()
                             .navigationTitle("Settings")
@@ -153,6 +156,7 @@ enum PhoneRoute: Hashable {
     case note(String)
     case template(String)
     case section(SidebarSection)
+    case planner
     case settings
 }
 

@@ -5,6 +5,7 @@ import ParagonCore
 struct ParagonApp: App {
     @StateObject private var model = AppModel()
     @AppStorage("showMenuBarItem") private var showMenuBarItem = true
+    static let plannerWindowID = "planner"
 
     var body: some Scene {
         WindowGroup {
@@ -39,6 +40,13 @@ struct ParagonApp: App {
             // Its own menu, so the shortcuts work wherever the focus happens to be — the
             // toolbar buttons only exist while a note is open.
             CommandMenu("Go") {
+                #if os(macOS)
+                // Its own window, because the planner wants the width of three columns and
+                // the note screen is usually open beside it.
+                PlannerMenuButton()
+                    .disabled(model.vault == nil)
+                Divider()
+                #endif
                 // Arrows, not the browsers' \u{2318}[ and \u{2318}]: on a Swedish keyboard those
                 // brackets are \u{2325}8 and \u{2325}9, so the shortcut would be a three-finger
                 // chord and the menu would advertise a key he does not have.
@@ -59,6 +67,15 @@ struct ParagonApp: App {
             }
         }
         #if os(macOS)
+        // A window of its own, opened from Go \u{203a} Plan the Day and from the Time Blocks
+        // section: the planner wants the width of three columns, and the note screen is
+        // usually open beside it. The iPhone has no windows, so there it is a pushed screen.
+        Window("Plan the day", id: ParagonApp.plannerWindowID) {
+            PlannerView()
+                .environmentObject(model)
+                .frame(minWidth: 720, minHeight: 480)
+        }
+        .defaultSize(width: 900, height: 620)
         MenuBarExtra("PARAGON quick capture", systemImage: "tray.and.arrow.down", isInserted: $showMenuBarItem) {
             QuickCaptureView(compact: true)
                 .environmentObject(model)
@@ -85,6 +102,20 @@ struct HelpMenuButtons: View {
         Button("How PARAGON Works") { openWindow(id: "help", value: HelpView.Page.howItWorks) }
             .keyboardShortcut("?", modifiers: [.command])
         Button("Version History") { openWindow(id: "help", value: HelpView.Page.versionHistory) }
+    }
+}
+#endif
+
+#if os(macOS)
+/// Opens the planner window from the Go menu. Its own view because `openWindow` is read from
+/// the environment, which a `View` has and the `App` struct does not — the same shape as
+/// `HelpMenuButtons`.
+struct PlannerMenuButton: View {
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        Button("Plan the Day\u{2026}") { openWindow(id: ParagonApp.plannerWindowID) }
+            .keyboardShortcut("p", modifiers: [.command, .shift])
     }
 }
 #endif
