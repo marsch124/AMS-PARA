@@ -1253,6 +1253,39 @@ first two were answered by the third.
   `StateToggle`. A filled shape is what carries a tint there. The preview page is the fourth
   time choosing before building has been the cheap way to get this right.
 
+## Search is tick boxes (build 157)
+
+He reported that searching for **done** did nothing he expected, and asked for the whole screen
+to be brushed up: *"maybe we could perform the search with tick boxes so that you have an
+overview of what you are actually searching for."*
+
+**The fault was never the engine.** `SearchQuery.parse("done")` has always made it a *term*, and
+a note whose body holds `@done(2026-09-12)` has always matched. What failed was the screen: the
+word **done** and the **Done** chip looked identical and asked two different questions, and
+nothing said which one had been heard. **When a report does not match the code, look at what
+the screen said, not only at what it did** — the same trap as builds 123–127.
+
+- **The field is words only; every other question is a `FilterBox`** you can see without opening
+  a menu (build 74 again: the old filters were `Menu`s whose state showed as a faintly tinted
+  capsule). Rows: **Tasks** (is/due), **Kind of note**, **How the note stands**, **Tags**.
+- **The text stays the single source of truth.** Every box writes or removes a token in
+  `AppModel.queryText`, because other screens set that text — `TagsView` sends `#travel` here and
+  `handle(url:)` can too — and a second store would have to be kept in step with it. Typing
+  still works exactly as before.
+- **`due` and `taskFilter` became `dues` and `taskStates`, both `Set`s.** A row of tick boxes can
+  hold two answers and one optional could not. Within a row the set is an **or**; between rows
+  they are **and**ed. `SearchTests` pins that.
+- **`SearchQuery.summary` (Core, tested) is the query in plain words**, and
+  `SearchQuery.label(for:)` is what the boxes are titled from, so a box and the sentence can
+  never disagree. He said a prose summary was not what he was after — so on screen it is only
+  the line shown while the boxes are folded, and the message in the "Nothing matches" state.
+  **Never a bare "no results"**: a word that found nothing has to be tellable from a box that
+  ruled everything out (build 100's rule, in a new place).
+- `FilterBox` uses build 142's two states in words rather than a symbol: ticked is the tint
+  filled with a solid border, unticked is grey with a dashed one.
+- The boxes fold (`@AppStorage "searchFiltersFolded"`, **open by default** — build 121) because
+  the middle column is narrow, and each row is a `WrappingHStack` (build 138).
+
 Still open, in the order agreed: Goals and Aspirations
 screens if the one review is not enough; then the status vocabulary (reached / missed / dropped), last because it edits his
 notes. Also queued: **spread `StateToggle`** to the other two-state controls (Hide finished,

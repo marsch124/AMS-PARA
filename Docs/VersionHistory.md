@@ -2,6 +2,26 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 157 · 13 September 2026
+
+**Search is rebuilt around tick boxes.**
+
+- The field at the top is now only for **words**. Everything else is a row of boxes you can see
+  without opening a menu, so one look tells you what you are searching for.
+- **Tasks**: Not done, Done, Overdue, Today, This week, This month, No date. Tick any of them
+  and the results are tasks rather than notes — which the screen now says, where before it just
+  quietly changed.
+- **Kind of note**, **How the note stands** and **Tags** have their own rows of boxes.
+- **Two boxes in the same row mean either of them.** That is new: before, picking a second one
+  replaced the first. Boxes in different rows are added together.
+- **Why “done” found nothing you wanted.** The word **done** and the **Done** box are two
+  different questions, and the old screen made them look the same. Writing done searches for
+  those letters in your notes; the Done box asks for finished tasks. The boxes make it plain.
+- When nothing matches, the screen now says what it looked for instead of only "no results".
+- The button beside the field folds the boxes away on a narrow column, and a line then says the
+  search in words.
+- Everything you could type before still works, typed or ticked.
+
 ## Build 156 · 13 September 2026
 
 - **The New note button is the one you chose**: a plus in a filled circle, in the colour of the

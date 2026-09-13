@@ -1,102 +1,45 @@
 import SwiftUI
 import ParagonCore
 
-/// Content column for the Search section: a query field, filter chips, and ranked results.
+/// The Search section: a field for words, tick boxes for everything else, then the results.
+///
+/// **Build 157 turned the filters into tick boxes you can see without opening anything.** His
+/// words: *"maybe we could perform the search with tick boxes so that you have an overview of
+/// what you are actually searching for."* Before this the filters were `Menu`s whose state
+/// showed only as a faintly tinted capsule, and the field mixed his words with `key:value`
+/// syntax — so searching for the word **done** and ticking the **Done** box looked the same and
+/// meant two different things. Now the word goes in the field and the questions are boxes, and
+/// a glance at the panel is the whole query.
+///
+/// **The text is still the one source of truth.** Every box writes or removes a token in
+/// `AppModel.queryText`, because other screens set that text — the Tags screen sends `#travel`
+/// here, and an `amspara://` link can too — and a second store would have to be kept in step
+/// with it. So the syntax he already knows still works, typed by hand or ticked.
 struct SearchView: View {
     @EnvironmentObject private var model: AppModel
     @FocusState private var focused: Bool
     @State private var fieldText = ""
+    /// His to fold, and open to begin with: build 121 is about not hiding the settings he asked
+    /// to see. A narrow middle column is the only reason the fold exists at all.
+    @AppStorage("searchFiltersFolded") private var filtersFolded = false
 
-    private static let dueOptions: [(String, String)] = [
-        ("Overdue", "due:overdue"), ("Today", "due:today"), ("This week", "due:week"), ("This month", "due:month"), ("No date", "due:none"),
-    ]
+    private static let kinds: [ParaKind] = [.goal, .project, .area, .resource, .archive, .daily, .inbox]
+    private static let statuses = ["active", "on-hold", "done", "archived"]
+    private static let dues: [SearchQuery.DueFilter] = [.overdue, .today, .week, .month, .none]
+    private static let taskStates: [SearchQuery.TaskFilter] = [.open, .done]
 
     var body: some View {
         let query = model.searchQuery
-        let hits = model.searchHits
         VStack(spacing: 0) {
-            TextField("Search notes and tasks… e.g. website tag:web due:week is:open", text: $fieldText)
-                .textFieldStyle(.roundedBorder)
-                .focused($focused)
-                .padding(10)
-                .onChange(of: fieldText) { _, value in
-                    if model.queryText != value { model.queryText = value }
-                }
-                .onChange(of: model.queryText) { _, value in
-                    if fieldText != value { fieldText = value }
-                }
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 6) {
-                    Menu {
-                        ForEach([ParaKind.goal, .project, .area, .resource, .archive, .daily, .inbox], id: \.self) { kind in
-                            Button {
-                                toggle("type:\(kind.rawValue)")
-                            } label: {
-                                Label(kind.displayName, systemImage: SidebarSection.kind(kind).systemImage)
-                            }
-                        }
-                    } label: {
-                        chipLabel("Type", active: !query.kinds.isEmpty)
-                    }
-                    Menu {
-                        ForEach(["active", "on-hold", "done", "archived"], id: \.self) { status in
-                            Button(status.capitalized) { toggle("status:\(status)") }
-                        }
-                    } label: {
-                        chipLabel("Status", active: !query.statuses.isEmpty)
-                    }
-                    Menu {
-                        let tags = model.index.allTags
-                        if tags.isEmpty { Text("No tags yet") }
-                        ForEach(tags, id: \.self) { tag in
-                            Button("#\(tag)") { toggle("#\(tag)") }
-                        }
-                    } label: {
-                        chipLabel("Tag", active: !query.tags.isEmpty)
-                    }
-                    Menu {
-                        ForEach(Self.dueOptions, id: \.1) { option in
-                            Button(option.0) { toggle(option.1) }
-                        }
-                    } label: {
-                        chipLabel("Due", active: query.due != nil)
-                    }
-                    Button { toggle("is:open") } label: { chipLabel("Open tasks", active: query.taskFilter == .open) }
-                    Button { toggle("is:done") } label: { chipLabel("Done", active: query.taskFilter == .done) }
-                    if !model.queryText.isEmpty {
-                        Button { model.queryText = "" } label: { chipLabel("Clear", active: false) }
-                    }
-                }
-                .padding(.horizontal, 10)
-                .padding(.bottom, 8)
-            }
-            .buttonStyle(.plain)
-            .menuStyle(.borderlessButton)
-            Divider()
-            if query.isEmpty {
-                SearchHelpView()
-            } else if hits.isEmpty {
-                ContentUnavailableView.search(text: model.queryText)
+            wordField
+            if filtersFolded {
+                foldedLine(query)
             } else {
-                List(selection: model.noteSelection) {
-                    if query.wantsTasks {
-                        let refs = hits.flatMap { hit in hit.tasks.map { TaskRef(notePath: hit.note.relativePath, noteTitle: hit.note.displayTitle, task: $0) } }
-                        Section("\(refs.count) task\(refs.count == 1 ? "" : "s")") {
-                            ForEach(refs) { ref in
-                                TaskRow(ref: ref, showNote: true) { model.toggle(ref) }
-                                    .tag(ref.notePath)
-                            }
-                        }
-                    } else {
-                        Section("\(hits.count) note\(hits.count == 1 ? "" : "s")") {
-                            ForEach(hits) { hit in
-                                SearchHitRow(hit: hit)
-                                    .tag(hit.note.relativePath)
-                            }
-                        }
-                    }
-                }
+                ScrollView { filters(query) }
+                    .frame(maxHeight: 320)
             }
+            Divider()
+            results(query)
         }
         .onAppear {
             fieldText = model.queryText
@@ -104,27 +47,206 @@ struct SearchView: View {
         }
     }
 
-    private func chipLabel(_ title: String, active: Bool) -> some View {
-        Text(title)
-            .font(.caption)
-            .padding(.horizontal, 9)
-            .padding(.vertical, 4)
-            .background(active ? Color.accentColor.opacity(0.2) : Color.secondary.opacity(0.12), in: Capsule())
+    // MARK: The word
+
+    private var wordField: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                // Only words go in here now. Everything else is a box below, so the field can
+                // say what it is in two words instead of a line of syntax (build 142's lesson
+                // about the add-a-task placeholder).
+                TextField("Search for a word", text: $fieldText)
+                    .textFieldStyle(.roundedBorder)
+                    .focused($focused)
+                    .onChange(of: fieldText) { _, value in
+                        if model.queryText != value { model.queryText = value }
+                    }
+                    .onChange(of: model.queryText) { _, value in
+                        if fieldText != value { fieldText = value }
+                    }
+                Button {
+                    filtersFolded.toggle()
+                } label: {
+                    Label(filtersFolded ? "Show the boxes" : "Hide the boxes",
+                          systemImage: filtersFolded ? "chevron.down" : "chevron.up")
+                        .labelStyle(.iconOnly)
+                }
+                .buttonStyle(.borderless)
+                .help(filtersFolded ? "Show the tick boxes" : "Put the tick boxes away")
+                if !model.queryText.isEmpty {
+                    Button("Clear") { model.queryText = "" }
+                        .buttonStyle(.borderless)
+                        .help("Empty the field and untick every box")
+                }
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.top, 10)
+        .padding(.bottom, 8)
     }
 
-    /// Adds a filter token to the query, or removes it when already present.
+    /// What the boxes say while they are folded away, so the query is never invisible.
+    private func foldedLine(_ query: SearchQuery) -> some View {
+        Text(query.summary)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .lineLimit(2)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 10)
+            .padding(.bottom, 8)
+    }
+
+    // MARK: The boxes
+
+    @ViewBuilder
+    private func filters(_ query: SearchQuery) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            group("Tasks", tint: SidebarSection.allActions.tint,
+                  note: "Tick any of these and the results are tasks, not notes.") {
+                ForEach(Self.taskStates, id: \.self) { state in
+                    FilterBox(title: SearchQuery.label(for: state).capitalizedFirst,
+                              isOn: query.taskStates.contains(state),
+                              tint: SidebarSection.allActions.tint) { toggle("is:\(state.rawValue)") }
+                }
+                ForEach(Self.dues, id: \.self) { due in
+                    FilterBox(title: SearchQuery.label(for: due).capitalizedFirst,
+                              isOn: query.dues.contains(due),
+                              tint: SidebarSection.calendar.tint) { toggle("due:\(due.rawValue)") }
+                }
+            }
+            group("Kind of note", tint: ParaKind.project.tint, note: nil) {
+                ForEach(Self.kinds, id: \.self) { kind in
+                    FilterBox(title: kind.displayName,
+                              isOn: query.kinds.contains(kind),
+                              tint: kind.tint) { toggle("type:\(kind.rawValue)") }
+                }
+            }
+            group("How the note stands", tint: SidebarSection.review.tint, note: nil) {
+                ForEach(Self.statuses, id: \.self) { status in
+                    FilterBox(title: status.capitalizedFirst,
+                              isOn: query.statuses.contains(status),
+                              tint: SidebarSection.review.tint) { toggle("status:\(status)") }
+                }
+            }
+            tagGroup(query)
+        }
+        .padding(.horizontal, 10)
+        .padding(.bottom, 10)
+    }
+
+    /// Built as its own function so the empty case is a sentence rather than an empty row.
+    @ViewBuilder
+    private func tagGroup(_ query: SearchQuery) -> some View {
+        let tags = model.allTagNames
+        group("Tags", tint: SidebarSection.tags.tint, note: tags.isEmpty ? "No tags in the vault yet." : nil) {
+            ForEach(tags, id: \.self) { tag in
+                FilterBox(title: "#\(tag)",
+                          isOn: query.tags.contains(tag.lowercased()),
+                          tint: SidebarSection.tags.tint) { toggle("#\(tag)") }
+            }
+        }
+    }
+
+    /// One titled row of boxes. `WrappingHStack` so a narrow column moves whole boxes to the
+    /// next line rather than squeezing every one of them thinner (build 138).
+    private func group<Content: View>(_ title: String, tint: Color, note: String?,
+                                      @ViewBuilder boxes: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            SectionLabel(title: title, count: nil, tint: tint)
+            if let note {
+                Text(note)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            WrappingHStack(spacing: 6, lineSpacing: 6) {
+                boxes()
+            }
+            .lineLimit(1)
+        }
+    }
+
+    // MARK: The results
+
+    @ViewBuilder
+    private func results(_ query: SearchQuery) -> some View {
+        let hits = model.searchHits
+        if query.isEmpty {
+            SearchHelpView()
+        } else if hits.isEmpty {
+            // Never a bare "no results": say what was asked for, so a word that found nothing
+            // can be told apart from a box that ruled everything out.
+            EmptyStateView(title: "Nothing matches",
+                           systemImage: SidebarSection.search.systemImage,
+                           message: query.summary,
+                           tint: SidebarSection.search.tint)
+        } else if query.wantsTasks {
+            let refs = hits.flatMap { hit in
+                hit.tasks.map { TaskRef(notePath: hit.note.relativePath, noteTitle: hit.note.displayTitle, task: $0) }
+            }
+            List(selection: model.noteSelection) {
+                Section("\(refs.count) task\(refs.count == 1 ? "" : "s")") {
+                    ForEach(refs) { ref in
+                        TaskRow(ref: ref, showNote: true) { model.toggle(ref) }
+                            .tag(ref.notePath)
+                    }
+                }
+            }
+        } else {
+            List(selection: model.noteSelection) {
+                Section("\(hits.count) note\(hits.count == 1 ? "" : "s")") {
+                    ForEach(hits) { hit in
+                        SearchHitRow(hit: hit)
+                            .tag(hit.note.relativePath)
+                    }
+                }
+            }
+        }
+    }
+
+    /// Adds a token to the query, or takes it out when it is already there. Two boxes in the
+    /// same row can both be on: they mean "either of these" (`SearchQuery.taskMatches`).
     private func toggle(_ token: String) {
         var tokens = model.queryText.split(separator: " ").map(String.init)
         if let i = tokens.firstIndex(where: { $0.caseInsensitiveCompare(token) == .orderedSame }) {
             tokens.remove(at: i)
         } else {
-            let key = token.split(separator: ":").first.map(String.init) ?? token
-            if ["due", "is"].contains(key) {
-                tokens.removeAll { $0.lowercased().hasPrefix(key + ":") }
-            }
             tokens.append(token)
         }
         model.queryText = tokens.joined(separator: " ")
+    }
+}
+
+/// One tick box. The same two states as `StateToggle` (build 142) in words rather than a
+/// symbol: on is the tint filled with a solid border, off is grey with a dashed one.
+struct FilterBox: View {
+    let title: String
+    let isOn: Bool
+    var tint: Color = .accentColor
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 5) {
+                Image(systemName: isOn ? "checkmark.square.fill" : "square")
+                    .font(.caption)
+                    .foregroundStyle(isOn ? tint : Color.secondary)
+                Text(title)
+                    .font(.caption)
+                    .foregroundStyle(isOn ? Color.primary : Color.secondary)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(tint.opacity(isOn ? 0.16 : 0), in: Capsule())
+            .overlay(
+                Capsule().strokeBorder(isOn ? tint.opacity(0.7) : Color.secondary.opacity(0.35),
+                                       style: StrokeStyle(lineWidth: 1, dash: isOn ? [] : [3, 2]))
+            )
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(isOn ? "\(title), ticked" : "\(title), not ticked")
+        .accessibilityAddTraits(isOn ? [.isSelected] : [])
     }
 }
 
@@ -134,7 +256,7 @@ struct SearchHitRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
             HStack(spacing: 8) {
-                KindBadge(kind: hit.note.kind, size: 20)
+                KindBadge(kind: hit.note.declaredKind, size: 20)
                 Text(hit.note.displayTitle)
                     .font(.headline)
                 Spacer()
@@ -163,6 +285,7 @@ struct SearchHitRow: View {
     }
 }
 
+/// What the results area shows before anything has been asked for.
 struct SearchHelpView: View {
     @EnvironmentObject private var model: AppModel
 
@@ -170,30 +293,42 @@ struct SearchHelpView: View {
         ("due:overdue is:open", "Everything overdue"),
         ("due:week is:open", "Due this week"),
         ("type:project status:active", "Active projects"),
-        ("type:resource", "All reference material"),
-        ("is:done due:any", "Completed tasks that had a date"),
+        ("is:done due:any", "Finished tasks that had a date"),
     ]
 
     var body: some View {
         List {
-            Section("Try") {
+            Section {
+                Text("Write a word above, or tick any of the boxes. Ticking two boxes in the same row means either of them; boxes in different rows are added together.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Section("The same thing, typed") {
                 ForEach(examples, id: \.0) { example in
                     Button {
                         model.queryText = example.0
                     } label: {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(example.0).font(.system(.body, design: .monospaced))
+                            Text(example.0).font(.system(.caption, design: .monospaced))
                             Text(example.1).font(.caption).foregroundStyle(.secondary)
                         }
                     }
                     .buttonStyle(.plain)
                 }
-            }
-            Section("Filters") {
-                Text("type: project, area, resource, archive, daily, inbox\nstatus: active, on-hold, done, archived\ntag:web or #web · area:Health · in:Projects\ndue: overdue, today, week, month, none, any\nis: open, done · \"quoted phrase\" matches exactly")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            } footer: {
+                Text("Every box has a word you can type instead: type:, status:, tag: or #tag, area:, in:, due:, is:. A \"quoted phrase\" matches as a whole.")
+                    .font(.caption2)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
+    }
+}
+
+extension String {
+    /// "not done" → "Not done". `capitalized` would give "Not Done".
+    var capitalizedFirst: String {
+        guard let first else { return self }
+        return String(first).uppercased() + dropFirst()
     }
 }

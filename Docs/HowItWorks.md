@@ -384,7 +384,29 @@ Type two square brackets in any note and a list of your notes appears under the 
 
 ### Search Everywhere
 
-Filters can be typed straight into the query:
+**The field is for words. Everything else is a tick box.**
+
+Write a word in the field at the top. Under it are rows of boxes, and ticking them is the
+search — one look at the boxes tells you what you are asking for.
+
+- **Tasks**: Not done, Done, Overdue, Today, This week, This month, No date. **Tick any one of
+  these and the results are tasks rather than notes.**
+- **Kind of note**: Goals, Projects, Areas, Resources, Archive, Calendar, Inbox.
+- **How the note stands**: Active, On hold, Done, Archived.
+- **Tags**: every tag in the vault.
+
+Two boxes in the **same row** mean either of them — tick **Not done** and **Done** and you get
+both. Boxes in **different rows** are added together: Projects *and* overdue.
+
+The word and the boxes are two different questions, and this is the one that used to catch
+people out. Writing **done** looks for the letters d-o-n-e in your notes. Ticking the **Done**
+box asks for tasks you have finished. Neither is wrong; the boxes just make it plain which one
+you asked.
+
+The button beside the field folds the boxes away when the column is narrow. While they are
+folded, a line says what the search is in words.
+
+Every box also has a word you can type instead, if you prefer typing:
 
 - `type:project`, `type:area`, `type:goal`
 - `status:active`, `status:done`

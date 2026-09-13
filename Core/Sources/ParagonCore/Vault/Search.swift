@@ -14,18 +14,21 @@ public struct SearchQuery: Equatable, Sendable {
     public var statuses: Set<String> = []
     public var tags: Set<String> = []
     public var area: String?
-    public var due: DueFilter?
-    public var taskFilter: TaskFilter?
+    /// Any of these matches. Sets rather than one value each since build 157, because a row of
+    /// tick boxes lets him ask for two at once and a single optional could not hold that.
+    public var dues: Set<DueFilter> = []
+    public var taskStates: Set<TaskFilter> = []
     public var pathPrefix: String?
 
     public init() {}
 
     public var isEmpty: Bool {
-        terms.isEmpty && kinds.isEmpty && statuses.isEmpty && tags.isEmpty && area == nil && due == nil && taskFilter == nil && pathPrefix == nil
+        terms.isEmpty && kinds.isEmpty && statuses.isEmpty && tags.isEmpty && area == nil
+            && dues.isEmpty && taskStates.isEmpty && pathPrefix == nil
     }
 
     /// True when the query says something about tasks rather than notes.
-    public var wantsTasks: Bool { due != nil || taskFilter != nil }
+    public var wantsTasks: Bool { !dues.isEmpty || !taskStates.isEmpty }
 
     public static func parse(_ text: String) -> SearchQuery {
         var query = SearchQuery()
@@ -48,13 +51,83 @@ public struct SearchQuery: Equatable, Sendable {
             case "status": query.statuses.insert(lowerValue)
             case "tag", "tags": query.tags.insert(lowerValue.trimmingCharacters(in: .init(charactersIn: "#")))
             case "area": query.area = value
-            case "due": if let d = DueFilter(rawValue: lowerValue) { query.due = d } else { query.terms.append(token) }
-            case "is": if let t = TaskFilter(rawValue: lowerValue) { query.taskFilter = t } else { query.terms.append(token) }
+            case "due": if let d = DueFilter(rawValue: lowerValue) { query.dues.insert(d) } else { query.terms.append(token) }
+            case "is": if let t = TaskFilter(rawValue: lowerValue) { query.taskStates.insert(t) } else { query.terms.append(token) }
             case "in", "path": query.pathPrefix = value
             default: query.terms.append(token)
             }
         }
         return query
+    }
+
+    // MARK: Saying what it means
+
+    /// The query in plain words: "Notes in Projects with the word \u201cplan\u201d."
+    ///
+    /// Build 157, and the reason for it is his: *"I think it would be better if you could do it
+    /// somehow so that you tick in boxes so that you see exactly what your search term is."*
+    /// He searched for **done** and got nothing he expected, because the word `done` and the
+    /// **Done** tick box are two different questions and the screen never said which one it had
+    /// heard. This line says it, every time, above the results.
+    ///
+    /// It lives in Core, with tests, because it is the one place the meaning of a query is
+    /// written down \u2014 and because the labels below are what the tick boxes are drawn from, so
+    /// a box and this sentence can never disagree.
+    public var summary: String {
+        guard !isEmpty else { return "Nothing searched for yet. Write a word, or tick a box." }
+        var parts: [String] = []
+        if !taskStates.isEmpty {
+            parts.append("that are " + SearchQuery.list(taskStates.sorted { $0.rawValue < $1.rawValue }.map { SearchQuery.label(for: $0) }))
+        }
+        if !dues.isEmpty {
+            parts.append(SearchQuery.list(dues.sorted { $0.rawValue < $1.rawValue }.map { SearchQuery.label(for: $0) }))
+        }
+        if !kinds.isEmpty {
+            parts.append("in " + SearchQuery.list(kinds.map(\.displayName).sorted()))
+        }
+        if !statuses.isEmpty {
+            parts.append("marked " + SearchQuery.list(statuses.sorted()))
+        }
+        if !tags.isEmpty {
+            parts.append("tagged " + SearchQuery.list(tags.sorted().map { "#\($0)" }))
+        }
+        if let area { parts.append("in the area \(area)") }
+        if let pathPrefix { parts.append("under \(pathPrefix)") }
+        if !terms.isEmpty {
+            let quoted = terms.map { "\u{201C}\($0)\u{201D}" }
+            parts.append(terms.count == 1 ? "with the word \(quoted[0])" : "with the words " + SearchQuery.list(quoted))
+        }
+        return (wantsTasks ? "Tasks " : "Notes ") + parts.joined(separator: ", ") + "."
+    }
+
+    /// What a tick box for this is called. The box and `summary` read from the same words.
+    public static func label(for due: DueFilter) -> String {
+        switch due {
+        case .overdue: return "overdue"
+        case .today: return "due today"
+        case .week: return "due this week"
+        case .month: return "due this month"
+        case .none: return "with no date"
+        case .any: return "with a date"
+        }
+    }
+
+    public static func label(for state: TaskFilter) -> String {
+        switch state {
+        case .open: return "not done"
+        case .done: return "done"
+        case .task: return "tasks"
+        }
+    }
+
+    /// "a", "a and b", "a, b and c".
+    static func list(_ items: [String]) -> String {
+        switch items.count {
+        case 0: return ""
+        case 1: return items[0]
+        case 2: return items[0] + " and " + items[1]
+        default: return items.dropLast().joined(separator: ", ") + " and " + items[items.count - 1]
+        }
     }
 
     private static let kindAliases: [String: ParaKind] = [
@@ -182,13 +255,25 @@ public extension NoteIndex {
         return true
     }
 
+    /// Ticking two boxes in a row means "either of these", so each set is an **or** and the
+    /// sets are **and**ed together: open tasks *or* done tasks, that are also overdue *or* due
+    /// today. An empty set asks nothing of that row.
     private func taskMatches(_ task: TaskItem, query: SearchQuery, today: DateOnly, calendar: Calendar) -> Bool {
-        switch query.taskFilter {
-        case .open?: if task.isDone { return false }
-        case .done?: if task.status != .done { return false }
-        case .task?, nil: break
+        if !query.taskStates.isEmpty {
+            let matches = query.taskStates.contains { state in
+                switch state {
+                case .open: return !task.isDone
+                case .done: return task.status == .done
+                case .task: return true
+                }
+            }
+            guard matches else { return false }
         }
-        guard let due = query.due else { return true }
+        guard !query.dues.isEmpty else { return true }
+        return query.dues.contains { matchesDue($0, task: task, today: today) }
+    }
+
+    private func matchesDue(_ due: SearchQuery.DueFilter, task: TaskItem, today: DateOnly) -> Bool {
         switch due {
         case .any: return task.dueDate != nil
         case .none: return task.dueDate == nil

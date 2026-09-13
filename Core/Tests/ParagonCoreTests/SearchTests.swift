@@ -9,8 +9,8 @@ final class SearchQueryTests: XCTestCase {
         XCTAssertEqual(q.statuses, ["active"])
         XCTAssertEqual(q.tags, ["web", "marketing"])
         XCTAssertEqual(q.area, "Business")
-        XCTAssertEqual(q.due, .week)
-        XCTAssertEqual(q.taskFilter, .open)
+        XCTAssertEqual(q.dues, [.week])
+        XCTAssertEqual(q.taskStates, [.open])
         XCTAssertEqual(q.pathPrefix, "Projects")
         XCTAssertTrue(q.wantsTasks)
     }
@@ -19,9 +19,50 @@ final class SearchQueryTests: XCTestCase {
         let q = SearchQuery.parse("type:banana due:someday 10:30 meeting")
         XCTAssertEqual(q.terms, ["type:banana", "due:someday", "10:30", "meeting"])
         XCTAssertTrue(q.kinds.isEmpty)
-        XCTAssertNil(q.due)
+        XCTAssertTrue(q.dues.isEmpty)
         XCTAssertTrue(SearchQuery.parse("   ").isEmpty)
         XCTAssertEqual(SearchQuery.parse("type:projects kind:weekly").kinds, [.project, .daily])
+    }
+
+    // MARK: Ticking two boxes in a row (build 157)
+
+    func testTwoBoxesInOneRowAreBothKept() {
+        let q = SearchQuery.parse("is:open is:done due:today due:overdue")
+        XCTAssertEqual(q.taskStates, [.open, .done])
+        XCTAssertEqual(q.dues, [.today, .overdue])
+        XCTAssertTrue(q.wantsTasks)
+    }
+
+    // MARK: What the query says it is
+
+    func testTheWordDoneIsAWordAndNotTheDoneBox() {
+        // The whole reason for build 157: these two look alike and ask different questions.
+        let word = SearchQuery.parse("done")
+        XCTAssertEqual(word.terms, ["done"])
+        XCTAssertTrue(word.taskStates.isEmpty)
+        XCTAssertFalse(word.wantsTasks)
+        XCTAssertEqual(word.summary, "Notes with the word \u{201C}done\u{201D}.")
+
+        let box = SearchQuery.parse("is:done")
+        XCTAssertTrue(box.terms.isEmpty)
+        XCTAssertEqual(box.taskStates, [.done])
+        XCTAssertEqual(box.summary, "Tasks that are done.")
+    }
+
+    func testTheSummaryNamesEveryPartOfTheQuery() {
+        let q = SearchQuery.parse("plan type:project status:active #travel due:week is:open")
+        XCTAssertEqual(q.summary,
+                       "Tasks that are not done, due this week, in Projects, marked active, tagged #travel, with the word \u{201C}plan\u{201D}.")
+    }
+
+    func testAnEmptyQuerySaysSo() {
+        XCTAssertEqual(SearchQuery.parse("").summary, "Nothing searched for yet. Write a word, or tick a box.")
+    }
+
+    func testTheSummaryJoinsWithAnd() {
+        XCTAssertEqual(SearchQuery.list(["a"]), "a")
+        XCTAssertEqual(SearchQuery.list(["a", "b"]), "a and b")
+        XCTAssertEqual(SearchQuery.list(["a", "b", "c"]), "a, b and c")
     }
 }
 
