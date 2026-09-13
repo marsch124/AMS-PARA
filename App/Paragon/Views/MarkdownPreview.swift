@@ -34,6 +34,8 @@ struct MarkdownPreview: View {
     enum Block {
         case heading(level: Int, text: String)
         case task(TaskItem)
+        /// A `TB: 09:30-11:00 Title` line from the day's plan.
+        case planBlock(PlanBlock)
         case bullet(indent: Int, text: String)
         case numbered(indent: Int, number: String, text: String)
         case quote(String)
@@ -80,6 +82,13 @@ struct MarkdownPreview: View {
             if let task = TaskParser.parse(line: line, lineIndex: i) {
                 flushParagraph()
                 result.append(.task(task))
+                continue
+            }
+            // A plan line carries no bullet since build 152, so without this it would be swept
+            // into a paragraph with the line above it and the two drawn on one row.
+            if let plan = DayPlan.block(in: line) {
+                flushParagraph()
+                result.append(.planBlock(plan))
                 continue
             }
             let level = Self.headingLevel(trimmed)
@@ -142,6 +151,17 @@ struct MarkdownPreview: View {
                 model.toggle(TaskRef(notePath: note.relativePath, noteTitle: note.displayTitle, task: task))
             }
             .padding(.leading, CGFloat(task.indentLevel) * 14)
+        case .planBlock(let plan):
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(plan.timeText)
+                    .font(.callout.monospacedDigit())
+                    .foregroundStyle(Theme.planBlockTint)
+                inline(plan.title)
+                Spacer(minLength: 0)
+            }
+            .padding(.vertical, 3)
+            .padding(.horizontal, 8)
+            .background(Theme.planBlockTint.opacity(0.10), in: RoundedRectangle(cornerRadius: 6))
         case .bullet(let indent, let text):
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text("•")

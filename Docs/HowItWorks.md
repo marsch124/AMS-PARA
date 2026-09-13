@@ -256,11 +256,18 @@ blocks go to**.
 ## Plan
 
 TB: 09:30-11:00 Deep work on the IM plan
+
 TB: 13:00-14:00 Pack for Granden
 ```
 
+**One block per row, with a blank line between them.** In markdown, two lines written under
+each other with nothing between them are one paragraph, and any reader — this app's own
+**Read** mode included — draws them joined on a single row. The blank line is what keeps each
+block a row of its own, here and in every other editor.
+
 So they sync like everything else, and you can read and correct them by hand in any editor. If
-the daily note does not exist yet, the first block makes it.
+the daily note does not exist yet, the first block makes it. In **Read** mode a plan line is
+drawn as a block in its own orange, not as ordinary text.
 
 Time Blocks are the one thing the app writes to Calendar. They are blocks of time you reserve, separate from tasks. Add one in the Time Blocks section: it becomes an ordinary event in the calendar chosen under "Time blocks go to", and shows on all your devices. Click a block to edit it, right-click (long-press on the phone) to open it in Calendar or delete it. Nothing else in your calendars is ever changed.
 

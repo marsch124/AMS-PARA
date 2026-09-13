@@ -83,26 +83,36 @@ public enum DayPlan {
         // escape through as plain characters, so escaping here would quietly break the class.
         pattern: #"^\s*(?:[-*]\s*)?(?:[Tt][Bb]:\s*)?(\d{1,2}:\d{2})\s*[-–—]\s*(\d{1,2}:\d{2})\s+(\S.*)$"#)
 
+    /// One written line as a block, or nil. The Preview uses it so a plan line is drawn as
+    /// itself rather than swept into a paragraph with its neighbours.
+    public static func block(in line: String) -> PlanBlock? {
+        let ns = line as NSString
+        guard let match = lineRegex.firstMatch(in: line, range: NSRange(location: 0, length: ns.length)),
+              let start = PlanBlock.minutes(from: ns.substring(with: match.range(at: 1))),
+              let end = PlanBlock.minutes(from: ns.substring(with: match.range(at: 2)))
+        else { return nil }
+        let title = ns.substring(with: match.range(at: 3)).trimmingCharacters(in: .whitespaces)
+        return PlanBlock(start: start, end: max(end, start), title: title)
+    }
+
     /// The blocks in a note, earliest first.
     public static func blocks(in note: Note) -> [PlanBlock] {
-        var found: [PlanBlock] = []
-        for line in section(of: note.body).lines {
-            let ns = line as NSString
-            guard let match = lineRegex.firstMatch(in: line, range: NSRange(location: 0, length: ns.length)),
-                  let start = PlanBlock.minutes(from: ns.substring(with: match.range(at: 1))),
-                  let end = PlanBlock.minutes(from: ns.substring(with: match.range(at: 2)))
-            else { continue }
-            let title = ns.substring(with: match.range(at: 3)).trimmingCharacters(in: .whitespaces)
-            found.append(PlanBlock(start: start, end: max(end, start), title: title))
-        }
-        return numbered(found)
+        numbered(section(of: note.body).lines.compactMap(block(in:)))
     }
 
     /// The note with its plan replaced. The section is made when it is missing, above
     /// `## Tasks` so the day reads as plan-then-work; everything else in the note is untouched.
     public static func note(_ note: Note, settingBlocks blocks: [PlanBlock]) -> Note {
         var updated = note
-        let written = numbered(blocks).map(\.line)
+        // A blank line between blocks. Without a bullet in front of them, two lines running
+        // together are one paragraph in markdown, and every reader — the app's own Preview
+        // included — drew them joined on one row. He found that in the build 152 field test:
+        // "Each TB must be on its own row in the daily note."
+        var written: [String] = []
+        for line in numbered(blocks).map(\.line) {
+            if !written.isEmpty { written.append("") }
+            written.append(line)
+        }
         var lines = note.body.components(separatedBy: "\n")
         let found = section(of: note.body)
 

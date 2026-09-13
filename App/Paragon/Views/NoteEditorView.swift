@@ -738,6 +738,16 @@ struct TaskRow: View {
 
     private var isNext: Bool { ref.task.tags.contains(Note.nextActionTag) }
 
+    /// The note's own symbol, not one grey page for everything: a goal is a star, a project a
+    /// flag, an area the grid, a daily note a calendar. He asked what the two identical pages
+    /// in the planner's Actions column were (build 153) — which is the question an icon that
+    /// says nothing always gets. `declaredKind` reads `type:` first, so an archived project
+    /// still shows as a project.
+    private var noteSymbol: String {
+        let kind = model.note(at: ref.notePath)?.declaredKind ?? .resource
+        return SidebarSection.kind(kind).systemImage
+    }
+
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Button(action: toggle) {
@@ -780,7 +790,7 @@ struct TaskRow: View {
                         Label(rule.label, systemImage: "repeat")
                     }
                     if showNote {
-                        Label(ref.noteTitle, systemImage: "doc.text")
+                        Label(ref.noteTitle, systemImage: noteSymbol)
                             .foregroundStyle(tint)
                     }
                 }

@@ -186,4 +186,34 @@ final class DayPlanTests: XCTestCase {
         XCTAssertTrue(tidied.body.contains("TB: 09:30-11:00 Old bullet"))
         XCTAssertFalse(tidied.body.contains("- 09:30-11:00"))
     }
+
+    func testEachBlockIsOnItsOwnRowWithABlankLineBetween() {
+        // Without a bullet, two lines running together are one paragraph in markdown, so every
+        // reader drew them joined. He found it in the build 152 field test.
+        let note = daily("# Sunday\n").settingPlanBlocks([
+            PlanBlock(start: 9 * 60, end: 10 * 60, title: "First"),
+            PlanBlock(start: 13 * 60, end: 14 * 60, title: "Second"),
+            PlanBlock(start: 15 * 60, end: 16 * 60, title: "Third")
+        ])
+        XCTAssertTrue(note.body.contains("TB: 09:00-10:00 First\n\nTB: 13:00-14:00 Second\n\nTB: 15:00-16:00 Third"))
+        // And they still read back as three, not as one run-on line.
+        XCTAssertEqual(note.planBlocks.map(\.title), ["First", "Second", "Third"])
+    }
+
+    func testSavingTwiceDoesNotPileUpBlankLines() {
+        var note = daily("# Sunday\n").settingPlanBlocks([
+            PlanBlock(start: 540, end: 600, title: "First"),
+            PlanBlock(start: 780, end: 840, title: "Second")
+        ])
+        let once = note.body
+        note = note.settingPlanBlocks(note.planBlocks)
+        XCTAssertEqual(note.body, once)
+    }
+
+    func testOneLineIsReadOnItsOwn() {
+        XCTAssertEqual(DayPlan.block(in: "TB: 09:30-11:00 Deep work")?.title, "Deep work")
+        XCTAssertEqual(DayPlan.block(in: "- 09:30-11:00 Old bullet")?.start, 570)
+        XCTAssertNil(DayPlan.block(in: "Just a sentence about 09:30 and nothing else"))
+        XCTAssertNil(DayPlan.block(in: "## Plan"))
+    }
 }

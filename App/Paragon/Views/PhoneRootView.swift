@@ -162,7 +162,7 @@ struct PhoneBrowseView: View {
 
     private let groups: [(String, [SidebarSection])] = [
         ("Goals and PARA", [.kind(.goal), .kind(.project), .kind(.area), .kind(.resource), .kind(.archive)]),
-        ("Plan", [.allActions, .recent, .calendar, .timeBlocks, .done, .review, .map, .deleted, .search]),
+        ("Plan", [.calendar, .timeBlocks, .review, .map, .allActions, .recent, .done, .deleted, .search]),
         ("Tools", SidebarSection.tools),
     ]
 

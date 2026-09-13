@@ -2,6 +2,23 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 153 · 13 September 2026
+
+- **Fixed, from your field test: each `TB:` is on its own row.** Two blocks written under each
+  other were one paragraph in markdown, so they were drawn joined on one line. There is now a
+  blank line between them in the daily note, which is what markdown needs, and it is right in
+  any editor, not only here.
+- **A plan line in Read mode is drawn as a block**, in the same orange as the planner, instead
+  of as ordinary grey text.
+- **The sidebar order changed, as you asked.** **All actions**, **Recent** and **Done** now sit
+  together, straight above **Deleted**. The rest keeps its order.
+- **All actions has a ring for an icon**, since **Done** is that same ring with a tick in it —
+  and a task's own checkbox is the same circle.
+- **A task now shows what kind of note it lives in.** In the planner's action list and
+  everywhere else, the grey page beside a note's name became the note's own symbol: a star for
+  a goal, a flag for a project, the four squares for an area, a calendar for a daily note, in
+  that kind's colour. Two notes of different kinds no longer look identical.
+
 ## Build 152 · 13 September 2026
 
 Your three points from the screenshot.

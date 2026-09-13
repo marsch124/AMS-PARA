@@ -59,7 +59,9 @@ enum SidebarSection: Hashable, Identifiable {
         case .map: return "point.3.filled.connected.trianglepath.dotted"
         case .timeBlocks: return "calendar.badge.clock"
         case .done: return "checkmark.circle"
-        case .allActions: return "list.bullet"
+        // A plain ring, because Done is that ring with a tick in it and a task's own
+        // checkbox is the same circle. His idea, build 153.
+        case .allActions: return "circle"
         case .recent: return "clock.arrow.circlepath"
         case .deleted: return "trash"
         case .templates: return "doc.badge.gearshape"
@@ -77,7 +79,7 @@ enum SidebarSection: Hashable, Identifiable {
         }
     }
 
-    static let all: [SidebarSection] = [.inbox, .today, .allActions, .recent, .calendar, .timeBlocks, .done, .review, .map, .deleted, .templates, .snippets, .tags, .search, .kind(.goal), .kind(.project), .kind(.area), .kind(.resource), .kind(.archive)]
+    static let all: [SidebarSection] = [.inbox, .today, .calendar, .timeBlocks, .review, .map, .allActions, .recent, .done, .deleted, .templates, .snippets, .tags, .search, .kind(.goal), .kind(.project), .kind(.area), .kind(.resource), .kind(.archive)]
 
     /// The three that are not notes: things you use *on* notes. Grouped in the sidebar under
     /// "Tools" since build 143 — his idea, and he threw out "Building blocks" for it with the
@@ -99,7 +101,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 152
+    static let number = 153
 }
 
 @MainActor

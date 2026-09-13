@@ -186,13 +186,15 @@ struct SidebarView: View {
                 row(.inbox)
                     .acceptsTaskDrop { ref in model.moveTask(ref, to: model.vault?.config.inboxFile ?? "Inbox.md") }
                 row(.today)
-                row(.allActions)
-                row(.recent)
                 row(.calendar)
                 row(.timeBlocks)
-                row(.done)
                 row(.review)
                 row(.map)
+                // His order, build 153: the three lists you look back at sit together, just
+                // above Deleted, which is the furthest back of all.
+                row(.allActions)
+                row(.recent)
+                row(.done)
                 row(.deleted)
                 row(.search)
             }

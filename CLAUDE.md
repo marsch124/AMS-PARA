@@ -1165,6 +1165,38 @@ action nobody finds (build 74).
 - `openEventAction(for:)` is a function rather than `optional.map { event in { … } }`: a closure
   that returns a closure is where Swift's inference gives up, and there is no compiler here.
 
+**Build 153: the cost of leaving a bullet behind.** His field test of 152 passed on eight
+checks and failed on one: *"Each TB must be on its own row in the daily note."* Dropping the
+`- ` also dropped the thing that made each line a **block**. In markdown two plain lines under
+each other are one paragraph, so `MarkdownPreview` joined them with a space and drew both on
+one row — and so would any other editor. **A change to what a line looks like is a change to
+what markdown thinks it is.** Fixed twice over, because the vault has to be right outside the
+app as well as in it:
+- `DayPlan.note(_:settingBlocks:)` writes a **blank line between blocks**, which is what
+  markdown needs everywhere. `DayPlanTests` pins the exact text and pins that a second save
+  does not pile up more blank lines.
+- `DayPlan.block(in:)` is new and public, and `blocks(in:)` now goes through it, so there is
+  one parser. `MarkdownPreview.Block.planBlock` uses it to draw a plan line as itself, in
+  `Theme.planBlockTint`, rather than sweeping it into a paragraph — which also covers a line
+  someone typed by hand with no blank line after it.
+- The field test was an artifact with the `db` capability
+  (https://claude.ai/code/artifact/3dbed03e-2976-43f2-89dc-aa1d4f52773f), so his ticks and his
+  one note came back through `read_db`. **Worth repeating for a build with several visible
+  changes**: it cost one page and found a fault I could not have seen from here.
+
+Three things he asked for in the same message, all small:
+- **Sidebar order**: `.allActions`, `.recent`, `.done` moved together, straight above
+  `.deleted`. Changed in three places that must agree — the `List` in `ContentView`,
+  `SidebarSection.all`, and `PhoneBrowseView.groups`.
+- **`.allActions` is `circle`**, a plain ring, because `.done` is `checkmark.circle` and a
+  task's own checkbox is the same circle. His idea and a good one.
+- **`TaskRow`'s note badge is the note's kind symbol**, not `doc.text` for everything —
+  `noteSymbol` reads `declaredKind` (so an archived project still shows as a project) and takes
+  the symbol from `SidebarSection.kind(_:)`. He asked what the two identical grey pages in the
+  planner's Actions column were, which is the question an icon that says nothing always gets.
+  **The same fault class as "Hobby or homeless?"**: it is not wrong, it just carries no
+  information.
+
 Still open, in the order agreed: Goals and Aspirations
 screens if the one review is not enough; then the status vocabulary (reached / missed / dropped), last because it edits his
 notes. Also queued: **spread `StateToggle`** to the other two-state controls (Hide finished,
