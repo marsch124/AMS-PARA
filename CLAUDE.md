@@ -22,12 +22,20 @@ screen names and field names are always quoted exactly as they appear there — 
 *Horizon*, *Aspiration*, *Serves…*, *Set a deadline…*, *Review*, *Run workflow*, *Update*.
 Plain short sentences matter more than the language.
 Communicate in short, friendly, concrete steps. He cannot run
-Terminal commands. Since build 56 both apps come from TestFlight. When CI is green, tell him in two
-short lines, naming which of the two things is meant (he asked for that, and equally
-for no step-by-step lecture): **Run workflow** on GitHub, then **Update** in Apple's
-TestFlight app on the phone and on the Mac. Give him the **whole URL**, not an abbreviation —
-https://github.com/marsch124/AMS-PARAGON/actions/workflows/testflight.yml — he clicks it, and
-after the repository rename the old shorthand sent him to the wrong place. Xcode is no longer part of his routine.
+Terminal commands. Since build 56 both apps come from TestFlight.
+**Since 13 September 2026 I start the TestFlight upload myself.** He asked for it — "Now I
+have run the test flight a large number of times. Is it possible that you run it on GitHub
+when the CI is green? This would mean that I don't need to do it." So the routine is now: CI
+goes green, I dispatch the workflow with `mcp__github__actions_run_trigger` (`run_workflow`,
+`workflow_id: testflight.yml`, `ref: claude/ams-para-reminders-sync-s0ex53`, and a one-line
+`notes` input naming the build), and I tell him in **one** line that it is uploading and that
+his only step is **Update** in Apple's TestFlight app, on the phone and on the Mac. **Only for
+a push that bumped `BuildStamp.number`** — a docs-only push must not spend a TestFlight run,
+and two uploads of the same build number are refused by Apple anyway. Still give him the
+**whole URL** when he wants to watch it —
+https://github.com/marsch124/AMS-PARAGON/actions/workflows/testflight.yml — never an
+abbreviation, because after the repository rename the old shorthand sent him to the wrong
+place. Xcode is no longer part of his routine.
 
 ## Layout
 
