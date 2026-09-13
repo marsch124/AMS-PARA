@@ -156,3 +156,43 @@ public extension Note {
         return settingPlanBlocks(blocks)
     }
 }
+
+/// The tie between a plan block and an event in Apple Calendar.
+///
+/// A plan block normally never leaves PARAGON, and that is still the default. This is the one
+/// way out, taken one block at a time and only when he asks for it: the event carries a line in
+/// its own notes naming the day, the start and the title it was made from, and that line is the
+/// whole of what is stored. Nothing is written into the daily note.
+///
+/// **The key is the block's own identity, not a minted id.** There is nowhere on a plain
+/// `- 09:30-11:00 Title` line to keep an id without changing what the file looks like, and the
+/// file staying plain is the point of the whole feature. Every change made through the app
+/// rewrites the line and the event's key in the same step, so the two keep up with each other.
+/// A line edited **by hand** in the note loses the tie; the event is then left where it is in
+/// Apple Calendar rather than deleted, and the planner says so instead of going quiet.
+public enum PlanBlockLink {
+    public static let marker = "ams-para:planblock"
+
+    /// What is written into the event's notes to say which block it came from.
+    public static func key(for block: PlanBlock, on day: DateOnly) -> String {
+        "\(marker) \(day) \(block.startText) \(block.title)"
+    }
+
+    /// The key held in an event's notes, or nil when it holds none.
+    public static func key(inNotes notes: String) -> String? {
+        notes.components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .first { $0.hasPrefix(marker + " ") }
+    }
+
+    /// The whole notes body for such an event: a sentence for anyone who opens it in Calendar,
+    /// then the key.
+    public static func notes(for block: PlanBlock, on day: DateOnly) -> String {
+        "From the plan in your PARAGON daily note.\n\(key(for: block, on: day))"
+    }
+
+    /// True when the event's notes name this block.
+    public static func belongs(_ notes: String, to block: PlanBlock, on day: DateOnly) -> Bool {
+        key(inNotes: notes) == key(for: block, on: day)
+    }
+}

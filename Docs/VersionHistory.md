@@ -2,6 +2,23 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 151 · 13 September 2026
+
+- **A plan block can now be put into Apple Calendar, one block at a time.** Right-click a block
+  in the planner (long-press on the iPhone) and tick **In Apple Calendar**. The same tick is in
+  the block's own sheet, as **Also put this block in Apple Calendar**.
+- A block that is also an event shows a small **calendar** symbol beside its time, so you can
+  see which ones are out there without opening a menu.
+- The event goes to the calendar you chose under **Settings › Apple Calendar › Time blocks
+  go to**, the same one the old Time Blocks use.
+- **It keeps up with you.** Change a block's name, its time or its length and the event moves
+  with it. Take the tick off, or remove the block, and the event is deleted.
+- **Nothing changed by default.** A block is still only a line in your daily note under
+  **Plan**. This is the one way out, and only when you ask for it.
+- One thing to know: if you edit a block's line **by hand** in the daily note, the app loses
+  sight of which event belonged to it. The event stays in Apple Calendar — nothing you wrote is
+  deleted behind your back — and you can remove it from the **Blocks in Apple Calendar** list.
+
 ## Build 150 · 13 September 2026
 
 - **The planner is in the ordinary window now.** Choose **Time Blocks** and you get the day's actions in the middle column and the day itself — Calendar beside your own blocks, on one hour ruler — on the right. No floating window needed.

@@ -1110,6 +1110,32 @@ planner's single `.sheet`.
 - Removed with it: `plannerWay` in `TimeBlocksView` and the `PhoneRoute.planner` /
   `.calendarBlocks` cases, which nothing reached any more.
 
+**Build 151: one plan block at a time can go into Apple Calendar.** His idea, and a good one:
+the two kinds stay apart by default, and he decides per block. Right-click a block → a
+**Toggle** in the context menu (a tick, per build 142: the control shows the state you are in),
+and the same tick in the block's sheet, because an action only a right-click reveals is an
+action nobody finds (build 74).
+- **The tie is stored in the event, not in the note.** `PlanBlockLink` (Core, DayPlan.swift)
+  writes one line into the event's own notes: `ams-para:planblock <day> <start> <title>`. The
+  daily note stays a plain `- 09:30-11:00 Title`, which is the whole point of the feature, and
+  there is nowhere on such a line to keep a minted id without changing what the file looks
+  like. So **the key is the block's own identity**. It deliberately leaves the *end* time out,
+  so making a block longer keeps the tie; `DayPlanTests` pins all of that.
+- **Every change through the app rewrites the line and the key together**, which is why
+  `AppModel.savePlanBlock(_:on:replacing:inAppleCalendar:)` is one async function rather than a
+  save plus a toggle: moving a block changes the key the event is found by, so two separate
+  calls would race and the second would look for a key the first had just changed. The event is
+  read **before** the line is rewritten, against the block as it still is.
+- **A line edited by hand in the note loses the tie, and the event is then left alone** — never
+  deleted on a guess. Said out loud in `Docs/HowItWorks.md` and in VersionHistory; build 100's
+  rule applies to writes as well as reads.
+- `EventKitCalendarStore.timeBlocks(on:)` reads one day **ignoring the visible-calendar
+  filter**: a calendar he has hidden must not make a block look absent. `AppModel.
+  planBlocksInCalendar` is per day, not `timeBlocks`, which only spans −7 to +60 days while the
+  planner can stand on any date.
+- Removing a block removes its event: the tick said "this block is also in Apple Calendar", and
+  with the block gone there is nothing for the event to be.
+
 Still open, in the order agreed: dragging and resizing a plan block; then Goals and Aspirations
 screens if the one review is not enough; then the status vocabulary (reached / missed / dropped), last because it edits his
 notes. Also queued: **spread `StateToggle`** to the other two-state controls (Hide finished,

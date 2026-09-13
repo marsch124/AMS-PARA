@@ -226,8 +226,22 @@ that are real events in Apple Calendar.
 Press a block to change its name, its time or its length. Right-click it (long-press on the
 iPhone) for **Remove**. The arrows at the top move a day at a time.
 
-**A block is only for you.** It says where you mean to be, or what you mean to work on. It is
-never written to Apple Calendar, it never becomes a task, and nothing outside the app sees it.
+**A block is only for you.** It says where you mean to be, or what you mean to work on. It
+never becomes a task, and nothing outside the app sees it — unless you ask for one to, which is
+the next part.
+
+**Putting one block into Apple Calendar.** Right-click a block (long-press on the iPhone) and
+tick **In Apple Calendar**. The same tick is in the block's sheet, as **Also put this block in
+Apple Calendar**. The event goes to the calendar under **Settings › Apple Calendar › Time
+blocks go to**.
+
+- A block that is also an event has a small **calendar** symbol beside its time.
+- Change the block's name, its time or its length and the event follows it.
+- Take the tick off, or remove the block, and the event is deleted.
+- This is per block. Every other block stays inside PARAGON.
+- If you edit a block's line **by hand** in the daily note, the app can no longer tell which
+  event belonged to it. The event is left where it is rather than deleted; you can remove it
+  from the **Blocks in Apple Calendar** list.
 
 **Where the blocks are kept.** In that day's daily note, under a heading called **Plan**:
 

@@ -61,6 +61,7 @@ struct PlannerDayView: View {
     @State private var draftTitle = ""
     @State private var draftStart = 9 * 60
     @State private var draftMinutes = 60
+    @State private var draftInCalendar = false
     @State private var sheet: PlannerSheet?
 
     /// Six in the morning to eleven at night covers a day without making the column a mile long.
@@ -83,7 +84,12 @@ struct PlannerDayView: View {
             }
         }
         .navigationTitle("Plan the day")
-        .task(id: day) { await model.loadEvents(for: day) }
+        .task(id: day) {
+            await model.loadEvents(for: day)
+            // Which of this day's blocks he has copied into Apple Calendar. Asked per day: the
+            // planner can stand on any date, and `timeBlocks` only covers the coming weeks.
+            await model.loadPlanLinks(for: day)
+        }
         // One sheet for all of it, keyed by what is being shown (build 44).
         .sheet(item: $sheet) { which in
             switch which {
@@ -226,7 +232,8 @@ struct PlannerDayView: View {
         let each = usable / CGFloat(max(1, placed.lanes))
         // Named `box`, not `card`: a local called `card` would shadow the method of that name
         // inside its own initial value.
-        let box = card(title: placed.title, time: placed.time, tint: tint, filled: filled)
+        let inCalendar = placed.block.map { model.isInAppleCalendar($0, on: day) } ?? false
+        let box = card(title: placed.title, time: placed.time, tint: tint, filled: filled, alsoAnEvent: inCalendar)
             .frame(width: max(30, each - 3), height: placed.height)
             .offset(x: 4 + each * CGFloat(placed.lane), y: placed.top)
         if let block = placed.block {
@@ -234,6 +241,15 @@ struct PlannerDayView: View {
                 .buttonStyle(.plain)
                 .contextMenu {
                     Button("Edit\u{2026}") { startEditing(block) }
+                    // A tick, not "Add to Apple Calendar": the control says which state you are
+                    // in, never the state you would get (build 142).
+                    Toggle("In Apple Calendar", isOn: Binding(
+                        get: { model.isInAppleCalendar(block, on: day) },
+                        set: { wanted in Task { await model.setInAppleCalendar(wanted, for: block, on: day) } }))
+                    if let event = model.calendarBlock(for: block, on: day) {
+                        Button("Open in Calendar") { model.openInCalendar(event) }
+                    }
+                    Divider()
                     Button("Remove", role: .destructive) { model.removePlanBlock(block, on: day) }
                 }
         } else {
@@ -241,11 +257,23 @@ struct PlannerDayView: View {
         }
     }
 
-    private func card(title: String, time: String, tint: Color, filled: Bool) -> some View {
+    /// `alsoAnEvent` puts a small calendar symbol on a block he has copied into Apple Calendar,
+    /// so the state can be seen without opening a menu — an action only a right-click reveals is
+    /// an action nobody finds (build 74).
+    private func card(title: String, time: String, tint: Color, filled: Bool, alsoAnEvent: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: 1) {
-            Text(time)
-                .font(.caption2.monospacedDigit())
-                .foregroundStyle(tint.opacity(0.85))
+            HStack(spacing: 3) {
+                Text(time)
+                    .font(.caption2.monospacedDigit())
+                    .foregroundStyle(tint.opacity(0.85))
+                if alsoAnEvent {
+                    Image(systemName: "calendar")
+                        .font(.caption2)
+                        .foregroundStyle(SidebarSection.calendar.tint)
+                        .help("Also an event in Apple Calendar")
+                }
+                Spacer(minLength: 0)
+            }
             Text(title)
                 .font(.caption.weight(filled ? .semibold : .regular))
                 .foregroundStyle(tint)
@@ -339,6 +367,7 @@ struct PlannerDayView: View {
         draftTitle = title
         draftStart = start
         draftMinutes = 60
+        draftInCalendar = false
         sheet = .block
     }
 
@@ -347,6 +376,7 @@ struct PlannerDayView: View {
         draftTitle = block.title
         draftStart = block.start
         draftMinutes = block.minutes
+        draftInCalendar = model.isInAppleCalendar(block, on: day)
         sheet = .block
     }
 
@@ -368,7 +398,10 @@ struct PlannerDayView: View {
                     }
                 }
             }
-            Text("A block is only for you. It is never written to Apple Calendar and never becomes a task \u{2014} it is a line in this day's note under Plan.")
+            Toggle("Also put this block in Apple Calendar", isOn: $draftInCalendar)
+            Text(draftInCalendar
+                 ? "An event is written to the calendar under Settings \u{203a} Apple Calendar \u{203a} Time blocks go to. Change the block here and the event follows it; remove the block, or take the tick off, and the event goes."
+                 : "A block is only for you. It is a line in this day's note under Plan, it never becomes a task, and nothing outside PARAGON sees it.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -421,11 +454,11 @@ struct PlannerDayView: View {
         guard !title.isEmpty else { return }
         let made = PlanBlock(start: draftStart, end: draftStart + draftMinutes, title: title,
                              index: editing?.index ?? 0)
-        if editing != nil {
-            model.replacePlanBlock(made, on: day)
-        } else {
-            model.addPlanBlock(made, on: day)
-        }
+        // The note and the event are settled in one call, in order: moving a block changes the
+        // key the event is found by, so the two cannot be done side by side.
+        let previous = editing
+        let wanted = draftInCalendar
+        Task { await model.savePlanBlock(made, on: day, replacing: previous, inAppleCalendar: wanted) }
         sheet = nil
     }
 }

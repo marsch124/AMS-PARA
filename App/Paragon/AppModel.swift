@@ -99,7 +99,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 150
+    static let number = 151
 }
 
 @MainActor
@@ -1682,8 +1682,18 @@ final class AppModel: ObservableObject {
     func removePlanBlock(_ block: PlanBlock, on day: DateOnly) {
         var blocks = planBlocks(for: day)
         guard blocks.indices.contains(block.index) else { return }
+        let event = calendarBlock(for: block, on: day)
         blocks.remove(at: block.index)
         savePlan(blocks, for: day)
+        // The tick said "this block is also in Apple Calendar". With the block gone there is
+        // nothing for the event to be, so it goes too.
+        if let event {
+            Task {
+                await deleteTimeBlock(event)
+                await loadPlanLinks(for: day)
+            }
+        }
+        flash(event == nil ? "Block removed" : "Block removed, and from Apple Calendar")
     }
 
     func replacePlanBlock(_ block: PlanBlock, on day: DateOnly) {
@@ -1691,6 +1701,81 @@ final class AppModel: ObservableObject {
         guard blocks.indices.contains(block.index) else { return }
         blocks[block.index] = block
         savePlan(blocks, for: day)
+    }
+
+    /// Saves a block from the planner's sheet and settles its Apple Calendar copy in the same
+    /// breath. `previous` is nil for a new block, and `wanted` is where the tick was left.
+    ///
+    /// **One sequential place, deliberately.** The tie to an event is the block's day, start and
+    /// title, so moving a block rewrites the key: a separate "save the block" and "untick the
+    /// box" would race, and whichever ran second would look for a key the other had just
+    /// changed. Here the event is found first, against the block as it still is.
+    func savePlanBlock(_ block: PlanBlock, on day: DateOnly, replacing previous: PlanBlock?, inAppleCalendar wanted: Bool) async {
+        let event = previous.flatMap { calendarBlock(for: $0, on: day) }
+        if previous == nil {
+            addPlanBlock(block, on: day)
+        } else {
+            replacePlanBlock(block, on: day)
+        }
+        if wanted {
+            await putInAppleCalendar(block, on: day, replacing: event)
+        } else if let event {
+            await deleteTimeBlock(event)
+            await loadPlanLinks(for: day)
+        }
+    }
+
+    // MARK: A plan block in Apple Calendar
+
+    /// The blocks PARAGON wrote to Apple Calendar, by the day they are on. Its own store, not
+    /// `timeBlocks`: that one covers a week back to 60 days ahead, and the planner can be
+    /// standing on any day at all.
+    @Published private(set) var planBlocksInCalendar: [DateOnly: [TimeBlock]] = [:]
+
+    func loadPlanLinks(for day: DateOnly) async {
+        guard await ensureCalendarAccess() else { return }
+        let found = calendarStore.timeBlocks(on: day).filter { PlanBlockLink.key(inNotes: $0.notes) != nil }
+        if planBlocksInCalendar[day] != found { planBlocksInCalendar[day] = found }
+    }
+
+    /// The event this block was copied into, or nil when it is only in the note.
+    func calendarBlock(for block: PlanBlock, on day: DateOnly) -> TimeBlock? {
+        planBlocksInCalendar[day]?.first { PlanBlockLink.belongs($0.notes, to: block, on: day) }
+    }
+
+    func isInAppleCalendar(_ block: PlanBlock, on day: DateOnly) -> Bool {
+        calendarBlock(for: block, on: day) != nil
+    }
+
+    /// Puts one block into Apple Calendar, or takes it out again. Nothing else about a plan
+    /// ever leaves PARAGON; this is the one way out, and he asks for it a block at a time.
+    func setInAppleCalendar(_ wanted: Bool, for block: PlanBlock, on day: DateOnly) async {
+        let existing = calendarBlock(for: block, on: day)
+        if wanted {
+            await putInAppleCalendar(block, on: day, replacing: existing)
+        } else if let existing {
+            await deleteTimeBlock(existing)
+            await loadPlanLinks(for: day)
+        }
+    }
+
+    /// Writes the event. `replacing` keeps the same event when the block has been moved or
+    /// renamed, so the one in Apple Calendar follows the plan rather than being left behind.
+    private func putInAppleCalendar(_ block: PlanBlock, on day: DateOnly, replacing existing: TimeBlock?) async {
+        guard let start = minutesIntoDay(day, minutes: block.start),
+              let end = minutesIntoDay(day, minutes: block.start + block.minutes) else { return }
+        await saveTimeBlock(id: existing?.id,
+                            title: block.title,
+                            start: start,
+                            end: end,
+                            notes: PlanBlockLink.notes(for: block, on: day),
+                            calendarID: nil)
+        await loadPlanLinks(for: day)
+    }
+
+    private func minutesIntoDay(_ day: DateOnly, minutes: Int) -> Date? {
+        guard let midnight = day.date() else { return nil }
+        return Calendar.current.date(byAdding: .minute, value: minutes, to: midnight)
     }
 
     /// What the planner offers on the right: what is due on or before the day, then the next

@@ -171,6 +171,16 @@ final class EventKitCalendarStore {
                          color: event.calendar?.cgColor.map { Color(cgColor: $0) } ?? .accentColor)
     }
 
+    /// The blocks PARAGON created on one day, in **any** calendar and whether or not that
+    /// calendar is one he has chosen to see. The planner asks this to know which of its own
+    /// blocks he has put into Apple Calendar, and a hidden calendar must not make one look
+    /// absent (build 100's rule).
+    func timeBlocks(on day: DateOnly, calendar: Calendar = .current) -> [TimeBlock] {
+        guard let start = day.date(calendar: calendar),
+              let end = calendar.date(byAdding: .day, value: 1, to: start) else { return [] }
+        return timeBlocks(from: start, to: end)
+    }
+
     /// The blocks PARAGON created, in any calendar, between two dates.
     func timeBlocks(from: Date, to: Date) -> [TimeBlock] {
         let predicate = eventStore.predicateForEvents(withStart: from, end: to, calendars: nil)

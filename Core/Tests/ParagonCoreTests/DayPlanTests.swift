@@ -109,4 +109,53 @@ final class DayPlanTests: XCTestCase {
         let block = PlanBlock(start: 600, end: 300, title: "Wrong way round")
         XCTAssertEqual(block.minutes, 1)
     }
+
+    // MARK: The tie to Apple Calendar
+
+    func testTheKeyNamesTheDayTheStartAndTheTitle() {
+        let day = DateOnly(year: 2026, month: 9, day: 13)
+        let block = PlanBlock(start: 9 * 60 + 30, end: 11 * 60, title: "Deep work on the IM plan")
+        XCTAssertEqual(PlanBlockLink.key(for: block, on: day),
+                       "ams-para:planblock 2026-09-13 09:30 Deep work on the IM plan")
+    }
+
+    func testTheKeyIsFoundAmongTheOtherLinesOfAnEventsNotes() {
+        let day = DateOnly(year: 2026, month: 9, day: 13)
+        let block = PlanBlock(start: 9 * 60 + 30, end: 11 * 60, title: "Deep work on the IM plan")
+        // What the event really carries: our sentence, our key, and the older time-block marker
+        // the calendar store appends to everything it writes.
+        let notes = PlanBlockLink.notes(for: block, on: day) + "\n\nams-para:timeblock"
+        XCTAssertTrue(PlanBlockLink.belongs(notes, to: block, on: day))
+        XCTAssertEqual(PlanBlockLink.key(inNotes: notes), PlanBlockLink.key(for: block, on: day))
+    }
+
+    func testAnEventWithNoKeyBelongsToNoBlock() {
+        let day = DateOnly(year: 2026, month: 9, day: 13)
+        let block = PlanBlock(start: 540, end: 600, title: "Ride")
+        XCTAssertNil(PlanBlockLink.key(inNotes: "Just an ordinary event.\nams-para:timeblock"))
+        XCTAssertFalse(PlanBlockLink.belongs("Just an ordinary event.", to: block, on: day))
+    }
+
+    func testMovingOrRenamingABlockChangesItsKey() {
+        let day = DateOnly(year: 2026, month: 9, day: 13)
+        let block = PlanBlock(start: 540, end: 600, title: "Ride")
+        let notes = PlanBlockLink.notes(for: block, on: day)
+        var moved = block
+        moved.start = 600
+        moved.end = 660
+        XCTAssertFalse(PlanBlockLink.belongs(notes, to: moved, on: day))
+        var renamed = block
+        renamed.title = "Ride to Granden"
+        XCTAssertFalse(PlanBlockLink.belongs(notes, to: renamed, on: day))
+        // And the same block on another day is a different block.
+        XCTAssertFalse(PlanBlockLink.belongs(notes, to: block, on: day.adding(days: 1)))
+    }
+
+    func testTheKeyIgnoresTheEndTimeSoAResizeKeepsTheTie() {
+        let day = DateOnly(year: 2026, month: 9, day: 13)
+        let block = PlanBlock(start: 540, end: 600, title: "Ride")
+        var longer = block
+        longer.end = 720
+        XCTAssertTrue(PlanBlockLink.belongs(PlanBlockLink.notes(for: block, on: day), to: longer, on: day))
+    }
 }
