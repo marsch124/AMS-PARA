@@ -757,7 +757,10 @@ struct PlannerActionsView: View {
                 rows
             }
         }
-        .navigationTitle("Actions")
+        // The window's name has to be the sidebar row you pressed. It said "Actions" while
+        // Time Blocks was selected (build 155, his report). The heading inside the column still
+        // says Actions, because that is what the column is.
+        .navigationTitle("Time Blocks")
     }
 
     @ViewBuilder

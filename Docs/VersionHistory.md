@@ -2,6 +2,14 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 155 · 13 September 2026
+
+- **The Map's name is on the left now, like every other screen.** Its zoom and **Arrange**
+  buttons had been put in the slot that sits *before* the window's name, so the word **Map** was
+  pushed out past them. They have moved to the right, beside **Export**.
+- **The window says "Time Blocks" when you are in Time Blocks.** It said "Actions". The heading
+  inside the middle column still says **ACTIONS**, because that is what that column is.
+
 ## Build 154 · 13 September 2026
 
 The note's toolbar, from your screenshot.

@@ -52,8 +52,11 @@ struct MapView: View {
             }
         }
         .toolbar {
-            // On the left, where the eye starts: how the map is shown and how it behaves.
-            ToolbarItemGroup(placement: .navigation) {
+            ToolbarItemGroup {
+                // Not `.navigation`: that slot sits *before* the window's title, and three
+                // buttons there pushed the word "Map" out past them while every other screen
+                // has its name hard left (build 155, his report). Only the New note button
+                // belongs in front of the title.
                 Button { step(-1) } label: { Label("Zoom out", systemImage: "minus.magnifyingglass") }
                     .disabled(zoom <= Self.zoomSteps.first!)
                 Button { step(1) } label: { Label("Zoom in", systemImage: "plus.magnifyingglass") }
@@ -65,8 +68,7 @@ struct MapView: View {
                 .onChange(of: arranging) { _, on in if !on { marked = [] } }
                 .help(arranging ? "Tap boxes to mark them, then drag any one to move them all."
                                 : "Turn on to drag boxes where you want them")
-            }
-            ToolbarItemGroup {
+                Divider()
                 Menu {
                     Button("PDF\u{2026}") { export(MapExport.pdfData(for: map), extension: "pdf") }
                     Button("PNG\u{2026}") { export(MapExport.pngData(for: map), extension: "png") }
