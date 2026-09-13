@@ -455,7 +455,14 @@ struct NoteListView: View {
                 Button {
                     if model.section == .work { makingWorkNote = true } else { model.activeSheet = .newNote }
                 } label: {
-                    Label("New note", systemImage: "square.and.pencil")
+                    // He chose this from a preview of six
+                    // (https://claude.ai/code/artifact/77a48898-bbb1-4e3a-aeff-499b098721c7):
+                    // a filled circle, which carries colour in a way no outline in a macOS
+                    // toolbar can, and the plainest "add something" there is. The colour is the
+                    // section's own — the same tint `ModeAccent` lays over the detail column
+                    // (build 107) — so the button says which list it will add to.
+                    Label("New note", systemImage: "plus.circle.fill")
+                        .foregroundStyle(model.section?.tint ?? Color.accentColor)
                 }
                 .help("New note in this section (⌘N)")
             }

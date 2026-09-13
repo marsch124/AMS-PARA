@@ -1235,6 +1235,24 @@ first two were answered by the third.
   on-state fill went 0.20 → 0.24. **The two-state language itself is his and stays.** The lift
   reaches the Calendar day's month-grid button too, which shares the control.
 
+**Builds 155–156, from two screenshots.**
+- **`.navigation` in a macOS `.toolbar` is the slot *before* the window's title.** `MapView` put
+  its zoom and **Arrange** buttons there, so the word "Map" sat out past three buttons while
+  every other screen has its name hard left. Only the New note button belongs in front of the
+  title; everything a screen owns goes in the trailing group. Worth checking whenever a screen
+  gains its own tools.
+- `PlannerActionsView`'s `navigationTitle` said "Actions" while the sidebar row said **Time
+  Blocks**. **The window's name has to be the row he pressed.** The `SectionLabel` *inside* that
+  column still says ACTIONS, which is right — it labels the list, not the screen.
+- **The New note button is `plus.circle.fill` in `SidebarSection.tint`** (build 156). He asked
+  for five or six suggestions and picked the first from a preview
+  (https://claude.ai/code/artifact/77a48898-bbb1-4e3a-aeff-499b098721c7), which drew each
+  candidate twice — at true toolbar size and large — with a switcher for the five section
+  colours. **Most of the "pop" was the colour, not the glyph**: a macOS toolbar draws every
+  outline symbol at low emphasis, which is the same thing that made build 154 lift
+  `StateToggle`. A filled shape is what carries a tint there. The preview page is the fourth
+  time choosing before building has been the cheap way to get this right.
+
 Still open, in the order agreed: Goals and Aspirations
 screens if the one review is not enough; then the status vocabulary (reached / missed / dropped), last because it edits his
 notes. Also queued: **spread `StateToggle`** to the other two-state controls (Hide finished,

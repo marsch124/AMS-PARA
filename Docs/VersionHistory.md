@@ -2,6 +2,14 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 156 · 13 September 2026
+
+- **The New note button is the one you chose**: a plus in a filled circle, in the colour of the
+  section you are in — green in Projects, pink in Areas, gold in Goals. It was a grey pencil
+  before, the same weight as everything else in the bar.
+- The colour is the same one laid over the note column, so the button says which list it will
+  add to. It still makes a note in the section you are looking at, and ⌘N still works.
+
 ## Build 155 · 13 September 2026
 
 - **The Map's name is on the left now, like every other screen.** Its zoom and **Arrange**
