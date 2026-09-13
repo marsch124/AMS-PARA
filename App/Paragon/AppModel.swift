@@ -99,7 +99,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 149
+    static let number = 150
 }
 
 @MainActor
@@ -167,6 +167,10 @@ final class AppModel: ObservableObject {
     @Published var selectedWeek = WeekRef.current()
     @Published var selectedMonth = MonthRef.current()
     @Published var calendarMode: CalendarMode = .day
+    /// The day the planner shows. Its own, not `selectedDate`: the Calendar section and the
+    /// planner are two screens and moving in one must not move the other. Both planner columns
+    /// read it, so they can never drift apart.
+    @Published var plannerDay = DateOnly.today()
 
     enum CalendarMode: String, CaseIterable, Identifiable {
         case day, week, month, notes

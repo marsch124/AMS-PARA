@@ -41,8 +41,9 @@ struct ParagonApp: App {
             // toolbar buttons only exist while a note is open.
             CommandMenu("Go") {
                 #if os(macOS)
-                // Its own window, because the planner wants the width of three columns and
-                // the note screen is usually open beside it.
+                // The planner is the Time Blocks section itself since build 150. This is the
+                // extra he asked to keep: the same three parts in a window of their own, which
+                // can stay up while a note is open in the main window.
                 PlannerMenuButton()
                     .disabled(model.vault == nil)
                 Divider()
@@ -67,9 +68,9 @@ struct ParagonApp: App {
             }
         }
         #if os(macOS)
-        // A window of its own, opened from Go \u{203a} Plan the Day and from the Time Blocks
-        // section: the planner wants the width of three columns, and the note screen is
-        // usually open beside it. The iPhone has no windows, so there it is a pushed screen.
+        // The extra window, opened from Go \u{203a} Plan the Day. The planner itself is the
+        // Time Blocks section; this keeps a copy of it up while a note is open. The iPhone has
+        // no windows, and no need of one: there the section is the whole planner.
         Window("Plan the day", id: ParagonApp.plannerWindowID) {
             PlannerView()
                 .environmentObject(model)

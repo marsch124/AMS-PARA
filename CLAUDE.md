@@ -1084,6 +1084,32 @@ then your next actions").
 The phone stacks: `lanesRow` then `actionRows` in **one** `ScrollView`, never two nested
 (build 127). `LazyVStack` rather than `List` so the same rows serve both platforms.
 
+**Build 150: the planner is the window, not a window.** He asked whether all three parts could
+live in the ordinary app window instead of a floating one, and chose **"A with the floating
+window as an extra"** from a preview
+(https://claude.ai/code/artifact/c8934eb1-0b1e-46ca-a3e7-4a3a90b2a5ae). So `PlannerView` split
+into two halves that also stand alone: `PlannerActionsView` is the middle column
+(`NoteListView`, `.timeBlocks`) and `PlannerDayView` is the detail column (`DetailView`,
+`.timeBlocks`); `PlannerView` is just the two side by side, for the ⇧⌘P `Window` and for the
+phone. Both read **`AppModel.plannerDay`**, not each its own `@State`, or the two columns would
+show different days. The old `TimeBlocksView` (Apple Calendar) is one button away, in the
+planner's single `.sheet`.
+- **The bug this build fixed is a lesson about this file.** `ContentView.swift` holds **two**
+  long `if`/`else` chains that both branch on `model.section` and both contain
+  `} else if model.section == .snippets {`. Build 148's single-occurrence replacement matched
+  the first (in `NoteListView`), so the Mac's detail column never got a `.timeBlocks` branch
+  and said "No note open". **Anchor an edit in that file on something that appears once**, and
+  read back the line numbers of every match before replacing.
+- **Overlapping items share the width.** `place(_:)` sorts spans by start and greedily gives
+  each the first lane whose last item has finished; a gap with nothing running closes the group
+  off, so an uncrowded hour still gets the full width. The lane count comes out of the group,
+  and `GeometryReader` hands the width in — the same rule `DayScheduleView.lanes(for:)` has had
+  since build 61.
+- `let box = card(…)`, not `let card = card(…)`: a local shadows the method of the same name
+  inside its own initial value.
+- Removed with it: `plannerWay` in `TimeBlocksView` and the `PhoneRoute.planner` /
+  `.calendarBlocks` cases, which nothing reached any more.
+
 Still open, in the order agreed: dragging and resizing a plan block; then Goals and Aspirations
 screens if the one review is not enough; then the status vocabulary (reached / missed / dropped), last because it edits his
 notes. Also queued: **spread `StateToggle`** to the other two-state controls (Hide finished,

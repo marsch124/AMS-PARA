@@ -391,11 +391,12 @@ struct NoteListView: View {
                 MapView()
             } else if model.section == .timeBlocks {
                 #if os(iOS)
-                // No third column on the phone, so the section is the planner itself. The
-                // Apple Calendar blocks are one tap away from its toolbar.
+                // No third column on the phone, so the section is the whole planner, stacked.
                 PlannerView()
                 #else
-                TimeBlocksView()
+                // Build 150, his choice: the planner lives in the ordinary window. The day's
+                // actions are the middle column and the two lanes are the detail column.
+                PlannerActionsView()
                 #endif
             } else if model.section == .done {
                 DoneView()
@@ -405,12 +406,7 @@ struct NoteListView: View {
                 DeletedView()
             } else if model.section == .templates {
                 TemplatesView()
-            } else if model.section == .timeBlocks {
-            // Choosing Time Blocks shows the planner, which is what he asked for and what the
-            // agreed drawing said. Build 147 left it behind a menu item and the old Apple
-            // Calendar form was what a click on the row still gave you.
-            PlannerView()
-        } else if model.section == .snippets {
+            } else if model.section == .snippets {
                 SnippetsView()
             } else if model.section == .tags {
                 TagsView()
@@ -820,6 +816,10 @@ struct DetailView: View {
             // No selection to make: the file is the thing you edit, and the list beside it
             // says what is in it.
             TemplateEditorView(name: Snippets.fileName).id(Snippets.fileName)
+        } else if model.section == .timeBlocks {
+            // The day: the calendar beside your own blocks, on one hour ruler. The same view
+            // fills the floating window, where the actions come with it.
+            PlannerDayView()
         } else if model.section == .tags, model.selectedNotePath == nil {
             EmptyStateView(title: "Tags",
                            systemImage: SidebarSection.tags.systemImage,

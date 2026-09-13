@@ -5,9 +5,6 @@ import ParagonCore
 /// A form at the top adds or edits a block; the list below shows the coming weeks.
 struct TimeBlocksView: View {
     @EnvironmentObject private var model: AppModel
-    #if os(macOS)
-    @Environment(\.openWindow) private var openWindow
-    #endif
 
     @State private var editingID: String?
     @State private var title = ""
@@ -23,8 +20,6 @@ struct TimeBlocksView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            plannerWay
-            Divider()
             form
             Divider()
             list
@@ -45,35 +40,6 @@ struct TimeBlocksView: View {
         } message: { _ in
             Text("The event is removed from the calendar on all your devices.")
         }
-    }
-
-    /// The way to the planner, which is the other kind of block: one that stays in PARAGON.
-    /// The two are next to each other on purpose — the difference is worth seeing.
-    @ViewBuilder
-    private var plannerWay: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            #if os(macOS)
-            Button {
-                openWindow(id: ParagonApp.plannerWindowID)
-            } label: {
-                Label("Open the planner in its own window", systemImage: "macwindow")
-            }
-            Text("The planner is already beside you, on the right. This opens it in a window of its own, so it can stay up while you work in a note.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            #else
-            NavigationLink(value: PhoneRoute.planner) {
-                Label("Plan the day\u{2026}", systemImage: "rectangle.split.3x1")
-            }
-            Text("Your own blocks, kept in the daily note. They say where you mean to be, and are never written to Apple Calendar.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            #endif
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
     }
 
     // MARK: Form

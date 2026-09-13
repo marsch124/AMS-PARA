@@ -204,21 +204,24 @@ The Calendar section shows the day's schedule in the right-hand column: hours do
 ### Plan the day
 
 There is a second kind of block, and it is the opposite of a Time Block: it stays inside
-PARAGON. Open it with **Go › Plan the Day…** (⇧⌘P) on the Mac, which gives it a window of its
-own, or with **Plan the day…** at the top of the **Time Blocks** section on the iPhone.
+PARAGON. It is what the **Time Blocks** section shows. **Go › Plan the Day…** (⇧⌘P) on the
+Mac opens the same thing in a window of its own, which can stay up while you work in a note.
 
 The screen has three parts:
 
-- **Calendar** on the left: what is already booked that day, read from Apple Calendar.
-- **Time blocks** in the middle: your own blocks. They hang on the same hours as the calendar,
-  so you can see whether a block lands inside something already booked.
-- **Actions** on the right: what is due that day, then your next actions. Each row is a real
-  task: tick the circle to finish it, right-click (long-press on the iPhone) for the task menu,
-  and press **+** to make a block for it. Under each one is what it serves — the goal its note
-  belongs to, in gold, or the area it sits in, in pink.
+- **Actions** in the middle column: what is due that day, then your next actions. Each row is a
+  real task: tick the circle to finish it, right-click (long-press on the iPhone) for the task
+  menu, and press **+** to make a block for it. Under each one is what it serves — the goal its
+  note belongs to, in gold, or the area it sits in, in pink.
+- **Calendar** on the right: what is already booked that day, read from Apple Calendar.
+- **Time blocks** beside it: your own blocks. They hang on the same hours as the calendar, so
+  you can see whether a block lands inside something already booked. Two things at the same
+  time stand side by side at half the width, so nothing is hidden behind anything else.
 
-On the iPhone the three parts are one page instead: the day's hours first, the actions under
-them.
+On the iPhone the parts are one page instead: the day's hours first, the actions under them.
+
+The **calendar** button at the top right of the day leads to the other kind of block, the ones
+that are real events in Apple Calendar.
 
 Press a block to change its name, its time or its length. Right-click it (long-press on the
 iPhone) for **Remove**. The arrows at the top move a day at a time.

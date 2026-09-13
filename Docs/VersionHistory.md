@@ -2,6 +2,15 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 150 · 13 September 2026
+
+- **The planner is in the ordinary window now.** Choose **Time Blocks** and you get the day's actions in the middle column and the day itself — Calendar beside your own blocks, on one hour ruler — on the right. No floating window needed.
+- **The floating window is still there** as an extra: **Go › Plan the Day…** (⇧⌘P). It shows the same three parts and can stay up while you work in a note.
+- **Two events at the same time no longer sit on top of each other.** They stand side by side at half the width, three at a third, and so on. The same goes for your own blocks.
+- **The blocks in Apple Calendar are one button away**: the small calendar symbol at the top right of the day. They are unchanged.
+- **Confirmed, because you asked:** a block you make in the planner is never written to Apple Calendar. It is a line in the daily note under **Plan**, and nothing outside PARAGON ever sees it.
+- Fixed: on the Mac the right-hand side said **No note open** when you chose Time Blocks. My mistake in build 148 — the change landed in the wrong half of the file.
+
 ## Build 149 · 13 September 2026
 
 - **The Actions column in the planner is now made of real task rows.** Each one has a **checkbox**: tick it here and the task is ticked in its own note. Right-click a row (long-press on the iPhone) for the usual task menu — rename, give it a date, make it the next action, move it.
