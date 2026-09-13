@@ -192,7 +192,7 @@ The per cent never says 100 until everything really is finished, and never says 
 - **Today** shows the day's calendar events, one next action per active project, overdue tasks, tasks due today, and undated tasks marked `!!` or more.
 - **All actions** lists every open task in the vault, grouped by its note, with a filter for All, With a date, No date and Next actions.
 - **Done** lists what you completed, day by day, for the last 30 days.
-- **Calendar** lets you pick a day, week or month. The day view has a month grid with week numbers and a dot under every day that holds something — green for tasks due, red if one is overdue, blue for calendar events, grey for a day that already has a note. Under the grid is the day itself: its events, what is due, what got done, and a button to open or create the daily note. Move with the arrows, the Today button, or the left and right arrow keys. Drop a task on a day to give it that date.
+- **Calendar** lets you pick a day, week or month. The day view can show a month grid with week numbers and a dot under every day that holds something — green for tasks due, red if one is overdue, blue for calendar events, grey for a day that already has a note. Under the grid is the day itself: its events, what is due, what got done, and a button to open or create the daily note. The grid is off to begin with, because the day itself is what the screen is for: press the **calendar** button in the day's top row to show it, and press it again to put it away. The button is lit while the grid is showing, and the app remembers your choice. Move with the arrows, the Today button, or the left and right arrow keys. Drop a task on a day to give it that date.
 - A daily note shows the day's events and the tasks due that day above its own text. A weekly note shows all seven days as a plan: drop tasks onto a day, tick them off there.
 
 ## Apple Calendar and Time Blocks
@@ -348,7 +348,8 @@ the button in the top row. It says **Tags…** when the note has none and lists 
 has. A small panel opens:
 
 - A field at the top for a new tag. Write the word and press Return. The `#` is added for you,
-  and a space becomes a hyphen.
+  a space becomes a hyphen, and any `#` you type yourself is taken out — so "Claude #Productivity"
+  becomes the one tag `#Claude-Productivity`. For two tags, add them one at a time.
 - Under it, every tag you already use anywhere. Press one to put it on this note, press it
   again to take it off. A filled circle means the note has it.
 

@@ -999,6 +999,22 @@ missing and he asked for all three in one message.
   context menu, and the `.alert` + `.confirmationDialog` pair copied from `TemplatesView` —
   a macOS alert silently drops everything that is not a TextField (build 93).
 
+**Build 146.** Two things, one of them my own fault.
+- **The Calendar day view's month grid is off by default** (`@AppStorage "showsMonthGrid"`),
+  toggled by a `StateToggle` in the day header — the first place build 142's control has been
+  spread to, and the remaining candidates are unchanged (Hide finished, the Calendar's
+  Schedule/Note switch, the Map's Arrange). Thirty-one dated cells took more of the column
+  than the day itself. The header's two texts gained `.lineLimit(2)` and the arrow group
+  `.fixedSize()` at the same time: the row gained a button, and build 138 is about what a
+  narrow column does to an HStack.
+- **`cleanTag` only stripped a *leading* `#`** (my build 144 code), so "Claude #Productivity"
+  typed into a tag field became the single tag `Claude-#Productivity` — which the task
+  parser's own pattern can never match, so it could never be written on a task line. It now
+  replaces **every** `#` with a space, joins the words with hyphens, squeezes repeated
+  hyphens and trims them off the ends. He found it in a screenshot, not I.
+  **`cleanTag` lives in the App target and has no tests.** Anything that decides the shape of
+  a stored value belongs in Core where it can be tested — move it there next time it changes.
+
 Still open, in the order agreed: Goals and Aspirations screens if the one review is not
 enough; then the status vocabulary (reached / missed / dropped), last because it edits his
 notes. Also queued: **spread `StateToggle`** to the other two-state controls (Hide finished,

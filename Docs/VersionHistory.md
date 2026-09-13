@@ -2,6 +2,12 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 146 · 13 September 2026
+
+- **The month grid in Calendar › Day is off until you ask for it.** Thirty-one dated cells took more of the column than the day itself. A **calendar** button in the day's top row turns it on and off, lit when it is on, and it stays as you leave it.
+- **A tag can no longer come out with a `#` inside it.** Typing "Claude #Productivity" in a tag field made the single tag `Claude-#Productivity`, which nothing could ever match on a task line. Every `#` is now taken out, not just one at the front, and repeated hyphens are squeezed.
+- If you already have a tag like that: open **Tags**, right-click it (long-press on the iPhone) › **Rename…** and write it properly. It is fixed in every note and task at once.
+
 ## Build 145 · 12 September 2026
 
 - **A tag can be renamed everywhere at once.** Right-click a tag in **Tags** (long-press on the iPhone) › **Rename…**. Every note and every task that carries it is changed — both the `tags:` lines and the `#tag` words.

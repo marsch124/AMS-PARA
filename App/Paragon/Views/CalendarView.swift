@@ -31,6 +31,10 @@ struct CalendarView: View {
 struct DayCalendarView: View {
     @EnvironmentObject private var model: AppModel
     @State private var gridMonth: MonthRef = .current()
+    /// The month grid is off by default and remembered: thirty-one dated cells take more of
+    /// the column than the day itself, and the day is what the screen is for. His words:
+    /// "alla datum, ett till 31, tar upp alldeles för mycket plats".
+    @AppStorage("showsMonthGrid") private var showsMonthGrid = false
 
     private static let longDate: DateFormatter = {
         let f = DateFormatter()
@@ -44,12 +48,14 @@ struct DayCalendarView: View {
         VStack(spacing: 0) {
             header(day: day, overview: overview)
             Divider()
-            MonthGrid(month: gridMonth,
-                      selected: day,
-                      previous: { gridMonth = gridMonth.adding(months: -1) },
-                      next: { gridMonth = gridMonth.adding(months: 1) },
-                      pick: { picked in model.afterUpdate { model.openDailyNote(for: picked) } })
-            Divider()
+            if showsMonthGrid {
+                MonthGrid(month: gridMonth,
+                          selected: day,
+                          previous: { gridMonth = gridMonth.adding(months: -1) },
+                          next: { gridMonth = gridMonth.adding(months: 1) },
+                          pick: { picked in model.afterUpdate { model.openDailyNote(for: picked) } })
+                Divider()
+            }
             dayContents(day: day, overview: overview)
         }
         .focusable()
@@ -84,13 +90,23 @@ struct DayCalendarView: View {
     private func header(day: DateOnly, overview: DayOverview) -> some View {
         HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 2) {
+                // A narrow column squeezes an HStack's children until the text inside breaks
+                // (build 138), and this row gained a button. Both lines stop at two.
                 Text(dayTitle(day))
                     .font(.title3.weight(.semibold))
+                    .lineLimit(2)
                 Text(summary(day: day, overview: overview))
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .lineLimit(2)
             }
-            Spacer()
+            Spacer(minLength: 6)
+            // Build 142's rule: one symbol, lit when the thing is on. The calendar either
+            // shows the month or it does not, and the button says which.
+            StateToggle(systemImage: "calendar", title: "Month", isOn: showsMonthGrid,
+                        tint: SidebarSection.calendar.tint) {
+                showsMonthGrid.toggle()
+            }
             HStack(spacing: 2) {
                 Button { move(days: -1) } label: { Image(systemName: "chevron.left") }
                     .help("Previous day")
@@ -100,6 +116,7 @@ struct DayCalendarView: View {
                     .help("Next day")
             }
             .buttonStyle(.borderless)
+            .fixedSize()
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)

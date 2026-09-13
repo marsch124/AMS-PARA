@@ -99,7 +99,7 @@ enum AppSheet: String, Identifiable {
 
 /// Bumped on every push so the running build can be told apart from an older one.
 enum BuildStamp {
-    static let number = 145
+    static let number = 146
 }
 
 @MainActor
@@ -1554,14 +1554,21 @@ final class AppModel: ObservableObject {
     }
 
     /// A tag as it can be written in both places it is allowed: the `tags:` line and `#tag`
-    /// on a task. No leading `#`, and no spaces — a tag with a space could never be written
-    /// on a task line, so "next week" becomes "next-week" rather than two half tags.
+    /// on a task. No `#` **anywhere**, and no spaces — a tag with either could never be
+    /// written on a task line, so "next week" becomes "next-week" rather than two half tags.
+    ///
+    /// Build 145 only stripped a *leading* `#`, so typing "Claude #Productivity" made the one
+    /// tag "Claude-#Productivity", which the task parser can never match. Stripping every `#`
+    /// is the only spelling that keeps the two ways of writing a tag interchangeable.
     static func cleanTag(_ raw: String) -> String? {
-        let trimmed = raw.trimmingCharacters(in: .whitespaces)
-            .trimmingCharacters(in: .init(charactersIn: "#"))
-            .trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty else { return nil }
-        return trimmed.split(separator: " ").joined(separator: "-")
+        let words = raw.replacingOccurrences(of: "#", with: " ")
+            .split(whereSeparator: { $0.isWhitespace })
+            .map(String.init)
+        guard !words.isEmpty else { return nil }
+        var joined = words.joined(separator: "-")
+        while joined.contains("--") { joined = joined.replacingOccurrences(of: "--", with: "-") }
+        joined = joined.trimmingCharacters(in: .init(charactersIn: "-"))
+        return joined.isEmpty ? nil : joined
     }
 
     /// Puts an area under another one, or takes it back out with nil.
