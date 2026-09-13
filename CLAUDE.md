@@ -1283,6 +1283,10 @@ the screen said, not only at what it did** — the same trap as builds 123–127
   ruled everything out (build 100's rule, in a new place).
 - `FilterBox` uses build 142's two states in words rather than a symbol: ticked is the tint
   filled with a solid border, unticked is grey with a dashed one.
+- **`Section(_:content:footer:)` does not exist.** A title string and a footer cannot be given
+  together — it is `Section { } header: { } footer: { }` or a bare title. CI caught it and 157
+  cost a run; the build number stayed 157 because nothing ever shipped (the build 143
+  precedent).
 - The boxes fold (`@AppStorage "searchFiltersFolded"`, **open by default** — build 121) because
   the middle column is narrow, and each row is a `WrappingHStack` (build 138).
 

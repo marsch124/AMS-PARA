@@ -304,7 +304,9 @@ struct SearchHelpView: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            Section("The same thing, typed") {
+            // `Section(_:content:footer:)` does not exist — a title string and a footer cannot
+            // be given together. It is the header/footer form or nothing (CI caught this).
+            Section {
                 ForEach(examples, id: \.0) { example in
                     Button {
                         model.queryText = example.0
@@ -316,6 +318,8 @@ struct SearchHelpView: View {
                     }
                     .buttonStyle(.plain)
                 }
+            } header: {
+                Text("The same thing, typed")
             } footer: {
                 Text("Every box has a word you can type instead: type:, status:, tag: or #tag, area:, in:, due:, is:. A \"quoted phrase\" matches as a whole.")
                     .font(.caption2)
