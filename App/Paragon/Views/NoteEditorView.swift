@@ -175,19 +175,13 @@ struct NoteEditorView: View {
                         flushSave()
                         model.archive(note)
                     } label: {
-                        Label("Archive", systemImage: "archivebox")
+                        MoveToArchiveIcon()
                     }
                     .help("Move this note to the Archive folder and stop syncing its tasks")
                 }
-                if let note, note.kind != .inbox, note.kind != .daily {
-                    Button {
-                        noteTitleDraft = note.displayTitle
-                        renamingNote = true
-                    } label: {
-                        Label("Rename", systemImage: "pencil")
-                    }
-                    .help("Change this note's name; links to it follow")
-                }
+                // No Rename button. It was a second pencil beside the Edit toggle and a whole
+                // toolbar slot for one rare action — "exaggerated", his word, build 154. The
+                // note's name in the header is what renames it now.
                 if let note, note.kind != .inbox {
                     Button {
                         confirmTrash = true
@@ -265,12 +259,23 @@ struct NoteEditorView: View {
         }
     }
 
+    /// Renaming this note, or nil when the name is not his to change. A function, not a
+    /// ternary with a closure in one arm: that is where Swift's inference gives up, and there
+    /// is no compiler in this container (the same reason as build 152's `openEventAction`).
+    private func renameAction(for note: Note) -> (() -> Void)? {
+        guard note.kind != .inbox, note.kind != .daily else { return nil }
+        return {
+            noteTitleDraft = note.displayTitle
+            renamingNote = true
+        }
+    }
+
     /// Everything above the editor: the note's own header, whatever agenda it carries, its
     /// tasks and its links.
     @ViewBuilder
     private var sections: some View {
         if let note {
-            NoteHeader(note: note)
+            NoteHeader(note: note, rename: renameAction(for: note))
             Divider()
             if let date = note.dailyDate {
                 DayAgendaView(date: date)
@@ -599,6 +604,10 @@ struct ProjectDeadlineChip: View {
 struct NoteHeader: View {
     @EnvironmentObject private var model: AppModel
     let note: Note
+    /// Renames the note. Nil for the Inbox and for daily notes, whose names are not theirs to
+    /// change. Build 154 put it here: the name is a fact about the note like its goal, its tags
+    /// and its deadline, and every one of those is changed by pressing it where it is shown.
+    var rename: (() -> Void)? = nil
 
     private func listName(for note: Note) -> String {
         switch note.kind {
@@ -613,6 +622,21 @@ struct NoteHeader: View {
             Label(note.kind == .daily ? "Daily note" : note.kind.displayName, systemImage: SidebarSection.kind(note.kind).systemImage)
                 .foregroundStyle(note.tint)
                 .fontWeight(.semibold)
+            if let rename {
+                Button(action: rename) {
+                    Text(note.displayTitle)
+                        .fontWeight(.semibold)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .foregroundStyle(note.tint)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 2)
+                        .background(note.tint.opacity(0.12), in: Capsule())
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .help("Press to rename this note. The file is renamed too, and links to it follow.")
+            }
             if let status = note.status {
                 Label(status.capitalized, systemImage: "circle.fill")
             }

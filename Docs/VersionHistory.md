@@ -2,6 +2,23 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 154 · 13 September 2026
+
+The note's toolbar, from your screenshot.
+
+- **Rename has no button of its own any more.** It was a second pencil next to the Edit pencil,
+  and a whole toolbar slot for something you do rarely. **The note's name now sits in the row
+  under the toolbar, beside "Project" or "Area", and you press it to rename.** That is where its
+  goal, its tags and its deadline already are, and all of those are changed by pressing them.
+  On the iPhone rename stays in the **…** menu.
+- **The Archive button shows the movement**: a small arrow coming down into the box, so it reads
+  as "move this note to the Archive" rather than "here is the archive".
+- **The Edit pencil is easier to see.** Both of its states are stronger now — still the tint
+  with a solid frame when Edit is on, still grey with a dashed frame when it is off, only with
+  enough contrast to read in a toolbar. The same lift reaches the **calendar** button in
+  Calendar › Day, which uses the same control.
+- With rename gone there is one pencil in that row, not two.
+
 ## Build 153 · 13 September 2026
 
 - **Fixed, from your field test: each `TB:` is on its own row.** Two blocks written under each

@@ -304,6 +304,26 @@ struct GoalProgressBar: View {
 /// symbol that is either lit or not has a single reading, and it is the reading everything
 /// else in the app already uses: a tinted fill is "on", grey is "off". The dashed border says
 /// the same thing a second way, which is what the Map's dashed boxes have always meant here.
+/// The Archive button's symbol: a small arrow coming down into the box, because the button
+/// **moves** the note rather than showing an archive. His idea, build 154 — "is it possible to
+/// make a small down arrow so that it shows the movement somehow?"
+///
+/// Drawn here rather than named, because SF Symbols has no archivebox carrying an arrow. A
+/// `VStack`, not a `ZStack` with offsets: the two pieces then cannot drift over each other at
+/// another text size.
+struct MoveToArchiveIcon: View {
+    var body: some View {
+        VStack(spacing: 0) {
+            Image(systemName: "arrow.down")
+                .font(.system(size: 7, weight: .bold))
+            Image(systemName: "archivebox")
+                .font(.system(size: 12))
+        }
+        .frame(height: 21)
+        .accessibilityLabel("Move to the Archive")
+    }
+}
+
 struct StateToggle: View {
     let systemImage: String
     /// What the symbol stands for, e.g. "Edit". Read aloud and shown as the tooltip.
@@ -317,7 +337,7 @@ struct StateToggle: View {
             Image(systemName: systemImage)
                 .font(.system(size: 13, weight: .semibold))
                 .frame(width: 30, height: 26)
-                .foregroundStyle(isOn ? tint : Color.secondary)
+                .foregroundStyle(isOn ? tint : Color.primary.opacity(0.62))
                 .background { fill }
                 .overlay { border }
                 .contentShape(Rectangle())
@@ -331,13 +351,16 @@ struct StateToggle: View {
     @ViewBuilder
     private var fill: some View {
         if isOn {
-            RoundedRectangle(cornerRadius: 6).fill(tint.opacity(0.20))
+            RoundedRectangle(cornerRadius: 6).fill(tint.opacity(0.24))
         }
     }
 
     private var border: some View {
         RoundedRectangle(cornerRadius: 6)
-            .strokeBorder(isOn ? tint.opacity(0.55) : Color.secondary.opacity(0.35),
-                          style: StrokeStyle(lineWidth: 1, dash: isOn ? [] : [3, 2]))
+            // Build 154: both states were too faint to read in a macOS toolbar, which draws
+            // everything at low emphasis to begin with. Same two-state language he chose in
+            // build 142 — tinted and solid for on, grey and dashed for off — only stronger.
+            .strokeBorder(isOn ? tint.opacity(0.7) : Color.primary.opacity(0.3),
+                          style: StrokeStyle(lineWidth: isOn ? 1.4 : 1.2, dash: isOn ? [] : [3.5, 2.5]))
     }
 }

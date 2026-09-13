@@ -59,7 +59,7 @@ Under that, everything else a note can be given as it is made, all of it on scre
 
 ### Renaming a note
 
-Right-click a note in the list (long-press on the phone) › **Rename…**, or press **Rename** in the toolbar of the note itself. The file is renamed with it, and every note that pointed at the old name — `goal:`, `area:`, `parent:`, `related:` or a `[[wikilink]]` — is updated, so no link comes loose. The note's own `# Heading` follows when it still said the old name.
+Press the note's **name** in the row under the toolbar, beside **Project** or **Area**. Or right-click the note in the list (long-press on the phone) › **Rename…**; on the iPhone it is also in the **…** menu at the top of the note. The file is renamed with it, and every note that pointed at the old name — `goal:`, `area:`, `parent:`, `related:` or a `[[wikilink]]` — is updated, so no link comes loose. The note's own `# Heading` follows when it still said the old name.
 
 A name another note already uses is refused. In Apple Reminders the list follows on the next sync; the tasks keep their reminders. The Inbox and daily notes cannot be renamed.
 

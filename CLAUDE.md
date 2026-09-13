@@ -1210,6 +1210,31 @@ Three things he asked for in the same message, all small:
   **The same fault class as "Hobby or homeless?"**: it is not wrong, it just carries no
   information.
 
+**Build 154: the note's toolbar, from one screenshot of four icons.** Three asks, and the
+first two were answered by the third.
+- **Rename lost its toolbar button.** His word was "exaggerated": a whole slot for a rare
+  action, and its pencil was the *second* pencil in the row, next to the Edit `StateToggle`.
+  **The name is now a chip in `NoteHeader`, and pressing it renames.** That is the family the
+  header already is — `NoteGoalChip`, `NoteTagsChip`, `AreaParentChip`, `ProjectDeadlineChip`
+  are all "press the fact to change it" — and the note's name is a fact about the note. The
+  alert and `renameNote` are unchanged; `NoteHeader` just takes a `rename: (() -> Void)?`,
+  nil for the Inbox and daily notes. The phone keeps it in its one `Menu` (build 88), which is
+  not a dedicated icon and so is not the thing he objected to.
+  **"Two icons that look alike" is usually a sign one of them should not be there.** Recolouring
+  them would have kept the real fault.
+- `renameAction(for:)` is a function, not a ternary with a closure in one arm — the same
+  inference cliff as build 152's `openEventAction(for:)`.
+- **`MoveToArchiveIcon` (Theme.swift)**: `arrow.down` above `archivebox` in a `VStack`, his idea,
+  so the button reads as *moving* the note rather than as showing an archive. Drawn rather than
+  named because SF Symbols has no archivebox carrying an arrow, and a `VStack` rather than a
+  `ZStack` with offsets so the two pieces cannot drift apart at another text size.
+- **`StateToggle` got more contrast in both states**, because a macOS toolbar draws everything
+  at low emphasis and his dashed grey had almost disappeared. Same language he chose in build
+  142 — tint + solid for on, grey + dashed for off — only stronger: off is
+  `Color.primary.opacity(0.62)` rather than `.secondary`, the border is 1.2–1.4pt, and the
+  on-state fill went 0.20 → 0.24. **The two-state language itself is his and stays.** The lift
+  reaches the Calendar day's month-grid button too, which shares the control.
+
 Still open, in the order agreed: Goals and Aspirations
 screens if the one review is not enough; then the status vocabulary (reached / missed / dropped), last because it edits his
 notes. Also queued: **spread `StateToggle`** to the other two-state controls (Hide finished,
