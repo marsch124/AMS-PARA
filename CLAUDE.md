@@ -1071,6 +1071,19 @@ Quietly keeping the old thing as the default is a change to the agreement, not a
 the same shape that broke the scene list in build 147, and `ToolbarItem(placement:
 .topBarTrailing)` does not exist on macOS anyway.
 
+**Build 149: the planner's Actions column is `TaskRow`.** He asked for checkboxes, editing,
+scrolling, and to see *what an action serves*. `TaskRow` already carried the first three —
+the tick, the rename, the task menu, the date popover — so the hand-rolled button row was
+thrown away. **Reach for `TaskRow` for any list of tasks; a new one only repeats work and
+drifts.** Its `.draggable` is safe here because this list has no selection of its own
+(builds 71–74 were about `List(selection:)`).
+`servesLine(for:)` answers the last part: the goal the task's note serves in gold, else the
+area in pink. That is the chain the whole app is built on, and a list of actions without it
+is just a list. A caption under the heading says what the list *is* ("due today or earlier,
+then your next actions").
+The phone stacks: `lanesRow` then `actionRows` in **one** `ScrollView`, never two nested
+(build 127). `LazyVStack` rather than `List` so the same rows serve both platforms.
+
 Still open, in the order agreed: dragging and resizing a plan block; then Goals and Aspirations
 screens if the one review is not enough; then the status vocabulary (reached / missed / dropped), last because it edits his
 notes. Also queued: **spread `StateToggle`** to the other two-state controls (Hide finished,

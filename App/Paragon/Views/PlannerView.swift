@@ -28,6 +28,13 @@ struct PlannerView: View {
     private let lastHour = 23
     private let hourHeight: CGFloat = 44
 
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    private var isPhone: Bool { sizeClass == .compact }
+    #else
+    private var isPhone: Bool { false }
+    #endif
+
     private var blocks: [PlanBlock] { model.planBlocks(for: day) }
     private var actions: [TaskRef] { model.actionsForPlanning(on: day) }
     private var laneHeight: CGFloat { CGFloat(lastHour - firstHour + 1) * hourHeight }
@@ -36,25 +43,45 @@ struct PlannerView: View {
         VStack(spacing: 0) {
             header
             Divider()
-            HStack(spacing: 0) {
-                ScrollView {
-                    HStack(alignment: .top, spacing: 0) {
-                        hours
-                        lane(title: "Calendar", tint: SidebarSection.calendar.tint) { calendarItems }
-                        Divider()
-                        lane(title: "Time blocks", tint: SidebarSection.review.tint) { blockItems }
-                    }
-                }
-                Divider()
-                actionList
-                    .frame(width: 260)
-            }
+            if isPhone { phoneBody } else { deskBody }
         }
         .navigationTitle("Plan the day")
         .modifier(CalendarBlocksLink())
         .task(id: day) { await model.loadEvents(for: day) }
         // One sheet on this screen, for both a new block and an existing one (build 44).
         .sheet(isPresented: $showingEditor) { editorSheet }
+    }
+
+    /// Side by side, each column scrolling on its own.
+    private var deskBody: some View {
+        HStack(spacing: 0) {
+            ScrollView { lanesRow }
+            Divider()
+            ScrollView { actionRows }
+                .frame(width: 290)
+        }
+    }
+
+    /// The phone has no room for three columns, so the day is one scroll with the actions
+    /// under it. One scroll view, never two inside each other — that is build 127's lesson.
+    private var phoneBody: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                lanesRow
+                Divider()
+                    .padding(.vertical, 10)
+                actionRows
+            }
+        }
+    }
+
+    private var lanesRow: some View {
+        HStack(alignment: .top, spacing: 0) {
+            hours
+            lane(title: "Calendar", tint: SidebarSection.calendar.tint) { calendarItems }
+            Divider()
+            lane(title: "Time blocks", tint: SidebarSection.review.tint) { blockItems }
+        }
     }
 
     // MARK: Header
@@ -247,13 +274,22 @@ struct PlannerView: View {
 
     // MARK: The actions column
 
-    private var actionList: some View {
-        VStack(alignment: .leading, spacing: 0) {
+    /// Real task rows, so a tick here ticks the task in its note, the task menu is the same
+    /// one as everywhere else, and a name can be changed on the spot. `TaskRow` is draggable,
+    /// which is safe here because this list has no selection of its own (builds 71 to 74).
+    @ViewBuilder
+    private var actionRows: some View {
+        LazyVStack(alignment: .leading, spacing: 0) {
             SectionLabel(title: "Actions", count: actions.isEmpty ? nil : actions.count,
                          tint: SidebarSection.allActions.tint)
                 .padding(.horizontal, 10)
-                .padding(.bottom, 6)
+                .padding(.bottom, 2)
                 .frame(height: 26, alignment: .bottom)
+            Text("Due today or earlier, then your next actions.")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 10)
+                .padding(.bottom, 6)
             Divider()
             if actions.isEmpty {
                 Text("Nothing due today and no next actions. Give a task a date, or mark one as the next action.")
@@ -261,30 +297,58 @@ struct PlannerView: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(12)
-                Spacer(minLength: 0)
-            } else {
-                List {
-                    ForEach(actions) { ref in
+            }
+            ForEach(actions) { ref in
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(alignment: .top, spacing: 6) {
+                        TaskRow(ref: ref, showNote: true) { model.toggle(ref) }
                         Button {
                             startNewBlock(at: nextFreeStart(), titled: ref.task.title)
                         } label: {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(ref.task.title)
-                                    .font(.caption)
-                                    .lineLimit(3)
-                                Text(ref.noteTitle)
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                                    .lineLimit(1)
-                            }
-                            .contentShape(Rectangle())
+                            Image(systemName: "plus.circle")
+                                .foregroundStyle(SidebarSection.review.tint)
                         }
                         .buttonStyle(.plain)
                         .help("Make a block for this")
                     }
+                    servesLine(for: ref)
                 }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                Divider()
             }
         }
+    }
+
+    /// What the task is in aid of: the goal its note serves, or the area it sits in. This is
+    /// the chain the app is built on — task, project, goal — and a list of actions with no
+    /// sight of it is just a list.
+    @ViewBuilder
+    private func servesLine(for ref: TaskRef) -> some View {
+        if let serves = serves(ref) {
+            Label(serves.title, systemImage: serves.isGoal ? "star" : "circle.grid.2x2")
+                .font(.caption2)
+                .foregroundStyle(serves.isGoal ? ParaKind.goal.tint : ParaKind.area.tint)
+                .lineLimit(1)
+                .padding(.leading, 22)
+        }
+    }
+
+    /// A struct, not a tuple: key paths cannot address tuple members (build 61).
+    private struct Serves {
+        let title: String
+        let isGoal: Bool
+    }
+
+    private func serves(_ ref: TaskRef) -> Serves? {
+        guard let note = model.note(at: ref.notePath) else { return nil }
+        if let goal = note.goal {
+            return Serves(title: model.index.goal(matching: goal)?.displayTitle ?? goal, isGoal: true)
+        }
+        if let area = note.area {
+            return Serves(title: model.index.note(matching: area)?.displayTitle ?? area, isGoal: false)
+        }
+        return nil
     }
 
     // MARK: Making and changing a block

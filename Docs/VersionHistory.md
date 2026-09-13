@@ -2,6 +2,15 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 149 · 13 September 2026
+
+- **The Actions column in the planner is now made of real task rows.** Each one has a **checkbox**: tick it here and the task is ticked in its own note. Right-click a row (long-press on the iPhone) for the usual task menu — rename, give it a date, make it the next action, move it.
+- **Every action shows what it serves:** the goal its note belongs to, in gold, or the area it sits in, in pink. A list of things to do says little without that.
+- A line under the heading says what the list is: **due today or earlier, then your next actions**.
+- **The column scrolls on its own**, so a long list no longer pushes anything about.
+- The **+** button on a row is what makes a block for it. Pressing the words now edits the task instead.
+- **On the iPhone the planner is one page**: the day's hours first, the actions under them. Three columns never fitted on a phone.
+
 ## Build 148 · 13 September 2026
 
 - **Time Blocks in the sidebar now opens the planner.** In build 147 it still showed the old Apple Calendar form, and the planner was hidden behind a menu item. That was not what we agreed — my mistake.

@@ -212,8 +212,13 @@ The screen has three parts:
 - **Calendar** on the left: what is already booked that day, read from Apple Calendar.
 - **Time blocks** in the middle: your own blocks. They hang on the same hours as the calendar,
   so you can see whether a block lands inside something already booked.
-- **Actions** on the right: what is due that day, then your next actions. Press one to make a
-  block for it.
+- **Actions** on the right: what is due that day, then your next actions. Each row is a real
+  task: tick the circle to finish it, right-click (long-press on the iPhone) for the task menu,
+  and press **+** to make a block for it. Under each one is what it serves — the goal its note
+  belongs to, in gold, or the area it sits in, in pink.
+
+On the iPhone the three parts are one page instead: the day's hours first, the actions under
+them.
 
 Press a block to change its name, its time or its length. Right-click it (long-press on the
 iPhone) for **Remove**. The arrows at the top move a day at a time.
