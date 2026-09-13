@@ -178,7 +178,7 @@ struct SearchView: View {
             // can be told apart from a box that ruled everything out.
             EmptyStateView(title: "Nothing matches",
                            systemImage: SidebarSection.search.systemImage,
-                           message: query.summary,
+                           message: emptyMessage(query),
                            tint: SidebarSection.search.tint)
         } else if query.wantsTasks {
             let refs = hits.flatMap { hit in
@@ -202,6 +202,26 @@ struct SearchView: View {
                 }
             }
         }
+    }
+
+    /// Why there is nothing, not just that there is nothing.
+    ///
+    /// **This is the fault he reported.** Searching for the word **done** came back empty, and
+    /// the reason was almost certainly a box left ticked from before: `is:done done` asks for
+    /// *finished tasks whose own title contains the word done*, which nobody has. The old
+    /// screen showed that as a blank list. Now it says the boxes ruled the word out, and how
+    /// many notes the word alone is in \u2014 build 100's rule, in a new place: an absence has to
+    /// say why.
+    private func emptyMessage(_ query: SearchQuery) -> String {
+        guard query.wantsTasks, !query.terms.isEmpty else { return query.summary }
+        var wordsOnly = SearchQuery()
+        wordsOnly.terms = query.terms
+        let count = model.index.search(wordsOnly).count
+        guard count > 0 else { return query.summary }
+        let notes = count == 1 ? "1 note" : "\(count) notes"
+        return query.summary
+            + " The words are in \(notes), but no task in them matches the boxes you ticked."
+            + " Untick the boxes under Tasks to search the notes themselves."
     }
 
     /// Adds a token to the query, or takes it out when it is already there. Two boxes in the

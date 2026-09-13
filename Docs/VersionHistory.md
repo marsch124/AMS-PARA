@@ -17,7 +17,11 @@ The build number is shown at the bottom of the sidebar. Newest first.
 - **Why “done” found nothing you wanted.** The word **done** and the **Done** box are two
   different questions, and the old screen made them look the same. Writing done searches for
   those letters in your notes; the Done box asks for finished tasks. The boxes make it plain.
-- When nothing matches, the screen now says what it looked for instead of only "no results".
+- **When nothing matches, the screen says why.** That is the fault you found. Searching for the
+  word **done** came back empty because a box was still ticked from before: `is:done done` asks
+  for *finished tasks whose own name contains the word done*, which nobody has. The old screen
+  showed that as a blank list. Now it says so, and tells you how many notes the word alone is
+  in, and which boxes to untick.
 - The button beside the field folds the boxes away on a narrow column, and a line then says the
   search in words.
 - Everything you could type before still works, typed or ticked.

@@ -1259,11 +1259,15 @@ He reported that searching for **done** did nothing he expected, and asked for t
 to be brushed up: *"maybe we could perform the search with tick boxes so that you have an
 overview of what you are actually searching for."*
 
-**The fault was never the engine.** `SearchQuery.parse("done")` has always made it a *term*, and
-a note whose body holds `@done(2026-09-12)` has always matched. What failed was the screen: the
-word **done** and the **Done** chip looked identical and asked two different questions, and
-nothing said which one had been heard. **When a report does not match the code, look at what
-the screen said, not only at what it did** — the same trap as builds 123–127.
+**The engine was innocent; the screen was not.** `SearchQuery.parse("done")` has always made it
+a *term*, and a note whose body holds `@done(2026-09-12)` has always matched — so the word alone
+could never come back empty. He said it came back **empty**, which only happens with a task box
+also on: `is:done done` asks for *finished tasks whose own title contains the word done*, and
+nobody has one. The old field mixed his words with the chips' `key:value` tokens, so a box
+ticked minutes earlier was still in the query and looked like part of what he had typed.
+**When a report does not match the code, ask what the screen showed before changing the
+engine** — the same trap as builds 123–127, and asking him one question ("empty, or no
+reaction?") is what placed it.
 
 - **The field is words only; every other question is a `FilterBox`** you can see without opening
   a menu (build 74 again: the old filters were `Menu`s whose state showed as a faintly tinted
@@ -1281,6 +1285,10 @@ the screen said, not only at what it did** — the same trap as builds 123–127
   the line shown while the boxes are folded, and the message in the "Nothing matches" state.
   **Never a bare "no results"**: a word that found nothing has to be tellable from a box that
   ruled everything out (build 100's rule, in a new place).
+- **`emptyMessage` says why there is nothing**: with a word and a task box on, it counts what
+  the word alone would find and names it — "The words are in 34 notes, but no task in them
+  matches the boxes you ticked." Build 100's rule applied to a search: an absence has to say
+  why, or it looks like a broken app.
 - `FilterBox` uses build 142's two states in words rather than a symbol: ticked is the tint
   filled with a solid border, unticked is grey with a dashed one.
 - **`Section(_:content:footer:)` does not exist.** A title string and a footer cannot be given
