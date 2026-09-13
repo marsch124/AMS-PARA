@@ -2,6 +2,13 @@
 
 The build number is shown at the bottom of the sidebar. Newest first.
 
+## Build 148 · 13 September 2026
+
+- **Time Blocks in the sidebar now opens the planner.** In build 147 it still showed the old Apple Calendar form, and the planner was hidden behind a menu item. That was not what we agreed — my mistake.
+- On the Mac the planner fills the right-hand side the moment you choose **Time Blocks**. The middle column keeps the Apple Calendar blocks, now under their own name, and has a button to open the planner in a window of its own.
+- On the iPhone, **Time Blocks** is the planner. The **calendar** button at the top right leads to the Apple Calendar blocks.
+- Nothing was deleted. The blocks you already made are still events in Apple Calendar and still work exactly as before.
+
 ## Build 147 · 13 September 2026
 
 - **Plan the day.** A new screen with three parts side by side: the day's **Calendar** on the left, your own **Time blocks** in the middle, and the day's **Actions** on the right. Calendar and blocks hang on the same hours, so you see at once whether a block lands inside something already booked.

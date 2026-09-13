@@ -56,17 +56,21 @@ struct TimeBlocksView: View {
             Button {
                 openWindow(id: ParagonApp.plannerWindowID)
             } label: {
-                Label("Plan the day\u{2026}", systemImage: "rectangle.split.3x1")
+                Label("Open the planner in its own window", systemImage: "macwindow")
             }
+            Text("The planner is already beside you, on the right. This opens it in a window of its own, so it can stay up while you work in a note.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
             #else
             NavigationLink(value: PhoneRoute.planner) {
                 Label("Plan the day\u{2026}", systemImage: "rectangle.split.3x1")
             }
-            #endif
-            Text("Blocks that stay in PARAGON: they say where you mean to be, and are never written to Apple Calendar. The blocks below are the other kind \u{2014} real calendar events.")
+            Text("Your own blocks, kept in the daily note. They say where you mean to be, and are never written to Apple Calendar.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
+            #endif
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
@@ -77,7 +81,7 @@ struct TimeBlocksView: View {
     private var form: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text(editingID == nil ? "New time block" : "Edit time block")
+                Text(editingID == nil ? "New event in Apple Calendar" : "Edit calendar event")
                     .font(.subheadline.weight(.medium))
                 Spacer()
                 if editingID != nil {

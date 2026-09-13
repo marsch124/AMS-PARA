@@ -96,6 +96,10 @@ struct PhoneStack<Content: View>: View {
                     case .planner:
                         PlannerView()
                             .navigationBarTitleDisplayMode(.inline)
+                    case .calendarBlocks:
+                        TimeBlocksView()
+                            .navigationTitle("In Apple Calendar")
+                            .navigationBarTitleDisplayMode(.inline)
                     case .settings:
                         SettingsView()
                             .navigationTitle("Settings")
@@ -157,6 +161,8 @@ enum PhoneRoute: Hashable {
     case template(String)
     case section(SidebarSection)
     case planner
+    /// The old blocks, the ones that are events in Apple Calendar.
+    case calendarBlocks
     case settings
 }
 

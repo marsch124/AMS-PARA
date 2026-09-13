@@ -13,11 +13,14 @@ developer). **English is not his first language.** Write short, plain sentences 
 words. No idioms, no wordplay, no invented shorthand, and never a heading that stands in for
 a sentence — "the word", "chains", "ladders" and "Serves… on an area" each cost a round trip
 on 11 September because he could not tell what they meant. Name every button and screen
-exactly as it is spelled in the app, and give whole URLs, never an abbreviation. **Write to him in Swedish** (he asked on 11 September 2026), but **keep every technical term
-in English**: he runs GitHub, TestFlight and the app itself in English, so button names, screen
-names and field names are quoted exactly as they appear there — *New Note*, *Horizon*,
-*Aspiration*, *Serves…*, *Set a deadline…*, *Review*, *Run workflow*, *Update*. Swedish prose,
-English nouns. Commit messages, code, comments and the two Docs files stay in English.
+exactly as it is spelled in the app, and give whole URLs, never an abbreviation. **Write to him in English again** — he asked on **13 September 2026**: *"let's speak English
+for some time. Sometimes that is easier for me, and I think it's easier in some respects
+because the app is in English."* From 11 to 13 September it was Swedish prose with English
+terms; that rule is on hold, not gone, so switch back the moment he asks. Either way the
+reason behind it holds: he runs GitHub, TestFlight and the app in English, so button names,
+screen names and field names are always quoted exactly as they appear there — *New Note*,
+*Horizon*, *Aspiration*, *Serves…*, *Set a deadline…*, *Review*, *Run workflow*, *Update*.
+Plain short sentences matter more than the language.
 Communicate in short, friendly, concrete steps. He cannot run
 Terminal commands. Since build 56 both apps come from TestFlight. When CI is green, tell him in two
 short lines, naming which of the two things is meant (he asked for that, and equally
@@ -1053,6 +1056,20 @@ the thing to avoid.
 - iOS has no windows: `PhoneRoute.planner` pushes the same view.
 - **Not built yet, by choice:** dragging a block to move it in time or to change its length.
   That is the second round; the columns had to work first.
+
+**Build 148: the planner is the section, not a menu item.** He objected, and he was right:
+"vi var ju överens om att timeblocks inte ska finnas i kalendern, utan vara i noten… Det
+verkar inte alls vara som alternativ B." **The agreed drawing said the Time Blocks row becomes
+the planner; build 147 left the old Apple Calendar form as what a click on that row gave you**
+and hid the planner behind ⇧⌘P. Nothing was wrong with the planner — he had simply never seen
+it. `DetailView` shows `PlannerView` for `.timeBlocks` on the Mac, and on the phone
+`NoteListView` does (no third column there); the Apple Calendar blocks keep their form, now
+named as such, one button away. Nothing was deleted.
+**The rule this earns: when a preview artifact has been agreed, the build has to match it.**
+Quietly keeping the old thing as the default is a change to the agreement, not a safe choice.
+`CalendarBlocksLink` is a `ViewModifier`, not an `#if` in the middle of a modifier chain —
+the same shape that broke the scene list in build 147, and `ToolbarItem(placement:
+.topBarTrailing)` does not exist on macOS anyway.
 
 Still open, in the order agreed: dragging and resizing a plan block; then Goals and Aspirations
 screens if the one review is not enough; then the status vocabulary (reached / missed / dropped), last because it edits his

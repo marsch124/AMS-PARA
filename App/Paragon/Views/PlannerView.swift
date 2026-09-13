@@ -51,6 +51,7 @@ struct PlannerView: View {
             }
         }
         .navigationTitle("Plan the day")
+        .modifier(CalendarBlocksLink())
         .task(id: day) { await model.loadEvents(for: day) }
         // One sheet on this screen, for both a new block and an existing one (build 44).
         .sheet(isPresented: $showingEditor) { editorSheet }
@@ -372,5 +373,29 @@ struct PlannerView: View {
             model.addPlanBlock(made, on: day)
         }
         showingEditor = false
+    }
+}
+
+/// The phone's one way to the old blocks, the ones that are events in Apple Calendar.
+///
+/// A modifier rather than an `#if` in the middle of the chain: conditional compilation inside
+/// a modifier chain is the shape that broke the scene list in build 147, and here it would
+/// also have to hold `ToolbarItem(placement: .topBarTrailing)`, which macOS does not have.
+/// One control beside the back button and the title, and no more — three is what made
+/// build 88 draw overlapping letters.
+private struct CalendarBlocksLink: ViewModifier {
+    func body(content: Content) -> some View {
+        #if os(iOS)
+        content.toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                NavigationLink(value: PhoneRoute.calendarBlocks) {
+                    Image(systemName: "calendar.badge.clock")
+                }
+                .accessibilityLabel("Blocks in Apple Calendar")
+            }
+        }
+        #else
+        content
+        #endif
     }
 }

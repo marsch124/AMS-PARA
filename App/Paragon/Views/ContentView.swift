@@ -390,7 +390,13 @@ struct NoteListView: View {
             } else if model.section == .map {
                 MapView()
             } else if model.section == .timeBlocks {
+                #if os(iOS)
+                // No third column on the phone, so the section is the planner itself. The
+                // Apple Calendar blocks are one tap away from its toolbar.
+                PlannerView()
+                #else
                 TimeBlocksView()
+                #endif
             } else if model.section == .done {
                 DoneView()
             } else if model.section == .allActions {
@@ -399,7 +405,12 @@ struct NoteListView: View {
                 DeletedView()
             } else if model.section == .templates {
                 TemplatesView()
-            } else if model.section == .snippets {
+            } else if model.section == .timeBlocks {
+            // Choosing Time Blocks shows the planner, which is what he asked for and what the
+            // agreed drawing said. Build 147 left it behind a menu item and the old Apple
+            // Calendar form was what a click on the row still gave you.
+            PlannerView()
+        } else if model.section == .snippets {
                 SnippetsView()
             } else if model.section == .tags {
                 TagsView()
@@ -820,11 +831,6 @@ struct DetailView: View {
         } else if let path = model.selectedNotePath, model.note(at: path) != nil {
             NoteEditorView(path: path)
                 .id(path)
-        } else if model.section == .timeBlocks {
-            EmptyStateView(title: "Time blocks live in Apple Calendar",
-                           systemImage: "calendar.badge.clock",
-                           message: "Add a block on the left. It becomes an event in the calendar you chose and shows up on all your devices. Click a block to edit it, right-click to open it in Calendar or delete it.",
-                           tint: SidebarSection.timeBlocks.tint)
         } else if model.section == .done {
             EmptyStateView(title: "What you finished",
                            systemImage: "checkmark.circle",
